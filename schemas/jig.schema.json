@@ -52,6 +52,11 @@
           "minLength": 1,
           "description": "Resolved by name from the config directory. Left out, the generic exit-code adapter runs."
         },
+        "adapter-command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "An explicit adapter invocation, written in place of the default one. The same substitutions are available as in a command, and the envelope is still expected at output.yaml in the work directory, because no flag says where it goes."
+        },
         "evidence": {
           "type": "array",
           "description": "The files this task produces that its adapter should read. Declared, never discovered.",
@@ -97,6 +102,7 @@
           "properties": {
             "command": false,
             "adapter": false,
+            "adapter-command": false,
             "evidence": false,
             "matching": false,
             "excluding": false
