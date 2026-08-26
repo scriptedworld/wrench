@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scriptedworld.github.io/wrench/manifest.schema.json",
+  "title": "manifest",
+  "description": "What one task execution was going to be given, written before its command runs. It therefore holds only what is known beforehand: anything a run learns by finishing is not in here, because the manifest was closed before there was anything to learn.",
+
+  "type": "object",
+  "required": ["task", "ordinal", "command", "variables"],
+
+  "properties": {
+    "task": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The task this execution belongs to."
+    },
+    "ordinal": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "This execution's index within the task."
+    },
+    "command": {
+      "type": "string",
+      "description": "The command line as executed, after substitution."
+    },
+    "variables": {
+      "type": "object",
+      "description": "Every value exposed as a template variable for this execution, whether or not the command used it. A reader sees what the task was given and not only what its command became, which matters where a variable was available and went unused.",
+      "properties": {
+        "project_root": { "type": "string" },
+        "base_dir": { "type": "string" },
+        "work_dir": { "type": "string" },
+        "config_dir": { "type": "string" },
+        "output_dir": { "type": "string" },
+        "each_path": { "type": "string" },
+        "all_paths": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["project_root", "base_dir", "work_dir", "config_dir", "output_dir"]
+    },
+    "selection": {
+      "type": "object",
+      "description": "What the task was offered and what it was kept from seeing. Present for a task that consumes paths.",
+      "properties": {
+        "matched": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The whole matched list, repeated in every execution of a per-path task, because one path alone loses the context of what the task was offered."
+        },
+        "excluded": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

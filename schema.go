@@ -30,6 +30,13 @@ var JigSchema Schema = shipped(
 	"https://scriptedworld.github.io/wrench/jig.schema.json",
 )
 
+// ManifestSchema is what one task execution was going to be given, written
+// before its command runs.
+var ManifestSchema Schema = shipped(
+	"schemas/manifest.schema.json",
+	"https://scriptedworld.github.io/wrench/manifest.schema.json",
+)
+
 // CompileSchema turns a JSON Schema document into a Schema. The shipped pair
 // are not special: anything in the ecosystem can attach a schema to its own
 // structured files and hand it to the same two calls.

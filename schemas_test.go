@@ -14,7 +14,7 @@ func TestTheSchemasShipAsFilesBesideTheLibrary(t *testing.T) {
 	// Embedded is how a consumer links one static binary. Present as files is
 	// what lets a YAML language server be pointed at them while a jig is being
 	// written, and it is what keeps one copy rather than one per pack.
-	for _, name := range []string{"envelope.schema.json", "jig.schema.json"} {
+	for _, name := range []string{"envelope.schema.json", "jig.schema.json", "manifest.schema.json"} {
 		path := filepath.Join("schemas", name)
 		data, err := os.ReadFile(path)
 		if err != nil {
