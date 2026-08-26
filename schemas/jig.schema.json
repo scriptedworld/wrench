@@ -14,6 +14,11 @@
       "items": { "type": "string", "minLength": 1 }
     },
 
+    "definitions": {
+      "$ref": "https://scriptedworld.github.io/wrench/definitions.schema.json",
+      "description": "Default values for the placeholders this jig's commands name. Optional, and so is any entry in it: a jig leaving a value to its adopter names the placeholder and defines nothing. A definitions file named on the invocation merges over this."
+    },
+
     "tasks": {
       "type": "array",
       "description": "Executed in declaration order. A task names either a command or a jig, never both.",
@@ -82,6 +87,11 @@
           "type": "string",
           "minLength": 1,
           "description": "Names the child's output directory rather than placing it. Whatever it is set to, the result is a subdirectory of this task's work directory."
+        },
+        "definitions": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Names the child's definitions file, as --definitions does for an invocation from the command line. Left out, it inherits, so subprojects sharing one set of adjustments name nothing and carry no copies."
         }
       },
 
@@ -93,7 +103,8 @@
             "jig": false,
             "in": false,
             "config-dir": false,
-            "output-dir": false
+            "output-dir": false,
+            "definitions": false
           }
         },
         {
