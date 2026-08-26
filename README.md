@@ -28,8 +28,9 @@ and checkers, and the next waits until something needs it. The contract is
 settled first and specified independently of any implementation, so a later pack
 is written from the contract rather than by reading the Go one.
 
-Derived from decisions recorded in `bolt/REQUIREMENTS.md` and filed for the
-architecture document as
-`clank/inbox/silo/yaml-and-json-schema-is-a-platform-decision/`.
+The contract is stated in `REQUIREMENTS.md`, derived from those decisions and
+from
+`silo/docs/DECISIONS/yaml-everywhere-validated-against-the-decoded-structure.md`,
+where the platform decision now lives.
 
 Nothing is built yet.
