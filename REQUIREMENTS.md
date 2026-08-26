@@ -5,9 +5,8 @@ Derived from four sources and nothing else: `README.md`, the rows in
 `silo/docs/DECISIONS/yaml-everywhere-validated-against-the-decoded-structure.md`,
 and `clank/inbox/wrench/python-library-runs-before-pip-exists/`.
 
-Those rows still sit in bolt as well. Removing them there is task
-`bolt/specification/20`, so until it lands the same property is stated twice and
-bolt's copy is the one that goes.
+Those rows have left bolt, which now states only its own use of the contract.
+The move landed as bolt 3d40517.
 
 Requirements are stated as observable properties. Each says what must be true of
 wrench or of a call, not how anything is built.
@@ -16,9 +15,11 @@ wrench or of a call, not how anything is built.
 sources. `[D]` is derived from one. `[A/D]` is both. `[?]` is open, recorded so
 it is not lost and carrying no test yet.
 
-No test cites any row here, because no implementation exists. Every settled row
-is uncovered under toolbox's traceability gate, and marking them `[?]` to turn
-that green would misreport what is settled.
+Six settled rows carry no test. FR-6.1 and FR-6.2 are the Python pack's and
+wait for it to exist. FR-5.1, FR-5.1a, FR-5.3 and FR-5.4 state why the project
+is shaped as it is rather than a property of a pack, so no test can discharge
+them and they are the wrong shape for this document rather than untested. That
+is recorded in `NEXT_STEPS.md` and left visible instead of turned green.
 
 ---
 
@@ -42,6 +43,8 @@ that green would misreport what is settled.
 | FR-2.5 | The codec is the format and the reader or writer is the IO, declared separately. A format is then added without inventing a source and a source without inventing a format, rather than needing one function per combination of the two. | [A] |
 | FR-2.5a | Separating them puts the IO boundary wholly outside the call. A reader is handed the path, so substituting it in a test exercises the validation paths against no filesystem at all rather than only replacing the parse. | [A/D] |
 | FR-2.6 | A failing call says which of the two steps failed: the parser could not load the file, or the structure it produced did not match the schema. The two have different causes and different fixes. | [D] |
+| FR-2.7 | YAML is the codec that ships. Every structured file in the ecosystem is YAML, so a second has no consumer today; the codec argument exists so that adding one later is not a change to the two calls. | [D] |
+| FR-2.8 | A local file reader and a local file writer ship, and nothing else. Everything wrench serves reads and writes on the machine it is running on, and a test substitutes its own reader rather than needing one shipped to do it. | [D] |
 
 ## 3. Schemas
 
@@ -51,6 +54,7 @@ that green would misreport what is settled.
 | FR-3.2 | The schemas ship with the library, so a consumer names one rather than carrying a copy that can drift from it. | [A] |
 | FR-3.3 | JSON Schema validates the decoded structure, so validation is indifferent to how the file was serialised on the way in. | [A/D] |
 | FR-3.4 | A schema checks shape, not meaning. A value that parsed differently from how it was written is still a value of the right type and validation passes it. Anything relying on a schema to catch a wrong value is relying on the wrong control. | [A] |
+| FR-3.5 | The schemas are files, reachable in the tree, so a YAML language server can be pointed at one while a jig is being written. A pack may embed them to link a single static binary, and what it embeds is those same files rather than a copy of its own. | [D] |
 
 ## 4. Canonical form
 
@@ -72,6 +76,7 @@ that green would misreport what is settled.
 | FR-5.3 | A pack is written from the contract rather than by reading another pack. Otherwise the first implementation's accidents become the specification, which is the provenance failure this ecosystem exists to avoid. | [A] |
 | FR-5.4 | Packs follow demand. Go serves bolt and Python serves toolbox's adapters and checkers; the next waits until something needs it. | [A] |
 | FR-5.5 | Packs are held level by JSON Schema's own cross-implementation test suite, plus a shared fixture set covering canonical emission and error shape. Agreement comes from both being tested against the same declared cases, not from shared code. | [A] |
+| FR-5.6 | The fixture set holding the packs level lives in this repository beside the schemas, so a fixture and every pack it judges move in one commit and no pack is tested against a different revision of it. | [D] |
 
 ## 6. Reaching the library
 
@@ -88,8 +93,4 @@ The questions that would settle them are in `NEXT_STEPS.md`.
 
 | ID | Requirement | |
 |---|---|---|
-| FR-7.1 | The codecs shipped with the library are a stated set, and adding one does not change the two calls. | [?] |
-| FR-7.2 | The readers and writers shipped with the library are a stated set. | [?] |
-| FR-7.3 | The schemas are reachable as files an editor can be pointed at, or they are an implementation detail, and which one is decided. | [?] |
 | FR-7.4 | The Python pack reaches its bootstrap consumer by a stated route, whether that is apt's `python3-yaml` as the declared floor or vendoring into dotfiles. | [?] |
-| FR-7.5 | The fixture set holding the packs level is versioned and owned somewhere both packs are tested against the same revision of it. | [?] |

@@ -1,0 +1,16 @@
+"metadata":
+  "evidence":
+    - "work/format-0001/stdout"
+  "statistics":
+    "checked": 12
+    "failed": 3
+"reasons":
+  - "files":
+      - "a.go"
+      - "b.go"
+      - "c.go"
+    "kind": "tool-findings"
+    "message": "3 files need formatting"
+  - "kind": "missing-tool"
+    "message": "golangci-lint is not installed"
+"success": false

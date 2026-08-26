@@ -1,0 +1,3 @@
+tools: [go, gofmt, golangci-lint]
+limits: {cpu: 2, wall: 30}
+nested: [{name: one}, {name: two}]

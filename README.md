@@ -33,4 +33,14 @@ from
 `silo/docs/DECISIONS/yaml-everywhere-validated-against-the-decoded-structure.md`,
 where the platform decision now lives.
 
-Nothing is built yet.
+The Go pack is built: `LoadFormattedFile` and `SaveFormattedFile`, a YAML codec
+emitting canonical form, a local file reader and an atomic writer, and both
+schemas embedded. `go test ./...` runs it.
+
+    import "github.com/scriptedworld/wrench"
+
+    envelope, err := wrench.LoadFormattedFile(
+        path, wrench.EnvelopeSchema, wrench.YAML, wrench.LocalFile)
+
+The Python pack waits until something needs it, and will be written from
+`REQUIREMENTS.md` rather than by reading the Go one.

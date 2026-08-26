@@ -1,0 +1,10 @@
+"limits":
+  "cpu": 2
+  "wall": 30
+"nested":
+  - "name": "one"
+  - "name": "two"
+"tools":
+  - "go"
+  - "gofmt"
+  - "golangci-lint"

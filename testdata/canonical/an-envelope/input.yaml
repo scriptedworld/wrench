@@ -1,0 +1,13 @@
+success: false
+reasons:
+  - kind: tool-findings
+    message: 3 files need formatting
+    files: [a.go, b.go, c.go]
+  - kind: missing-tool
+    message: golangci-lint is not installed
+metadata:
+  statistics:
+    checked: 12
+    failed: 3
+  evidence:
+    - work/format-0001/stdout

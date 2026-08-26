@@ -1,0 +1,6 @@
+answer: "no"
+version: "1.20"
+absent: "null"
+truthy: "true"
+numeric: "42"
+empty: ""

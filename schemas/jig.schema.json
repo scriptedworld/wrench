@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scriptedworld.github.io/wrench/jig.schema.json",
+  "title": "jig",
+  "description": "A jig: the unit of configuration and composition. What a runner executes for a project is read from that project's jig. Unrecognised keys are not refused here, because whether an unknown key fails or warns is still open, and a schema that leaves something open leaves it open.",
+
+  "type": "object",
+  "required": ["tasks"],
+
+  "properties": {
+    "requires": {
+      "type": "array",
+      "description": "Every executable this jig invokes: the tools its commands run, the adapters its tasks name, any checker it calls. The whole dependency inventory, not a note about unusual tools.",
+      "items": { "type": "string", "minLength": 1 }
+    },
+
+    "tasks": {
+      "type": "array",
+      "description": "Executed in declaration order. A task names either a command or a jig, never both.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/task" }
+    }
+  },
+
+  "$defs": {
+    "task": {
+      "type": "object",
+      "required": ["name"],
+
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Prefixes this task's work directories, so its evidence is identifiable on disk without opening anything. Unique within the jig."
+        },
+        "description": { "type": "string" },
+        "short-circuit-failure": {
+          "type": "boolean",
+          "default": false,
+          "description": "Stop the run when this task fails. Stopping is what a jig asks for rather than what it gets."
+        },
+
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A shell line. How it runs is read off it: {each_path} means one execution per matched path, {all_paths} one execution with the whole selection. Naming both is an error."
+        },
+        "matching": { "$ref": "#/$defs/pathList" },
+        "excluding": { "$ref": "#/$defs/pathList" },
+        "adapter": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resolved by name from the config directory. Left out, the generic exit-code adapter runs."
+        },
+        "evidence": {
+          "type": "array",
+          "description": "The files this task produces that its adapter should read. Declared, never discovered.",
+          "items": { "type": "string", "minLength": 1 }
+        },
+
+        "jig": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Run this jig instead of a command. The child follows its own process: its own requires, its own tasks, its own filtering."
+        },
+        "in": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A subdirectory of the current base to run the named jig in. A written path, not a pattern, because a pattern can say which files look like Go and never that a directory is a Go module. The only thing that sets a child's base."
+        },
+        "config-dir": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Where the child looks for jigs. Left out, it inherits."
+        },
+        "output-dir": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Names the child's output directory rather than placing it. Whatever it is set to, the result is a subdirectory of this task's work directory."
+        }
+      },
+
+      "oneOf": [
+        {
+          "title": "a command task",
+          "required": ["command"],
+          "properties": {
+            "jig": false,
+            "in": false,
+            "config-dir": false,
+            "output-dir": false
+          }
+        },
+        {
+          "title": "a jig task",
+          "required": ["jig"],
+          "properties": {
+            "command": false,
+            "adapter": false,
+            "evidence": false,
+            "matching": false,
+            "excluding": false
+          }
+        }
+      ]
+    },
+
+    "pathList": {
+      "type": "array",
+      "description": "Patterns or literal paths, relative to the base of the run they are declared in, where ** matches zero or more directory levels.",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

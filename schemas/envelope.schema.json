@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scriptedworld.github.io/wrench/envelope.schema.json",
+  "title": "envelope",
+  "description": "A result envelope. Every producer in the ecosystem writes one of these, and every consumer reads it the same way. success is the only key every envelope carries; the rest is open so whatever detail a producer holds can travel with the result.",
+
+  "type": "object",
+  "required": ["success"],
+
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether what this envelope describes passed. The authoritative verdict."
+    },
+
+    "reasons": {
+      "type": "array",
+      "description": "Why. Present when success is false. A member's shape is open beyond the two keys every consumer can count on.",
+      "items": { "$ref": "#/$defs/reason" }
+    },
+
+    "metadata": {
+      "type": "object",
+      "description": "Optional. Carries statistics and evidence where a producer has them.",
+      "properties": {
+        "statistics": {
+          "description": "Whatever the producer counted."
+        },
+        "evidence": {
+          "description": "What the result rests on, by path."
+        }
+      }
+    }
+  },
+
+  "if": {
+    "properties": { "success": { "const": false } },
+    "required": ["success"]
+  },
+  "then": {
+    "required": ["reasons"],
+    "properties": {
+      "reasons": { "minItems": 1 }
+    }
+  },
+
+  "$defs": {
+    "reason": {
+      "type": "object",
+      "required": ["message", "kind"],
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "Renderable by any consumer, which is what makes it required."
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What sort of thing this is, so a consumer tells a missing tool from a tool that found problems without reading English. The vocabulary is deliberately not enumerated here: a closed list would make a schema change the price of a new kind of failure."
+        }
+      }
+    }
+  }
+}
