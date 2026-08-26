@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wrench"
+version = "0.1.0"
+description = "Reads, writes and validates the form of the ecosystem's structured files"
+requires-python = ">=3.11"
+license = "MIT"
+
+# Both are imported by name and expected to come from the platform. Declaring
+# them here is for a resolver that has one; FR-6.2 and FR-6.2a say the pack
+# depends on the names being importable rather than on a resolver having run,
+# which is what the bootstrap window needs.
+dependencies = [
+    "PyYAML",
+    "jsonschema",
+]
+
+[tool.setuptools]
+packages = ["wrench"]
+
+# INSTALL THIS EDITABLE. The schemas are read from `schemas/` at the repository
+# root, two levels above this package, so a copied install would leave the pack
+# looking for files that are not beside it. Editable keeps one copy of the
+# schemas, which is the whole of FR-3.2.
