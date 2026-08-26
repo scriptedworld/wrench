@@ -5,3 +5,8 @@ START_HERE.md
 # -F. Gitignored so that naming it on the command line can never put it into
 # the commit it describes.
 .ephemera/
+
+# Python build and cache artifacts. The pack is installed editable, so the
+# egg-info lands beside the source rather than in a build directory.
+__pycache__/
+*.egg-info/
