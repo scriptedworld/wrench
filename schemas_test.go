@@ -130,3 +130,57 @@ func TestADefinitionsFileTakesOneLevelOfScalars(t *testing.T) {
 		}
 	}
 }
+
+// manifestWith builds a manifest carrying the five locations every execution
+// has, plus whatever the case under test adds. Written as YAML because that is
+// what a manifest is on disk, and validating the decoded structure is what the
+// schema is for.
+func manifestWith(variables string) string {
+	return "task: build\n" +
+		"ordinal: 0\n" +
+		"command: go build ./...\n" +
+		"variables:\n" +
+		"  project_root:\n    value: /p\n    from: bolt\n" +
+		"  base_dir:\n    value: /p\n    from: bolt\n" +
+		"  work_dir:\n    value: /p/w\n    from: bolt\n" +
+		"  config_dir:\n    value: /p\n    from: bolt\n" +
+		"  output_dir:\n    value: /p/o\n    from: bolt\n" +
+		variables
+}
+
+// COVERS: FR-3.1, FR-3.4 | edge
+func TestAManifestVariableSaysWhichLayerSuppliedIt(t *testing.T) {
+	// Nothing in Go exercised this schema until a change to it broke the Python
+	// pack alone. A shipped schema no pack validates against is a shape the
+	// gate cannot hold either pack to.
+	accepted := manifestWith(
+		"  requirements:\n    value: ../REQUIREMENTS.md\n    from: file\n" +
+			"  all_paths:\n    value:\n      - a.go\n      - b.go\n    from: bolt\n")
+	if _, err := wrench.LoadFormattedFile("m.yaml", wrench.ManifestSchema, wrench.YAML, &stubReader{data: []byte(accepted)}); err != nil {
+		t.Errorf("a manifest naming the layer of each variable was refused: %v", err)
+	}
+
+	refused := map[string]string{
+		"a bare value":              "  requirements: ../REQUIREMENTS.md\n",
+		"a value with no layer":     "  requirements:\n    value: x\n",
+		"a layer with no value":     "  requirements:\n    from: jig\n",
+		"a layer outside the three": "  requirements:\n    value: x\n    from: environment\n",
+	}
+	for what, variable := range refused {
+		if _, err := wrench.LoadFormattedFile("m.yaml", wrench.ManifestSchema, wrench.YAML, &stubReader{data: []byte(manifestWith(variable))}); err == nil {
+			t.Errorf("%s was accepted", what)
+		}
+	}
+}
+
+// COVERS: FR-3.1 | negative
+func TestAManifestKeepsTheFiveLocations(t *testing.T) {
+	// Every execution has them whatever else it has, so a manifest missing one
+	// is not a smaller manifest, it is a broken one.
+	for _, missing := range []string{"project_root", "base_dir", "work_dir", "config_dir", "output_dir"} {
+		document := strings.Replace(manifestWith(""), "  "+missing+":\n", "  absent_"+missing+":\n", 1)
+		if _, err := wrench.LoadFormattedFile("m.yaml", wrench.ManifestSchema, wrench.YAML, &stubReader{data: []byte(document)}); err == nil {
+			t.Errorf("a manifest without %s was accepted", missing)
+		}
+	}
+}
