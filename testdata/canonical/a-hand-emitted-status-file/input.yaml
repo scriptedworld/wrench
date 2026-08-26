@@ -1,0 +1,9 @@
+session: abcd-1234
+model: 'Opus 5 "1M" \ context'
+cwd: /home/ancient/.projects/infobot
+effort: xhigh
+context_size: 1000000
+context_used: 480000
+context_remaining: 520000
+context_percent: 48.2
+written: '2026-08-26T16:25:52-07:00'
