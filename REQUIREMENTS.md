@@ -84,6 +84,7 @@ is recorded in `NEXT_STEPS.md` and left visible instead of turned green.
 |---|---|---|
 | FR-6.1 | The Python pack is importable without an install having run. `dotfiles/bin/setup` runs on `/usr/bin/python3` before mise, uv or pip exist, so a pack needing `pip install` first would mean installing requires the installer. | [A] |
 | FR-6.2 | Its YAML support is whatever the platform supplies under that name. Debian's `python3-yaml` satisfies that through the one channel available before any other is, and a pip-installed PyYAML satisfies every consumer that is not the bootstrap case. The dependency is on the name being importable rather than on a resolver having run. | [A] |
+| FR-6.2a | Validation needs the platform to supply `jsonschema` as well, and that is the half FR-6.2 missed. FACT 2026-08-26: `/usr/bin/python3` on this machine has `yaml` 6.0.2 and no `jsonschema`, so `import wrench` fails outright there rather than degrading. Debian packages it as `python3-jsonschema`. | [A] |
 | FR-6.3 | A write is atomic: the file is written beside its target and renamed into place, so a reader sees the previous content or the new one and never a partial file. | [A] |
 
 ## 7. Open

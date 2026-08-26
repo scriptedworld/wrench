@@ -15,7 +15,13 @@ FR-2.6 what a failure says.
 # Still open
 
 1. How does the Python pack reach `dotfiles/bin/setup`? **Default: declare
-   `python3-yaml` as a prerequisite and import `yaml` by name.** FR-6.1 and
+   `python3-yaml` as a prerequisite and import `yaml` by name.**
+   **Sharpened 2026-08-26 by building the pack.** It needs `python3-jsonschema`
+   too, and that one is not installed here. The pack imports on mise's
+   interpreter, which has both, and not on `/usr/bin/python3`, which has
+   neither validation nor a way to get it without apt. So the prerequisite is
+   two packages, not one, and the bootstrap window is the case that has
+   neither. FR-6.1 and
    FR-6.2 fix the constraint; what is open is only whether that is enough or
    whether the pack gets vendored into dotfiles as well. Vendoring is the
    fallback, worth choosing rather than arriving at.
