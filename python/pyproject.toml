@@ -9,13 +9,18 @@ description = "Reads, writes and validates the form of the ecosystem's structure
 requires-python = ">=3.11"
 license = "MIT"
 
-# Both are imported by name and expected to come from the platform. Declaring
-# them here is for a resolver that has one; FR-6.2 and FR-6.2a say the pack
-# depends on the names being importable rather than on a resolver having run,
-# which is what the bootstrap window needs.
+# All three are imported by name and expected to come from the platform.
+# Declaring them here is for a resolver that has one; FR-6.2 and FR-6.2a say the
+# pack depends on the names being importable rather than on a resolver having
+# run, which is what the bootstrap window needs.
+#
+# `referencing` is what resolves a $ref from one shipped schema to another. It
+# is jsonschema's own dependency from 4.18 on, and Debian's python3-jsonschema
+# pulls python3-referencing, so it is named rather than assumed.
 dependencies = [
     "PyYAML",
     "jsonschema",
+    "referencing",
 ]
 
 [tool.setuptools]

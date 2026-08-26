@@ -179,26 +179,106 @@ def test_save_writes_canonical_form():
 # ---- schemas ----------------------------------------------------------------
 
 
+LOCATIONS = ("project_root", "base_dir", "work_dir", "config_dir", "output_dir")
+
+
+def _manifest(**variables):
+    """A manifest carrying the five locations bolt always supplies. Every
+    variable is {value, from}, because a reader needs which layer won as well
+    as what the value was."""
+    supplied = {name: {"value": "/p", "from": "bolt"} for name in LOCATIONS}
+    supplied.update(variables)
+    return {
+        "task": "build",
+        "ordinal": 0,
+        "command": "go build ./...",
+        "variables": supplied,
+    }
+
+
+def _refuses(schema, value, what):
+    """Assert a schema refuses a value, naming what was offered when it does
+    not. `pytest.raises` alone loses which case of a table got through."""
+    try:
+        schema.validate(value)
+    except ValueError:
+        return
+    pytest.fail(f"{what} was accepted")
+
+
 # COVERS: FR-3.1, FR-3.2, FR-3.5 | positive
-def test_all_three_shipped_schemas_load_from_the_one_copy():
-    for schema in (wrench.ENVELOPE_SCHEMA, wrench.JIG_SCHEMA, wrench.MANIFEST_SCHEMA):
+def test_all_four_shipped_schemas_load_from_the_one_copy():
+    for schema in (
+        wrench.ENVELOPE_SCHEMA,
+        wrench.JIG_SCHEMA,
+        wrench.MANIFEST_SCHEMA,
+        wrench.DEFINITIONS_SCHEMA,
+    ):
         schema.validate.__self__  # noqa: B018 - it is a Schema, not a function
     wrench.ENVELOPE_SCHEMA.validate({"success": True})
     wrench.JIG_SCHEMA.validate({"tasks": [{"name": "build", "command": "go build ./..."}]})
+    wrench.MANIFEST_SCHEMA.validate(_manifest())
+    wrench.DEFINITIONS_SCHEMA.validate({"requirements": "../REQUIREMENTS.md"})
+
+
+# COVERS: FR-3.1, FR-3.4 | edge
+def test_a_manifest_variable_says_which_layer_supplied_it():
+    """A bare value is the shape before three layers existed. It is refused, so
+    a producer cannot write a manifest that loses which layer won."""
     wrench.MANIFEST_SCHEMA.validate(
-        {
-            "task": "build",
-            "ordinal": 0,
-            "command": "go build ./...",
-            "variables": {
-                "project_root": "/p",
-                "base_dir": "/p",
-                "work_dir": "/p/w",
-                "config_dir": "/p",
-                "output_dir": "/p/o",
-            },
-        }
+        _manifest(
+            requirements={"value": "../REQUIREMENTS.md", "from": "file"},
+            all_paths={"value": ["a.go", "b.go"], "from": "bolt"},
+        )
     )
+
+    for what, variable in {
+        "a bare value": "../REQUIREMENTS.md",
+        "a value with no layer": {"value": "x"},
+        "a layer with no value": {"from": "jig"},
+        "a layer outside the three": {"value": "x", "from": "environment"},
+    }.items():
+        _refuses(wrench.MANIFEST_SCHEMA, _manifest(requirements=variable), what)
+
+
+# COVERS: FR-3.1, FR-3.3 | positive
+def test_a_jigs_definitions_block_is_held_to_the_shared_shape():
+    """The block and the file are one shape, written once and referenced across
+    two shipped schemas. A jig carrying a nested value has to be refused by a
+    rule the jig schema does not itself state, which is what proves the
+    reference between them resolved."""
+    flat = b'definitions:\n  requirements: REQUIREMENTS.md\n  line_length: 100\ntasks:\n  - name: check\n    command: "true"\n'
+    wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(flat))
+
+    nested = b'definitions:\n  python:\n    line_length: 100\ntasks:\n  - name: check\n    command: "true"\n'
+    with pytest.raises(wrench.ValidationError):
+        wrench.load_formatted_file(
+            "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(nested)
+        )
+
+
+# COVERS: FR-3.2, FR-3.3 | negative
+def test_a_definitions_file_takes_one_level_of_scalars():
+    scalars = b'requirements: ../REQUIREMENTS.md\nline_length: 100\nstrict: true\nempty: ""\n'
+    wrench.load_formatted_file(
+        "d.yaml", wrench.DEFINITIONS_SCHEMA, wrench.YAML, Stub(scalars)
+    )
+
+    refused = {
+        "a list value": b"tags:\n  - one\n  - two\n",
+        "a nested value": b"python:\n  line_length: 100\n",
+        "a hyphenated name": b"line-length: 100\n",
+        "a name with a brace": b'"{line_length}": 100\n',
+        "a leading underscore": b"_leading: 1\n",
+    }
+    for what, document in refused.items():
+        try:
+            wrench.load_formatted_file(
+                "d.yaml", wrench.DEFINITIONS_SCHEMA, wrench.YAML, Stub(document)
+            )
+        except wrench.ValidationError:
+            continue
+        pytest.fail(f"{what} was accepted")
 
 
 # COVERS: FR-3.2 | regression

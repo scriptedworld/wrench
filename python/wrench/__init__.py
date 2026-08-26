@@ -33,6 +33,7 @@ from wrench.errors import (
 )
 from wrench.localfile import LOCAL_FILE, LocalFileIO
 from wrench.schema import (
+    DEFINITIONS_SCHEMA,
     ENVELOPE_SCHEMA,
     JIG_SCHEMA,
     MANIFEST_SCHEMA,
@@ -52,6 +53,7 @@ __all__ = [
     "ENVELOPE_SCHEMA",
     "JIG_SCHEMA",
     "MANIFEST_SCHEMA",
+    "DEFINITIONS_SCHEMA",
     "WrenchError",
     "ReadError",
     "ParseError",
