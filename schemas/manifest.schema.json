@@ -24,15 +24,24 @@
     },
     "variables": {
       "type": "object",
-      "description": "Every value exposed as a template variable for this execution, whether or not the command used it. A reader sees what the task was given and not only what its command became, which matters where a variable was available and went unused.",
-      "properties": {
-        "project_root": { "type": "string" },
-        "base_dir": { "type": "string" },
-        "work_dir": { "type": "string" },
-        "config_dir": { "type": "string" },
-        "output_dir": { "type": "string" },
-        "each_path": { "type": "string" },
-        "all_paths": { "type": "array", "items": { "type": "string" } }
+      "description": "Every value exposed as a template variable for this execution, whether or not the command used it, with the layer each came from. A reader sees what the task was given and not only what its command became, which matters where a variable was available and went unused, and where a definition overrode what the jig shipped.",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value", "from"],
+        "properties": {
+          "value": {
+            "type": ["string", "array"],
+            "items": { "type": "string" },
+            "description": "What the placeholder stood for. A list only where the variable is itself a list of paths."
+          },
+          "from": {
+            "enum": ["bolt", "jig", "file"],
+            "description": "Which layer supplied it: a location or path variable bolt reserves, the jig's own definitions block, or the definitions file named on the invocation. The same key means different things depending on which won, and the command line alone does not say."
+          }
+        }
       },
       "required": ["project_root", "base_dir", "work_dir", "config_dir", "output_dir"]
     },
