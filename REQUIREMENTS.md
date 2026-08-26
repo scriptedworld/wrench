@@ -15,11 +15,18 @@ wrench or of a call, not how anything is built.
 sources. `[D]` is derived from one. `[A/D]` is both. `[?]` is open, recorded so
 it is not lost and carrying no test yet.
 
-Six settled rows carry no test. FR-6.1 and FR-6.2 are the Python pack's and
-wait for it to exist. FR-5.1, FR-5.1a, FR-5.3 and FR-5.4 state why the project
-is shaped as it is rather than a property of a pack, so no test can discharge
-them and they are the wrong shape for this document rather than untested. That
-is recorded in `NEXT_STEPS.md` and left visible instead of turned green.
+**One settled row carries no test.** FACT 2026-08-26, from
+`python3 ~/.projects/toolbox/bin/test-traceability.py --requirements
+REQUIREMENTS.md .`
+
+FR-6.2a states what `/usr/bin/python3` does not supply, which is a property of
+this machine rather than of wrench, so a test here would assert the platform
+rather than the pack. `NEXT_STEPS.md` question 1 is the open half of it, and
+FR-7.4 is the open row that settles it.
+
+The four rows that previously stood uncovered as design notes were retired to
+`docs/DECISIONS/` on 2026-08-26, and FR-6.1 and FR-6.2 were covered when the
+Python pack landed.
 
 ---
 
@@ -55,6 +62,8 @@ is recorded in `NEXT_STEPS.md` and left visible instead of turned green.
 | FR-3.3 | JSON Schema validates the decoded structure, so validation is indifferent to how the file was serialised on the way in. | [A/D] |
 | FR-3.4 | A schema checks shape, not meaning. A value that parsed differently from how it was written is still a value of the right type and validation passes it. Anything relying on a schema to catch a wrong value is relying on the wrong control. | [A] |
 | FR-3.5 | The schemas are files, reachable in the tree, so a YAML language server can be pointed at one while a jig is being written. A pack may embed them to link a single static binary, and what it embeds is those same files rather than a copy of its own. | [D] |
+| FR-3.6 | A shipped schema may reference another by the `$id` it declares, and the reference resolves from the shipped set alone without reaching the network. A shape two schemas both need is then written once rather than copied into each, because two copies are free to drift and nothing would report it. | [D] |
+| FR-3.7 | A pack discovers the shipped schemas by reading the directory they live in, not from a list of filenames in its own source. A schema added to that directory is then available in every pack without a second place having to be remembered. | [D] |
 
 ## 4. Canonical form
 
@@ -68,15 +77,17 @@ is recorded in `NEXT_STEPS.md` and left visible instead of turned green.
 
 ## 5. Language packs
 
+Why there is a library per language, why a pack is written from the contract, and
+what decides when the next pack is built are recorded in `docs/DECISIONS/`. They
+state why the project is shaped as it is rather than a property anything can
+test, and four rows saying so were retired from this table on 2026-08-26.
+
 | ID | Requirement | |
 |---|---|---|
-| FR-5.1 | A library per language, each implementing the contract, rather than a C core with bindings. The codecs are the easy half and JSON Schema validation is the hard one, so a C core means implementing the specification rather than binding to one. | [A] |
-| FR-5.1a | Cgo also costs static linking and cross-compilation, which is what bolt most wants to keep. | [A] |
 | FR-5.2 | Each pack binds to its language's established JSON Schema implementation rather than implementing the specification itself. | [D] |
-| FR-5.3 | A pack is written from the contract rather than by reading another pack. Otherwise the first implementation's accidents become the specification, which is the provenance failure this ecosystem exists to avoid. | [A] |
-| FR-5.4 | Packs follow demand. Go serves bolt and Python serves toolbox's adapters and checkers; the next waits until something needs it. | [A] |
 | FR-5.5 | Packs are held level by JSON Schema's own cross-implementation test suite, plus a shared fixture set covering canonical emission and error shape. Agreement comes from both being tested against the same declared cases, not from shared code. | [A] |
 | FR-5.6 | The fixture set holding the packs level lives in this repository beside the schemas, so a fixture and every pack it judges move in one commit and no pack is tested against a different revision of it. | [D] |
+| FR-5.7 | Every pack exposes the same set of schemas, and each pack's set matches the directory rather than the other pack's. A schema present in one pack and absent from another is a divergence in the contract, so each pack checks itself against the one authority and agreement between them follows. | [D] |
 
 ## 6. Reaching the library
 
@@ -106,12 +117,23 @@ commit or another project's document finds where it went here.
 Numbering therefore has gaps, and a gap is the record working rather than an
 oversight.
 
-All four were open questions that building the Go pack answered, which is the
-argument for building early: a decision you have to make to write the code is
+The FR-7 rows were open questions that building the Go pack answered, which is
+the argument for building early: a decision you have to make to write the code is
 one you have made by writing it.
+
+The FR-5 rows were design notes sitting in a requirements table. Each said why
+the project is shaped as it is rather than stating a property of wrench, so no
+test could ever discharge one and the gate reported four permanently uncovered
+rows. They moved to `docs/DECISIONS/` intact when the docs tree was created, and
+nothing was lost. No test cited any of them, so no `COVERS:` mark needed
+cleaning up.
 
 | ID | Retired | Superseded by |
 |---|---|---|
+| FR-5.1 | 2026-08-26 | `docs/DECISIONS/a-library-per-language-not-a-c-core.md` |
+| FR-5.1a | 2026-08-26 | `docs/DECISIONS/a-library-per-language-not-a-c-core.md` |
+| FR-5.3 | 2026-08-26 | `docs/DECISIONS/a-pack-is-written-from-the-contract.md` |
+| FR-5.4 | 2026-08-26 | `docs/DECISIONS/packs-follow-demand.md` |
 | FR-7.1 | 2026-08-26 | FR-2.7. YAML is the codec that ships. |
 | FR-7.2 | 2026-08-26 | FR-2.8. A local file reader and writer ship, and nothing else. |
 | FR-7.3 | 2026-08-26 | FR-3.5. The schemas are files, and a pack may embed those same files. |

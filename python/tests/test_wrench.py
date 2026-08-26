@@ -8,6 +8,7 @@ exists to catch, and neither pack is the oracle for the other.
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -214,11 +215,37 @@ def test_all_four_shipped_schemas_load_from_the_one_copy():
         wrench.MANIFEST_SCHEMA,
         wrench.DEFINITIONS_SCHEMA,
     ):
-        schema.validate.__self__  # noqa: B018 - it is a Schema, not a function
+        assert isinstance(schema, wrench.Schema), f"{schema!r} is not a Schema"
     wrench.ENVELOPE_SCHEMA.validate({"success": True})
     wrench.JIG_SCHEMA.validate({"tasks": [{"name": "build", "command": "go build ./..."}]})
     wrench.MANIFEST_SCHEMA.validate(_manifest())
     wrench.DEFINITIONS_SCHEMA.validate({"requirements": "../REQUIREMENTS.md"})
+
+
+# COVERS: FR-3.7, FR-5.7 | regression
+def test_every_shipped_schema_is_exported():
+    """A schema added to schemas/ and picked up by one pack but not the other is
+    a divergence in the contract that nothing reports. It has happened: a fourth
+    schema shipped, Go exported it, and this module named three filenames and did
+    not. Each pack asserts against the directory, so both agreeing with the
+    directory is what makes them agree with each other."""
+    declared = {}
+    for path in sorted((ROOT / "schemas").glob("*.schema.json")):
+        document = json.loads(path.read_text())
+        assert document.get("$id"), f"{path.name} declares no $id"
+        declared[document["$id"]] = path.name
+
+    exported = {
+        schema.name: name
+        for name in wrench.__all__
+        if isinstance(schema := getattr(wrench, name), wrench.Schema)
+    }
+
+    for identifier, filename in declared.items():
+        assert identifier in exported, f"{filename} declares {identifier} and this pack exports no schema for it"
+
+    for identifier in exported:
+        assert identifier in declared, f"this pack exports {identifier} and no file in schemas/ declares it"
 
 
 # COVERS: FR-3.1, FR-3.4 | edge
@@ -241,7 +268,7 @@ def test_a_manifest_variable_says_which_layer_supplied_it():
         _refuses(wrench.MANIFEST_SCHEMA, _manifest(requirements=variable), what)
 
 
-# COVERS: FR-3.1, FR-3.3 | positive
+# COVERS: FR-3.1, FR-3.3, FR-3.6 | positive
 def test_a_jigs_definitions_block_is_held_to_the_shared_shape():
     """The block and the file are one shape, written once and referenced across
     two shipped schemas. A jig carrying a nested value has to be refused by a

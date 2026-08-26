@@ -1,6 +1,7 @@
 package wrench_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +9,78 @@ import (
 
 	"github.com/scriptedworld/wrench"
 )
+
+// exported is every shipped schema this pack offers by name, keyed by the $id it
+// is named by. Go cannot enumerate its own package variables, so this list is
+// the thing that has to be kept in step with schemas/, and
+// TestEveryShippedSchemaIsExported is what keeps it.
+var exported = map[string]wrench.Schema{
+	"https://scriptedworld.github.io/wrench/envelope.schema.json":    wrench.EnvelopeSchema,
+	"https://scriptedworld.github.io/wrench/jig.schema.json":         wrench.JigSchema,
+	"https://scriptedworld.github.io/wrench/manifest.schema.json":    wrench.ManifestSchema,
+	"https://scriptedworld.github.io/wrench/definitions.schema.json": wrench.DefinitionsSchema,
+}
+
+// declaredIDs reads schemas/ and returns the $id each file declares. The
+// directory is the authority on what ships, not any list in Go or in Python.
+func declaredIDs(t *testing.T) map[string]string {
+	t.Helper()
+
+	entries, err := os.ReadDir("schemas")
+	if err != nil {
+		t.Fatalf("schemas/ is not readable: %v", err)
+	}
+
+	ids := make(map[string]string)
+	for _, entry := range entries {
+		if !strings.HasSuffix(entry.Name(), ".schema.json") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join("schemas", entry.Name()))
+		if err != nil {
+			t.Fatalf("%s is not readable: %v", entry.Name(), err)
+		}
+		var document struct {
+			ID string `json:"$id"`
+		}
+		if err := json.Unmarshal(data, &document); err != nil {
+			t.Fatalf("%s is not JSON: %v", entry.Name(), err)
+		}
+		if document.ID == "" {
+			t.Errorf("%s declares no $id, so nothing can reference it", entry.Name())
+			continue
+		}
+		ids[document.ID] = entry.Name()
+	}
+	return ids
+}
+
+// COVERS: FR-3.7, FR-5.7 | regression
+func TestEveryShippedSchemaIsExported(t *testing.T) {
+	// A schema added to schemas/ and picked up by one pack but not the other is
+	// a divergence in the contract that nothing reports. It has happened: a
+	// fourth schema shipped, Go exported it, Python named three filenames in its
+	// source and did not. Each pack asserts against the directory, so both
+	// agreeing with the directory is what makes them agree with each other.
+	declared := declaredIDs(t)
+
+	for id, file := range declared {
+		schema, ok := exported[id]
+		if !ok {
+			t.Errorf("%s declares %s and this pack exports no schema for it", file, id)
+			continue
+		}
+		if schema == nil {
+			t.Errorf("%s is exported as nil", id)
+		}
+	}
+
+	for id := range exported {
+		if _, ok := declared[id]; !ok {
+			t.Errorf("this pack exports %s and no file in schemas/ declares it", id)
+		}
+	}
+}
 
 // COVERS: FR-1.1, FR-3.2, FR-3.5 | positive
 func TestTheSchemasShipAsFilesBesideTheLibrary(t *testing.T) {
@@ -93,7 +166,7 @@ func TestAValidationErrorNamesTheSchemaByIdNotByLocalPath(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1, FR-3.3 | positive
+// COVERS: FR-3.1, FR-3.3, FR-3.6 | positive
 func TestAJigsDefinitionsBlockIsHeldToTheSharedShape(t *testing.T) {
 	// The block and the file are one shape, written once and referenced across
 	// two shipped schemas. A jig carrying a nested value has to be refused by a
