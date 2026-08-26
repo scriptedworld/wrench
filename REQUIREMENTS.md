@@ -94,3 +94,24 @@ The questions that would settle them are in `NEXT_STEPS.md`.
 | ID | Requirement | |
 |---|---|---|
 | FR-7.4 | The Python pack reaches its bootstrap consumer by a stated route, whether that is apt's `python3-yaml` as the declared floor or vendoring into dotfiles. | [?] |
+
+## Retired
+
+A requirement can be retired or superseded. **Its ID is never reused**, because
+reuse silently rewrites what every existing reference to that ID meant and
+nothing about the new row looks wrong. A reader meeting one of these in an old
+commit or another project's document finds where it went here.
+
+Numbering therefore has gaps, and a gap is the record working rather than an
+oversight.
+
+All four were open questions that building the Go pack answered, which is the
+argument for building early: a decision you have to make to write the code is
+one you have made by writing it.
+
+| ID | Retired | Superseded by |
+|---|---|---|
+| FR-7.1 | 2026-08-26 | FR-2.7. YAML is the codec that ships. |
+| FR-7.2 | 2026-08-26 | FR-2.8. A local file reader and writer ship, and nothing else. |
+| FR-7.3 | 2026-08-26 | FR-3.5. The schemas are files, and a pack may embed those same files. |
+| FR-7.5 | 2026-08-26 | FR-5.6. The fixture set lives here beside the schemas. |
