@@ -38,7 +38,7 @@ passing the wrong one is not, and nothing here detects that.
 
 ## Layout
 
-    REQUIREMENTS.md          the contract, one document both packs implement
+    REQUIREMENTS.md          the contract, one document every pack implements
     NEXT_STEPS.md            open questions and context that is not work
     schemas/                 the schemas, one copy, read by every pack
     testdata/canonical/      the shared fixture set holding the packs level
@@ -54,26 +54,35 @@ passing the wrong one is not, and nothing here detects that.
     python/tests/
     python/pyproject.toml
 
+    rust/src/                the Rust pack
+    rust/tests/
+    rust/Cargo.toml
+
     docs/DECISIONS/          why the project is shaped as it is
     docs/PATTERNS/           the shape to follow when working on X
     docs/LESSONS/            what a failure here cost
 
-**The Go pack is at the root and the Python pack is under `python/`.** That
-asymmetry is known and is a problem for the gate rather than for the code:
-`clank/tasks/wrench/gate/10-a-composite-jig.planning` wants the Go pack moved to
-`go/` so the two are symmetric bases.
+**The Go pack is at the root and the other two are under `python/` and `rust/`.**
+That asymmetry is known and is a problem for the gate rather than for the code:
+`clank/tasks/wrench/gate/05-move-the-go-pack-under-go.planning` wants the Go pack
+moved to `go/` so the three are symmetric bases.
 
 ## The gate
 
     bolt wrench-quality .
 
-**FACT 2026-08-27: passes, 18 executions, `success: true` in `result.yaml`.**
-`bolt.wrench-quality.yaml` is wrench's own jig, nine tasks over the schemas, both
+2026-08-27: passes, 19 executions, `success: true` in `result.yaml`.
+`bolt.wrench-quality.yaml` is wrench's own jig, ten tasks over the schemas, the
 packs and the contract.
 
 **Read `result.yaml`, never the exit status.** bolt exits 0 whenever the run
 completed, whatever the tools concluded, and says so in its own usage. The verdict
 is the `success` key.
+
+**bolt refuses to reuse an output directory, and writes that refusal into
+`result.yaml` as `"success": false` with `kind: bolt-refused`.** So a stale
+directory yields a failing verdict for a run that never happened. Give it a fresh
+`--output-dir`, or read the `reasons` before believing the verdict.
 
 **This is wrench's own jig and not the shared standard.** toolbox's
 `bolt.*-std-quality.yaml` are still in the retired format, carrying `version: 1`,
@@ -93,13 +102,22 @@ The same checks, run by hand:
 
     go test -count=1 ./... && gofmt -l . && go vet ./...
     PYTHONPATH=python python3 -m pytest python/tests -q
+    cargo test --manifest-path rust/Cargo.toml
     python3 ~/.projects/toolbox/bin/test-traceability.py --requirements REQUIREMENTS.md .
     ./bin/test-suite-parity.py --requirements REQUIREMENTS.md \
         --suite go='*_test.go' --suite python='python/tests/*.py' .
 
-FACT 2026-08-27: Go ok, `gofmt` and `vet` clean, 53 Python tests passed,
-traceability 33 of 34 covered with 0 open and **exit 0**, parity 47 tests held
-level across both suites.
+2026-08-27: Go ok, `gofmt` and `vet` clean, 58 Python tests passed, 16 Rust tests
+plus 2 doc tests, traceability 35 of 35 with **exit 0**, parity 51 tests held
+level across the Go and Python suites.
+
+**The traceability figure moved without wrench moving.** It read 33 of 34 earlier
+the same day. toolbox's `8daa584` taught the checker that a `## Retired` section
+takes rows out of the live set, so numerator and denominator both changed and the
+summary is worded differently. That is the checker working, not drift here.
+
+`cargo test` and `--suite rust` are absent from the jig on purpose while the Rust
+suite is short of level. `clank/tasks/wrench/parity/20` adds both.
 
 **The traceability checker exits non-zero when a settled row has no test, and its
 printed summary looks like a pass either way.** This document quoted that summary
@@ -129,10 +147,14 @@ never created empty.
 
 ## How it fits against its siblings
 
-**bolt** is the Go pack's consumer and builds against this working tree:
-`bolt/go.mod` carries `replace github.com/scriptedworld/wrench => ../wrench`. So
-an uncommitted change here is bolt's build. Reshaping a schema breaks bolt at its
-HEAD, and extending one does not.
+**bolt is a Rust implementation and consumes the Rust pack**, by path:
+`bolt/Cargo.toml` carries `wrench = { path = "../wrench/rust" }`, and there is no
+`go.mod` in `bolt/` at all. So an uncommitted change under `rust/` is bolt's
+build. Reshaping a schema breaks bolt at its HEAD, and extending one does not.
+
+**The Go pack's consumer is `bolt.go`**, the previous implementation, which still
+carries `replace github.com/scriptedworld/wrench => ../wrench`. Whether that tree
+is kept, retired or finished is bolt's call, and this document does not know.
 
 **toolbox** is the Python pack's intended consumer, through its adapters and
 checkers. FACT 2026-08-26: nothing in toolbox imports `wrench` yet. Those
@@ -155,10 +177,10 @@ against it at `clank/inbox/wrench/`. Neither is in this repository.
 
 | Pack | Serves | State |
 |---|---|---|
-| Go | bolt | Built, at the repository root |
+| Go | `bolt.go`, the previous Go implementation | Built, at the repository root |
 | Python | toolbox's adapters and checkers | Built, under `python/` |
+| Rust | bolt, which is now a Rust implementation | Built, under `rust/`, suite 25 tests short of level |
 | TypeScript | Consumer not yet identified | Not built |
-| Rust | Consumer not yet identified | Not built |
 | Ruby | Consumer not yet identified | Not built |
 
 `docs/DECISIONS/packs-follow-demand.md` says what decides when a pack gets
@@ -207,15 +229,19 @@ imported. Read the other way, it has already misled one project.
 
 ## What holds the packs level
 
-The shared fixture set in `testdata/canonical/`, five cases, plus the same tables
-asserted in both suites. **Neither pack is the oracle for the other**: if they
-disagree, the fixture is right.
+The shared fixture set in `testdata/canonical/`, nine cases, plus the same tables
+asserted in every suite. **No pack is the oracle for another**: if they disagree,
+the fixture is right.
 
-FACT 2026-08-26: both packs produce byte-identical canonical output for all five
-cases, each checked by its own suite.
+2026-08-27: all three packs produce byte-identical canonical output for all nine
+cases, each checked by its own suite. That is the acceptance test for a pack.
 
-**The two suites now cover the same rows.** FACT 2026-08-26, from the `COVERS:`
-marks:
+**The Go and Python suites cover the same rows. The Rust suite is 25 tests
+short**, which is `clank/tasks/wrench/parity/20` and is missing coverage rather
+than missing function: a consumer exercised the whole write path through the Rust
+pack on 2026-08-27 and every file a run writes round-tripped.
+
+From the `COVERS:` marks, 2026-08-26:
 
     cited by Go and not Python    (none)
     cited by Python and not Go    FR-6.1 FR-6.2
@@ -224,31 +250,33 @@ Those two are the Python pack's own, about a Python pack reaching a Python
 environment, and the Go pack cannot discharge them. `REQUIREMENTS.md` section 6
 says so, which makes that divergence a statement rather than a gap.
 
-Regenerate it rather than trusting this paragraph:
+Regenerate it rather than trusting this paragraph. `bin/test-suite-parity.py` is
+the check, it names every divergence, and **it exits non-zero when it finds one**:
 
-    grep -ho 'COVERS: [^|]*' *_test.go | sed 's/COVERS: //' | tr ',' '\n' \
-        | tr -d ' ' | sort -u > /tmp/go.txt
-    grep -ho 'COVERS: [^|]*' python/tests/*.py | sed 's/COVERS: //' | tr ',' '\n' \
-        | tr -d ' ' | sort -u > /tmp/py.txt
-    comm -23 /tmp/go.txt /tmp/py.txt      # want: nothing
-    comm -13 /tmp/go.txt /tmp/py.txt      # want: FR-6.1 FR-6.2 only
+    ./bin/test-suite-parity.py --requirements REQUIREMENTS.md \
+        --suite go='*_test.go' --suite python='python/tests/*.py' \
+        --suite rust='rust/tests/*.rs' . ; echo $?
+
+2026-08-27: 25 divergences, all `in go, python but not in rust`, exit 1. Drop
+`--suite rust` and it reports 51 held level with 2 rows scoped to a subset, exit 0.
 
 **This was not bookkeeping.** It started at seven rows the Go pack held alone,
 and a row exercised in one pack is a row the other can break silently. That is
 measured, not hypothetical: a schema change once landed green in Go because the
 only test of that schema lived in the Python suite.
 
-`docs/PATTERNS/holding-two-packs-level.md` is what keeps it this way. Assert the
-same table in both suites; a table that differs is packs that differ.
-
-`docs/PATTERNS/holding-two-packs-level.md` is what to follow when changing any of
-this.
+`docs/PATTERNS/holding-two-packs-level.md` is what keeps it this way, and what to
+follow when changing any of this. Assert the same table in every suite; a table
+that differs is packs that differ. Its name predates the third pack and the
+pattern is unchanged by it.
 
 ## What is not done
 
-`clank/tasks/wrench/` is the register. In summary: wrench gates nothing, the two
-suites do not cover the same rows, the Go pack is at the root rather than under
-`go/`, and two questions in `NEXT_STEPS.md` are open and not blocking.
+`clank/tasks/wrench/` is the register. In summary: the Rust suite is 25 tests
+short of level and neither `cargo test` nor `--suite rust` is in the gate yet, the
+gate is wrench's own jig rather than the shared standard, the Go pack is at the
+root rather than under `go/`, and three questions in `NEXT_STEPS.md` are open and
+not blocking.
 
 There is no git remote. FACT 2026-08-26: `git remote -v` prints nothing. That is
 the expected state across this ecosystem while the history rewrite settles, and
