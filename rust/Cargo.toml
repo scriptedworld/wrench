@@ -1,0 +1,54 @@
+[package]
+name = "wrench"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.90"
+license = "MIT"
+description = "Reads, writes and validates the form of the ecosystem's structured files"
+
+[dependencies]
+
+# THE VALUE TYPE IS THE CONTRACT. FR-2.9 says a decoder produces maps, lists and
+# JSON scalars and nothing else, and serde_json::Value is that shape in Rust. It
+# is also jsonschema's native input, so nothing converts between validating and
+# returning, and a caller wanting its own struct writes serde_json::from_value
+# rather than walking maps by hand.
+serde_json = "1"
+
+# DEFAULT FEATURES OFF IS LOAD-BEARING, NOT TIDINESS.
+#
+# FACT 2026-08-27, from the crate's metadata:
+#     default      -> ["resolve-http", "resolve-file", "tls-aws-lc-rs", "idna"]
+#     resolve-http -> ["reqwest", "dep:rustls"]
+#
+# So the default build resolves $refs over HTTP and off the filesystem, and links
+# a whole HTTP client and TLS stack to do it. FR-3.10 says a schema may reference
+# the shipped set and nothing else. Turned off, this pack gets that at COMPILE
+# time: the code that would fetch is not linked, so unlike Go and Python there is
+# no runtime switch that can turn the refusal off.
+#
+# Chosen over boon on measurement rather than description: released 2026-08-26
+# against 2025-01-07, and 84 million downloads against 458 thousand.
+jsonschema = { version = "0.52", default-features = false }
+
+# Rust's YAML situation is bad and this is the maintained way through it.
+# serde_yaml is deprecated in its own version string, serde_yml says DEPRECATED
+# and unmaintained in its own description, and serde_norway was last touched in
+# 2024. yaml-rust2 is YAML 1.2 compliant, 53 million downloads, and was updated
+# nine days before this line was written.
+#
+# Only the PARSER is bound. Canonical form is emitted by hand here as it is in
+# the Go and Python packs, because the fixture set defines it rather than a
+# library, and no YAML emitter produces it.
+yaml-rust2 = "0.12"
+
+# FR-2.6 needs a distinct error per step, and bolt's FR-6.11 is unimplementable
+# if parse and validate collapse into one type.
+thiserror = "2"
+
+[dev-dependencies]
+
+# For the documented example only. The pack itself does not depend on serde's
+# derive: it hands back serde_json::Value and a caller deserialises if it wants
+# to. The example compiles so that claim is checked rather than asserted.
+serde = { version = "1", features = ["derive"] }

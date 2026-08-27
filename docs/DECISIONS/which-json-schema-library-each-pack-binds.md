@@ -20,7 +20,7 @@ implementation covering the 2020-12 dialect wrench declares.
 |---|---|---|---|
 | Go | `santhosh-tekuri/jsonschema/v6` | yes | In use, `go.mod` |
 | Python | `jsonschema` | yes | In use, `pyproject.toml` |
-| Rust | `boon` 0.6.1 | yes | Its crates.io description |
+| Rust | `jsonschema`, `default-features = false` | yes | Measured, below |
 | TypeScript | undecided, `ajv` or `@hyperjump/json-schema` | both yes | Both run against wrench's schemas 2026-08-27 |
 | Ruby | `json_schemer` 2.5.0 | yes | The gem's own summary |
 
@@ -47,9 +47,33 @@ exist only in 2020-12:
 **Ruby.** `json_schemer`'s summary: *"JSON Schema validator. Supports drafts 4, 6,
 7, 2019-09, 2020-12, OpenAPI 3.0, and OpenAPI 3.1."* Versions run to 2.5.0.
 
-**Rust.** `boon`'s crates.io line: *"JSONSchema (draft 2020-12, draft 2019-09,
-draft-7, draft-6, draft-4) Validation"*. `jsonschema` 0.52.0 is the alternative
-and the choice can wait for whoever writes the pack.
+**Rust: `jsonschema`, and `boon` is not the answer.** An earlier draft of this
+file preferred `boon` because its crates.io line names draft 2020-12 first. That
+was a description read rather than a library measured. FACT 2026-08-27:
+
+    jsonschema   0.52.0   released 2026-08-26     84,216,384 downloads
+    boon          0.6.1   released 2025-01-07        458,196 downloads
+
+Released the day before this was written, against nineteen months stale, and 184
+times the use.
+
+**Declare it `default-features = false`, and this is the load-bearing part.** FACT
+2026-08-27, from the crate's own metadata:
+
+    default        -> ["resolve-http", "resolve-file", "tls-aws-lc-rs", "idna"]
+    resolve-http   -> ["reqwest", "dep:rustls"]
+
+So the default build resolves `$ref`s over **HTTP and from the filesystem**, and
+links a whole HTTP client and TLS stack to do it. A plain `jsonschema = "0.52"`
+would violate FR-3.10 and put a network stack inside every consumer of the pack.
+
+**Turned off, the Rust pack gets FR-3.10 at compile time**, which is stronger than
+Go and Python manage. Those two refuse external references at runtime, with an
+environment variable that can turn the refusal off. Rust does not link the code
+that would do the fetching, so there is nothing to turn on.
+
+That difference is worth stating rather than smoothing over: the packs reach the
+same guarantee by different means, and one of them cannot be talked out of it.
 
 ## So the CLI fallback is not needed
 

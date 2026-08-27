@@ -15,3 +15,8 @@ __pycache__/
 # so a run from the repository root leaves one of these behind. Run it with
 # --output-dir .ephemera/gate to keep evidence where working files belong.
 .bolt-*/
+
+# Rust build output. Cargo.lock is committed for a binary and omitted for a
+# library, and this is a library, so a consumer resolves its own versions.
+rust/target/
+rust/Cargo.lock
