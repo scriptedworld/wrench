@@ -54,6 +54,30 @@ execution(s)` means the run failed and there were 18 executions, not that 18
 failed. Misread once here, in the same hour as the lesson above, in the opposite
 direction.
 
+## The same shape, a day later, about code rather than a check
+
+FACT 2026-08-27. Handing the Rust pack to bolt, I warned that it refused a
+non-string mapping key at the **parse** step where Go and Python refused during
+**normalisation**, and asked bolt to reconcile the difference because its FR-6.11
+matches on that word. I put the same warning into the follow-on task.
+
+There was no difference. All three packs say `parsing`, because **`normalise` runs
+inside the codec's decode in every one of them**, so a normalisation failure *is*
+a parse failure. Normalisation has never been a separate step here.
+
+**It was a claim about wrench's own code, and checking it was one command.** It
+cost a consumer a probe to disprove, and it would have cost whoever picked up the
+task an afternoon chasing a ghost.
+
+The habit that fails here is not laziness about someone else's system. It is
+assuming the shape of your own, because that is the thing you feel no need to
+measure.
+
+**bolt's method is the part worth copying.** It did not only run the failing case,
+which would have proved nothing since everything-refuses looks identical. It ran
+controls: a schema violation reports `validate` in all three, an unclosed flow
+sequence reports `parse`. That is what made the answer mean something.
+
 ## The rule already existed
 
 `silo/docs/LESSONS/read-the-artifact-not-the-exit-status/` says this, and the
