@@ -47,22 +47,41 @@ pack is Go, and some tooling is wanted as a deliberate example of working with i
 Which way the system goes is a preference, chosen rather than derived, so there is
 nothing to be right about and it is not re-argued from the numbers below.
 
-**Go staying put is not a preference, and this half must not be traded away.**
-FACT 2026-08-27, from the user: **nothing in this ecosystem was ever written in
-Go**, so a Go implementation cannot plausibly be a derivation of the archived bolt.
-The language choice is itself a clean-room proof, made to answer "was this based on
-former code" rather than on technical fit.
+### ~~Go staying put is not a preference and must not be traded away~~ Wrong, corrected 2026-08-27
 
-**That proof holds only while bolt stays Go.** A port to Rust could be alleged to
-be a translation of the Go one, so the argument would be spent rather than kept.
-Anyone reading the preference above and proposing to port bolt, on the reasonable
-grounds that Rust does subprocess orchestration perfectly well, would be
-destroying something not visible in the code.
+**That was my inference stated as a fact, and it was wrong.** What I was told was
+that Go *helped answer* the lineage question, because nothing here was ever written
+in Go. What I wrote was that bolt must therefore stay Go or the proof is spent.
+That step was mine and nobody made it.
 
-The two reasons happen to agree. Go is also genuinely right for bolt: subprocess
-orchestration, evidence collection, and a single static binary with no runtime to
-install, which is the property that made a dangling `~/bin/bolt` a one-line fix
-rather than an install problem. **Only one of those reasons survives a rewrite.**
+**The ruling, first-hand to bolt's session and recorded at bolt `2cbd872`:** bolt
+is expected to be rewritten in Rust, the Go-as-provenance argument is not what the
+choice rests on, and **qwark and grim stay Go to demonstrate working with Go.**
+
+**Why it costs nothing, which is the part worth keeping.** The provenance is
+carried by the *derivation record*, not by the language. `bolt/REQUIREMENTS.md`
+opens by stating those requirements were reached from
+`silo/docs/ARCHITECTURE.md` and from answers, with no earlier bolt implementation,
+requirements document, design note or test read. That is a written chain, and a
+Rust bolt translated from this one inherits it because this one's cleanliness is
+**recorded rather than inferred from what it is written in**.
+
+The language argument would only have been load-bearing if the derivation were not
+written down. It is, thoroughly, so losing it costs nothing.
+
+**The constraint that does not change:** the archived tree stays sealed. That is
+what the derivation rests on and it is language-independent.
+
+Go remains genuinely right for bolt on merit, and that is now the only claim being
+made for it: subprocess orchestration, evidence collection, and a static binary
+with no runtime to install.
+
+### How this got corrected is worth more than the correction
+
+bolt's session **asked the user directly rather than recording my relay**, on the
+grounds that a ruling passed through another agent is second-hand and only the
+agent in the conversation can cite the source. That is the right discipline and it
+caught an error two sessions had already written down.
 
 What follows from it:
 
