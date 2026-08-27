@@ -186,7 +186,7 @@ func TestBothShippedSchemasAreUsable(t *testing.T) {
 	}
 }
 
-// COVERS: FR-1.3, FR-2.3 | negative
+// COVERS: FR-2.3 | negative
 func TestTheWrongSchemaIsNotDetected(t *testing.T) {
 	// FR-2.3 says the signature compels a schema and not the right one. An
 	// envelope handed the jig schema fails, and it fails as a validation

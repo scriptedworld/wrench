@@ -399,7 +399,7 @@ def test_round_trip_through_the_real_filesystem(tmp_path):
     assert back["metadata"]["statistics"]["checked"] == 12
 
 
-# COVERS: FR-6.3 | positive
+# COVERS: FR-2.8, FR-6.3 | positive
 def test_local_file_writes_atomically(tmp_path):
     path = tmp_path / "output.yaml"
     path.write_bytes(b"previous\n")
@@ -447,3 +447,81 @@ def test_yaml_support_is_whatever_the_platform_supplies():
     assert "import yaml" in source
     assert not (ROOT / "python" / "wrench" / "yaml").exists(), "a vendored copy"
     assert yaml.safe_load("a: 1") == {"a": 1}
+
+
+# ---- rows the Go pack held alone --------------------------------------------
+#
+# One contract, two packs. A row exercised in one pack is a row the other can
+# break silently, which is not hypothetical here: a schema change once landed
+# green in Go because the only test of that schema was in this file.
+
+
+# COVERS: FR-1.1 | positive
+def test_the_pack_reads_the_one_copy_of_the_schemas():
+    """The schemas and a library for each language live in one repository, so a
+    Go producer and a Python producer work from the same definition. This pack
+    reaching outside its own package for them is what makes that true, and is
+    also why it must be installed editable."""
+    from wrench.schema import SCHEMA_DIR
+
+    assert SCHEMA_DIR == ROOT / "schemas", "the pack is reading a copy, not the copy"
+    assert SCHEMA_DIR.is_dir()
+
+    shipped = {p.name for p in SCHEMA_DIR.glob("*.schema.json")}
+    assert shipped, "no schemas found where the Go pack embeds them"
+
+    package = ROOT / "python" / "wrench"
+    assert not list(package.glob("*.schema.json")), "a second copy beside the package"
+
+
+# COVERS: FR-1.4 | negative
+def test_an_envelope_missing_success_is_refused():
+    """Validation is JSON Schema over the decoded structure, and wrench does not
+    get to differ from that decision. It is where it is implemented."""
+    with pytest.raises(wrench.ValidationError) as caught:
+        wrench.load_formatted_file(
+            "output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(b"reasons: []\n")
+        )
+    assert "success" in str(caught.value), "the error does not name the missing key"
+
+
+# COVERS: FR-2.5, FR-2.7 | positive
+def test_codec_and_io_are_independent():
+    """The same codec with two different readers. Neither combination needs a
+    function of its own, which is what declaring them separately buys."""
+    readers = {
+        "first": Stub(VALID_ENVELOPE),
+        "second": Stub(b"success: false\nreasons:\n  - kind: k\n    message: m\n"),
+    }
+    for name, reader in readers.items():
+        envelope = wrench.load_formatted_file(
+            "output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, reader
+        )
+        assert "success" in envelope, f"the {name} reader produced no envelope"
+
+    # YAML is the codec that ships, and it is the only one. The argument exists
+    # so adding a second later is not a change to the two calls.
+    assert isinstance(wrench.YAML, wrench.YAMLCodec)
+    assert [n for n in wrench.__all__ if n.endswith("Codec")] == ["YAMLCodec"]
+
+
+# COVERS: FR-5.2 | property
+def test_validation_is_a_real_json_schema_implementation():
+    """$ref resolution, $defs and conditional application are the parts a
+    hand-written checker never gets right. Binding to an established
+    implementation means they work, and this is what that buys."""
+    document = """{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": { "items": { "type": "array", "items": { "$ref": "#/$defs/entry" } } },
+      "$defs": { "entry": { "type": "object", "required": ["id"], "properties": { "id": { "type": "integer" } } } }
+    }"""
+    schema = wrench.compile_schema("refs.schema.json", document)
+
+    schema.validate({"items": [{"id": 1}]})
+
+    _refuses(
+        schema,
+        {"items": [{"id": "one"}]},
+        "a $ref'd constraint, so the reference did not resolve",
+    )

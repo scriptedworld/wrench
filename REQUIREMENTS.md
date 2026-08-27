@@ -36,7 +36,6 @@ Python pack landed.
 |---|---|---|
 | FR-1.1 | wrench reads, writes and validates the form of the ecosystem's structured files. The schemas and a library for each language live in one repository, so a Go producer and a Python producer work from the same definition rather than from two implementations obliged to keep up with each other. | [A] |
 | FR-1.2 | wrench establishes that a file has the form its schema declares and stops there. What a jig's keys mean and what an envelope's reasons say belong to the components that produce and consume them. | [D] |
-| FR-1.3 | wrench owns the contract and every component that reads or writes through it is a consumer. No consumer's convenience settles what the contract is, which is why the contract is specified before any pack is written. | [A/D] |
 | FR-1.4 | Every structured file in the ecosystem is YAML, validated as JSON Schema over the decoded structure. wrench does not make that decision and does not get to differ from it. It is where the decision is implemented. | [A] |
 
 ## 2. The two calls
@@ -91,6 +90,15 @@ test, and four rows saying so were retired from this table on 2026-08-26.
 
 ## 6. Reaching the library
 
+**FR-6.1, FR-6.2 and FR-6.2a are the Python pack's alone**, and are the only rows
+here that one pack holds and another cannot. They are about a Python pack reaching
+a Python environment; the Go pack cannot discharge them and should not try. Every
+other row states one contract that every pack implements, and both suites cite it.
+
+**So a `COVERS:` mark for these three appearing only in `python/tests/` is a
+statement rather than a gap.** Anywhere else in this document, a row cited by one
+suite and not the other is the divergence FR-5.7 exists to catch.
+
 | ID | Requirement | |
 |---|---|---|
 | FR-6.1 | The Python pack is importable from a source checkout, with no install having run. Its own suite runs that way, on `PYTHONPATH`, and the pack reads `schemas/` from the repository rather than from package data, which is why an editable install is the only supported form. ~~`dotfiles/bin/setup` runs on `/usr/bin/python3` before mise exists~~ **restated 2026-08-26**: that was the original motivation and it was disproven. Nothing in the bootstrap window imports wrench, and nothing is planned to. See `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`. | [A/D] |
@@ -133,6 +141,7 @@ cleaning up.
 
 | ID | Retired | Superseded by |
 |---|---|---|
+| FR-1.3 | 2026-08-26 | `docs/DECISIONS/wrench-owns-the-contract-and-consumers-do-not.md`. It stated who decides rather than a property of wrench. The Go test citing it was testing FR-2.3 and now cites that alone. |
 | FR-7.4 | 2026-08-26 | Answered, not superseded. There is no bootstrap consumer to reach: nothing in `dotfiles/bin/` imports wrench or reads YAML, and the pack is installed after mise exists. `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md` |
 | FR-5.1 | 2026-08-26 | `docs/DECISIONS/a-library-per-language-not-a-c-core.md` |
 | FR-5.1a | 2026-08-26 | `docs/DECISIONS/a-library-per-language-not-a-c-core.md` |

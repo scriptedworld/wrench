@@ -186,16 +186,32 @@ disagree, the fixture is right.
 FACT 2026-08-26: both packs produce byte-identical canonical output for all five
 cases, each checked by its own suite.
 
-**The two suites are not the same suite.** They share the fixture set, which is
-the part that matters, and diverge elsewhere. FACT 2026-08-26, from the `COVERS:`
+**The two suites now cover the same rows.** FACT 2026-08-26, from the `COVERS:`
 marks:
 
-    cited by Go and not Python    FR-1.1 FR-1.3 FR-1.4 FR-2.5 FR-2.7 FR-2.8 FR-5.2
+    cited by Go and not Python    (none)
     cited by Python and not Go    FR-6.1 FR-6.2
 
-FR-5.5 reads as though one contract is exercised twice. It is two hand-written
-suites with a shared oracle, and closing that gap is worth more than adding tests
-to either alone.
+Those two are the Python pack's own, about a Python pack reaching a Python
+environment, and the Go pack cannot discharge them. `REQUIREMENTS.md` section 6
+says so, which makes that divergence a statement rather than a gap.
+
+Regenerate it rather than trusting this paragraph:
+
+    grep -ho 'COVERS: [^|]*' *_test.go | sed 's/COVERS: //' | tr ',' '\n' \
+        | tr -d ' ' | sort -u > /tmp/go.txt
+    grep -ho 'COVERS: [^|]*' python/tests/*.py | sed 's/COVERS: //' | tr ',' '\n' \
+        | tr -d ' ' | sort -u > /tmp/py.txt
+    comm -23 /tmp/go.txt /tmp/py.txt      # want: nothing
+    comm -13 /tmp/go.txt /tmp/py.txt      # want: FR-6.1 FR-6.2 only
+
+**This was not bookkeeping.** It started at seven rows the Go pack held alone,
+and a row exercised in one pack is a row the other can break silently. That is
+measured, not hypothetical: a schema change once landed green in Go because the
+only test of that schema lived in the Python suite.
+
+`docs/PATTERNS/holding-two-packs-level.md` is what keeps it this way. Assert the
+same table in both suites; a table that differs is packs that differ.
 
 `docs/PATTERNS/holding-two-packs-level.md` is what to follow when changing any of
 this.
