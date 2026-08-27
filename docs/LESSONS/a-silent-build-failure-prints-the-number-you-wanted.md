@@ -53,6 +53,21 @@ report rather than as an expectation violated.
 
 `set -eu` does not cover this. It does not apply inside a pipeline.
 
+**The second script's guard was dead for a different reason**, and the two are
+worth separating because they need different fixes. It ended
+`lizard "$f" | grep -E ... | head -1 || echo "(none)"`, and `head` exits 0 on
+empty input, so the pipeline status was only half of it. toolbox measured what
+that branch was actually guarding: lizard prints a summary row matching the
+regex even for a file that does not exist, so with the tool installed the branch
+is unreachable whatever the input. The case it guards is lizard being **absent**,
+proved with `env -i`:
+
+    old shape   probe.py            bare filename, went quiet
+    fixed       probe.py (none)
+
+So of the two, only the python-pack probe could have misreported with the tools
+present. Both are fixed now, by toolbox, in its own tree.
+
 ## What to do instead
 
 **Assert that the artifact exists before measuring it.** A missing binary should
@@ -75,6 +90,12 @@ while checking, or set `pipefail` where the shell has it:
 **Write the unexpected branch loudly.** Every probe of an expected failure needs
 a branch that shouts when the expectation is violated. A probe with only the
 expected path cannot tell you the world changed.
+
+**Then check which failure that branch actually guards.** A fallback can be
+unreachable because the status never reaches it, or because the tool it guards
+against emits matching output regardless. Both look like a dead branch and only
+the first is about the pipe, so fixing the pipe on the second one would have left
+it just as dead.
 
 ## The rule this is a case of
 
