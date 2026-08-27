@@ -73,6 +73,7 @@ Python pack landed.
 | FR-3.5 | The schemas are files, reachable in the tree, so a YAML language server can be pointed at one while a jig is being written. A pack may embed them to link a single static binary, and what it embeds is those same files rather than a copy of its own. | [D] |
 | FR-3.6 | A shipped schema may reference another by the `$id` it declares, and the reference resolves from the shipped set alone without reaching the network. A shape two schemas both need is then written once rather than copied into each, because two copies are free to drift and nothing would report it. | [D] |
 | FR-3.7 | A pack discovers the shipped schemas by reading the directory they live in, not from a list of filenames in its own source. A schema added to that directory is then available in every pack without a second place having to be remembered. | [D] |
+| FR-3.8 | Every shipped schema has a fixture that is an instance of it, and a fixture declaring a schema is validated against it as well as compared byte for byte. Byte-identical output between two packs says they agree on the spelling; it does not say the thing they spelled is a document a consumer would accept. A schema nothing is ever validated against is one nobody knows compiles. | [D] |
 
 ## 4. Canonical form
 

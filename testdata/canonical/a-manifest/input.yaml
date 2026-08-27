@@ -1,0 +1,15 @@
+task: format
+ordinal: 0
+command: gofmt -l a.go b.go
+variables:
+  project_root: {value: /p, from: bolt}
+  base_dir: {value: /p/go, from: bolt}
+  work_dir: {value: /p/.bolt/work/format-0001, from: bolt}
+  config_dir: {value: /p, from: bolt}
+  output_dir: {value: /p/.bolt, from: bolt}
+  requirements: {value: ../REQUIREMENTS.md, from: file}
+  line_length: {value: "100", from: jig}
+  all_paths: {value: [a.go, b.go], from: bolt}
+selection:
+  matched: [a.go, b.go, c.go]
+  excluded: [vendor/d.go]

@@ -1,0 +1,26 @@
+"definitions":
+  "line_length": 100
+  "requirements": "../REQUIREMENTS.md"
+  "strict": true
+"needs-repository-root": true
+"requires":
+  - "go"
+  - "python3"
+  - "ruff"
+"tasks":
+  - "command": "go build ./..."
+    "name": "build"
+  - "command": "gofmt -l {each_path}"
+    "description": "every file is formatted"
+    "evidence":
+      - "work/format-0001/stdout"
+    "excluding":
+      - "vendor/**"
+    "matching":
+      - "**/*.go"
+    "name": "format"
+    "short-circuit-failure": true
+  - "definitions": "local"
+    "in": "python"
+    "jig": "python-std-quality"
+    "name": "nested"

@@ -1,0 +1,4 @@
+requirements: ../REQUIREMENTS.md
+line_length: 100
+strict: true
+empty: ""

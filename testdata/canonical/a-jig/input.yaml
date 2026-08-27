@@ -1,0 +1,20 @@
+requires: [go, python3, ruff]
+needs-repository-root: true
+definitions:
+  requirements: ../REQUIREMENTS.md
+  line_length: 100
+  strict: true
+tasks:
+  - name: build
+    command: go build ./...
+  - name: format
+    description: every file is formatted
+    command: gofmt -l {each_path}
+    matching: ["**/*.go"]
+    excluding: ["vendor/**"]
+    evidence: [work/format-0001/stdout]
+    short-circuit-failure: true
+  - name: nested
+    jig: python-std-quality
+    in: python
+    definitions: local

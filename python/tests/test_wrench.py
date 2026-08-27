@@ -57,6 +57,25 @@ VALID_ENVELOPE = b"success: true\n"
 # ---- the shared fixture set -------------------------------------------------
 
 
+SHIPPED_BY_ID = {
+    "https://scriptedworld.github.io/wrench/envelope.schema.json": "ENVELOPE_SCHEMA",
+    "https://scriptedworld.github.io/wrench/jig.schema.json": "JIG_SCHEMA",
+    "https://scriptedworld.github.io/wrench/manifest.schema.json": "MANIFEST_SCHEMA",
+    "https://scriptedworld.github.io/wrench/definitions.schema.json": "DEFINITIONS_SCHEMA",
+}
+
+
+def declared_schema(case):
+    """The shipped schema a fixture names in its `schema` file, or None where it
+    names none. A fixture with no such file is a codec case and nothing more."""
+    path = FIXTURES / case / "schema"
+    if not path.exists():
+        return None
+    identifier = path.read_text().strip()
+    assert identifier in SHIPPED_BY_ID, f"{case} declares {identifier}, which this pack does not ship"
+    return getattr(wrench, SHIPPED_BY_ID[identifier])
+
+
 # COVERS: FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-5.5, FR-5.6 | property
 @pytest.mark.parametrize("case", CASES)
 def test_canonical_form_matches_the_shared_fixtures(case):
@@ -65,6 +84,36 @@ def test_canonical_form_matches_the_shared_fixtures(case):
     directory = FIXTURES / case
     value = wrench.YAML.decode((directory / "input.yaml").read_bytes())
     assert wrench.YAML.encode(value).decode() == (directory / "canonical.yaml").read_text()
+
+    # A fixture that is an instance of a shipped schema says so, and is held to
+    # it. Byte-identical output between two packs says they agree on the
+    # spelling; it does not say the thing they spelled is a document any
+    # consumer would accept.
+    schema = declared_schema(case)
+    if schema is not None:
+        schema.validate(value)
+
+
+# COVERS: FR-3.8 | positive
+def test_every_shipped_schema_has_an_instance_fixture():
+    """A schema nothing is ever validated against is a schema nobody knows
+    compiles, let alone accepts a real document. The directory is the authority
+    on both sides, so a fifth schema fails here until it has a fixture."""
+    declared = {}
+    for path in sorted((ROOT / "schemas").glob("*.schema.json")):
+        declared[json.loads(path.read_text())["$id"]] = False
+    assert declared, "no shipped schemas, so this test asserts nothing"
+
+    for case in CASES:
+        path = FIXTURES / case / "schema"
+        if not path.exists():
+            continue
+        identifier = path.read_text().strip()
+        assert identifier in declared, f"fixture {case} declares {identifier}, which no schema does"
+        declared[identifier] = True
+
+    uncovered = sorted(i for i, seen in declared.items() if not seen)
+    assert not uncovered, f"no fixture is an instance of: {', '.join(uncovered)}"
 
 
 # COVERS: FR-4.5 | property
