@@ -55,6 +55,18 @@ def _normalise(value: object) -> object:
     return value
 
 
+def _at(where: str, error: ValueError) -> ValueError:
+    """Prefix a failure with where in the structure it happened.
+
+    A value with no canonical form is refused, and the caller needs to find it.
+    Descending wraps each level, so the message reads `at key "a": at index 0:
+    cannot write ...` and names the whole path rather than only the leaf. The Go
+    pack words it identically, because a message that differs by pack is one
+    consumers cannot be told to look for.
+    """
+    return ValueError(f"{where}: {error}")
+
+
 def _canonical(value: object, depth: int = 0) -> str:
     pad = " " * (INDENT * depth)
 
@@ -64,27 +76,33 @@ def _canonical(value: object, depth: int = 0) -> str:
         out = []
         for key in sorted(value):
             item = value[key]
-            if isinstance(item, (dict, list)) and item:
-                out.append(f"{pad}{_scalar(key)}:\n{_canonical(item, depth + 1)}")
-            else:
-                out.append(f"{pad}{_scalar(key)}: {_inline(item)}\n")
+            try:
+                if isinstance(item, (dict, list)) and item:
+                    out.append(f"{pad}{_scalar(key)}:\n{_canonical(item, depth + 1)}")
+                else:
+                    out.append(f"{pad}{_scalar(key)}: {_inline(item)}\n")
+            except ValueError as err:
+                raise _at(f"at key {_scalar(key)}", err) from err
         return "".join(out)
 
     if isinstance(value, list):
         if not value:
             return pad + "[]\n"
         out = []
-        for item in value:
-            if isinstance(item, (dict, list)) and item:
-                nested = _canonical(item, depth + 1)
-                # The dash takes the place of the first line's indent; the rest
-                # of the block keeps the indent it was rendered with.
-                first, _, rest = nested.partition("\n")
-                out.append(f"{pad}- {first.strip()}\n")
-                if rest:
-                    out.append(rest if rest.endswith("\n") else rest + "\n")
-            else:
-                out.append(f"{pad}- {_inline(item)}\n")
+        for index, item in enumerate(value):
+            try:
+                if isinstance(item, (dict, list)) and item:
+                    nested = _canonical(item, depth + 1)
+                    # The dash takes the place of the first line's indent; the
+                    # rest of the block keeps the indent it was rendered with.
+                    first, _, rest = nested.partition("\n")
+                    out.append(f"{pad}- {first.strip()}\n")
+                    if rest:
+                        out.append(rest if rest.endswith("\n") else rest + "\n")
+                else:
+                    out.append(f"{pad}- {_inline(item)}\n")
+            except ValueError as err:
+                raise _at(f"at index {index}", err) from err
         return "".join(out)
 
     return pad + _inline(value) + "\n"

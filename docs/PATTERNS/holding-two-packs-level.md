@@ -10,6 +10,28 @@ Every pack ships the same schemas, produces the same bytes for the same
 structure, and refuses the same documents. `REQUIREMENTS.md` is one contract that
 all of them implement.
 
+## The check that enforces it
+
+    ./bin/test-suite-parity.py --requirements REQUIREMENTS.md \
+        --suite go='*_test.go' --suite python='python/tests/*.py' .
+
+**Run this before committing anything that touches a test.** It fails when a
+`COVERS:` mark exists in one suite and not another, and it compares the
+requirement **and the kind**, so a row where one pack asserts the positive path
+and another the negative one is a divergence rather than agreement.
+
+That distinction is not theoretical. Comparing ids alone reported wrench level
+while three tests existed in Go and not in Python, and one of those turned up a
+real behavioural difference between the packs.
+
+**A row legitimately held by one pack declares itself** with a scope marker in
+`REQUIREMENTS.md`, such as `[python]`. The checker reads the document, so the
+exempt list lives in one place. **Never add a scope marker to silence a failure**:
+it is for a row a pack cannot discharge, and a row merely untested in one pack is
+the finding the check exists to produce.
+
+Adding a pack means adding a `--suite` for it. wrench is heading for four.
+
 ## Changing a schema
 
 **One commit, every pack.** A schema change is not a Go change or a Python

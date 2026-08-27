@@ -15,6 +15,16 @@ wrench or of a call, not how anything is built.
 sources. `[D]` is derived from one. `[A/D]` is both. `[?]` is open, recorded so
 it is not lost and carrying no test yet.
 
+**Scope markers.** A lowercase marker such as `[python]` names the packs expected
+to discharge that row, and **a row carrying none is expected in every pack**.
+Only three rows carry one, all in section 6.
+
+That is not documentation. `bin/test-suite-parity.py` reads these markers as the
+authority on which divergences are intended, so a row exempt here is exempt in
+the check, and nowhere else holds a second copy of that list. Adding a scope
+marker to silence a failure is the one wrong use of it: the marker is for a row a
+pack **cannot** discharge, where a row merely untested in one pack is the finding.
+
 **One settled row carries no test.** FACT 2026-08-26, from
 `python3 ~/.projects/toolbox/bin/test-traceability.py --requirements
 REQUIREMENTS.md .`
@@ -101,9 +111,9 @@ suite and not the other is the divergence FR-5.7 exists to catch.
 
 | ID | Requirement | |
 |---|---|---|
-| FR-6.1 | The Python pack is importable from a source checkout, with no install having run. Its own suite runs that way, on `PYTHONPATH`, and the pack reads `schemas/` from the repository rather than from package data, which is why an editable install is the only supported form. ~~`dotfiles/bin/setup` runs on `/usr/bin/python3` before mise exists~~ **restated 2026-08-26**: that was the original motivation and it was disproven. Nothing in the bootstrap window imports wrench, and nothing is planned to. See `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`. | [A/D] |
-| FR-6.2 | The pack's dependencies are on names being importable in the environment it is installed into, not on a resolver having run there. It imports `yaml`, `jsonschema` and `referencing` by name, so a platform package and a pip install satisfy it identically. ~~Debian's `python3-yaml` through the one channel available before any other is~~ **restated 2026-08-26**: that framing rested on the bootstrap window, which does not consume this pack. | [A/D] |
-| FR-6.2a | Validation needs the platform to supply `jsonschema` as well, and that is the half FR-6.2 missed. **This is about the bootstrap window's interpreter and no other.** FACT 2026-08-26: `/usr/bin/python3` here is 3.13.5 with `yaml` and no `jsonschema`, so `import wrench` fails outright there rather than degrading; `env python3` resolves to mise's 3.14.7, which has all three, and imports fine. A consumer with a `#!/usr/bin/env python3` shebang gets the second, so the failure is the bootstrap's and not every caller's. Reading this row as "wrench cannot be imported" has already misled one project. Debian packages it as `python3-jsonschema`. | [A] |
+| FR-6.1 | The Python pack is importable from a source checkout, with no install having run. Its own suite runs that way, on `PYTHONPATH`, and the pack reads `schemas/` from the repository rather than from package data, which is why an editable install is the only supported form. ~~`dotfiles/bin/setup` runs on `/usr/bin/python3` before mise exists~~ **restated 2026-08-26**: that was the original motivation and it was disproven. Nothing in the bootstrap window imports wrench, and nothing is planned to. See `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`. | [A/D] [python] |
+| FR-6.2 | The pack's dependencies are on names being importable in the environment it is installed into, not on a resolver having run there. It imports `yaml`, `jsonschema` and `referencing` by name, so a platform package and a pip install satisfy it identically. ~~Debian's `python3-yaml` through the one channel available before any other is~~ **restated 2026-08-26**: that framing rested on the bootstrap window, which does not consume this pack. | [A/D] [python] |
+| FR-6.2a | Validation needs the platform to supply `jsonschema` as well, and that is the half FR-6.2 missed. **This is about the bootstrap window's interpreter and no other.** FACT 2026-08-26: `/usr/bin/python3` here is 3.13.5 with `yaml` and no `jsonschema`, so `import wrench` fails outright there rather than degrading; `env python3` resolves to mise's 3.14.7, which has all three, and imports fine. A consumer with a `#!/usr/bin/env python3` shebang gets the second, so the failure is the bootstrap's and not every caller's. Reading this row as "wrench cannot be imported" has already misled one project. Debian packages it as `python3-jsonschema`. | [A] [python] |
 | FR-6.3 | A write is atomic: the file is written beside its target and renamed into place, so a reader sees the previous content or the new one and never a partial file. | [A] |
 
 ## 7. Open

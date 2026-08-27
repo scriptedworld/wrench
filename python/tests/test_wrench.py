@@ -94,6 +94,21 @@ def test_every_scalar_type_survives_the_round_trip():
 
 
 # COVERS: FR-4.1 | negative
+def test_a_value_with_no_canonical_form_is_refused():
+    """An object with no YAML spelling. Refusing beats inventing one, the error
+    says where the trouble was, and the writer never runs."""
+    writer = Stub()
+
+    with pytest.raises(wrench.EncodeError) as caught:
+        wrench.save_formatted_file(
+            {"c": object()}, "f.yaml", ANYTHING, wrench.YAML, writer
+        )
+
+    assert 'at key "c"' in str(caught.value), "the error does not say where"
+    assert writer.written is None, "the writer ran despite encoding failing"
+
+
+# COVERS: FR-4.1 | edge
 def test_nan_and_the_infinities_are_refused():
     for value in (float("nan"), float("inf"), float("-inf")):
         with pytest.raises(ValueError):
@@ -454,6 +469,55 @@ def test_yaml_support_is_whatever_the_platform_supplies():
 # One contract, two packs. A row exercised in one pack is a row the other can
 # break silently, which is not hypothetical here: a schema change once landed
 # green in Go because the only test of that schema was in this file.
+
+
+# COVERS: FR-3.1 | negative
+def test_an_unusable_schema_fails_when_it_is_compiled():
+    """A schema that will not compile fails at the call that compiled it, so the
+    failure does not surface later and somewhere else."""
+    for what, document in {
+        "not json": "{ not json at all",
+        "not a schema": '{"type": 42}',
+    }.items():
+        try:
+            wrench.compile_schema("broken.schema.json", document)
+        except Exception:
+            continue
+        pytest.fail(f"compiling {what} succeeded")
+
+
+# COVERS: FR-3.1 | negative
+def test_a_manifest_keeps_the_five_locations():
+    """Every execution has them whatever else it has, so a manifest missing one
+    is not a smaller manifest, it is a broken one."""
+    for missing in LOCATIONS:
+        variables = {
+            name: {"value": "/p", "from": "bolt"} for name in LOCATIONS if name != missing
+        }
+        _refuses(
+            wrench.MANIFEST_SCHEMA,
+            {
+                "task": "build",
+                "ordinal": 0,
+                "command": "go build ./...",
+                "variables": variables,
+            },
+            f"a manifest without {missing}",
+        )
+
+
+# COVERS: FR-6.3 | negative
+def test_a_failed_write_leaves_no_temporary_behind(tmp_path):
+    """The temporary is what atomicity is built on, so a write that fails before
+    it starts must not leave one for somebody to find."""
+    not_a_dir = tmp_path / "file"
+    not_a_dir.write_bytes(b"")
+
+    with pytest.raises(Exception):
+        wrench.LOCAL_FILE.write(str(not_a_dir / "output.yaml"), b"x\n")
+
+    entries = list(tmp_path.iterdir())
+    assert entries == [not_a_dir], f"directory holds {entries}, want only the seeded file"
 
 
 # COVERS: FR-1.1 | positive

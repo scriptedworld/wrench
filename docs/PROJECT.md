@@ -42,6 +42,8 @@ passing the wrong one is not, and nothing here detects that.
     NEXT_STEPS.md            open questions and context that is not work
     schemas/                 the schemas, one copy, read by every pack
     testdata/canonical/      the shared fixture set holding the packs level
+    bin/test-suite-parity.py the check that every pack's suite covers the same
+                             tests. wrench's own, not a shared checker
 
     wrench.go codec.go       the Go pack, at the repository root
     file.go schema.go
@@ -77,6 +79,8 @@ What a person runs, and what the gate will run when it exists:
     go test -count=1 ./... && gofmt -l . && go vet ./...
     PYTHONPATH=python python3 -m pytest python/tests -q
     python3 ~/.projects/toolbox/bin/test-traceability.py --requirements REQUIREMENTS.md .
+    ./bin/test-suite-parity.py --requirements REQUIREMENTS.md \
+        --suite go='*_test.go' --suite python='python/tests/*.py' .
 
 FACT 2026-08-26, all three at `fc6be8a`: Go ok, `gofmt` and `vet` clean, 32
 Python tests passed, traceability 29 of 34 covered with 1 open and exempt.
