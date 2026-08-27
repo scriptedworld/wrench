@@ -16,10 +16,16 @@ working tree.
 The pattern is full semver, so `1.0.0-rc.1+build.5` passes and `1`, `1.0`,
 `v1.0.0` and `01.0.0` do not.
 
-**The most useful thing it catches is `version: 1.0` unquoted.** YAML reads that
-as a float, a float is not a string, and the schema refuses it. Without the
-pattern it would have been accepted as a number and meant nothing. Both suites
-assert it.
+**What the pattern is for is rejecting things that are not semver.** `1`, `1.0`,
+`v1.0.0`, `01.0.0`, `latest`. Without it, `type: string` would accept every one of
+them and the field would mean whatever a producer felt like.
+
+An unquoted `version: 1.0` in a hand-written file is refused too, because YAML
+reads it as a float and a float is not a string. **That is a corollary and not the
+argument**: a well-formed semver has two dots, so it never parses as a float, and
+FR-4.1 quotes every string wrench writes, so nothing wrench emits could hit it.
+The case only exists for a file a person typed, and it is already covered by
+`1.0` not being semver.
 
 ## The definitions format does not carry one
 
@@ -28,9 +34,26 @@ shape of a key and every key is a placeholder name. Reserving `version` there
 means a jig can never have a `{version}` placeholder, which is a real cost the
 other three formats do not pay.
 
-bolt's FR-4.19 already reserves the location names, so reserving one more is not
-foreign to that format, but **it is bolt's call and not wrench's**: bolt owns what
-a definitions file means. Left out until bolt asks for it.
+Put to bolt, which owns what a definitions file means. **Answered no on
+2026-08-27, and the reasoning is better than the reasoning for asking.**
+
+**definitions is the one shipped schema whose keys are entirely a user
+namespace.** The envelope, jig and manifest all have named properties, so
+`version` sits beside them and a reader tells metadata from content by looking. In
+definitions every key is a placeholder name, so `version` would be **both at
+once**, and nothing in the document would say which was meant.
+
+`{version}` is an ordinary placeholder rather than a contrived one: a jig passing
+a version to a tool is the common case, and reserving the name costs that.
+
+**The FR-4.19 precedent does not carry, and that was my error in asking.** FR-4.19
+reserves the names *bolt supplies*, because a redefined `{base_dir}` would
+substitute somewhere other than where the command stands. That is a reservation
+against collision with a value bolt provides. A format-version key is a different
+kind of thing.
+
+If versioning a definitions file ever matters it goes out of band, since
+`bolt.<name>.definitions.yaml` already carries a name and has room.
 
 ## How versions map to files, when there is a second one
 
