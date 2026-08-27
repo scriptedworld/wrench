@@ -44,9 +44,25 @@ question for toolbox rather than a hypothetical for the two unbuilt packs.
 pack is Go, and some tooling is wanted as a deliberate example of working with it.
 **The system at large should be Python or Rust.**
 
-This is a preference, chosen rather than derived, so there is nothing to be right
-about and it is not re-argued from the numbers below. Leave it alone unless it is
-changed by the person who set it.
+Which way the system goes is a preference, chosen rather than derived, so there is
+nothing to be right about and it is not re-argued from the numbers below.
+
+**Go staying put is not a preference, and this half must not be traded away.**
+FACT 2026-08-27, from the user: **nothing in this ecosystem was ever written in
+Go**, so a Go implementation cannot plausibly be a derivation of the archived bolt.
+The language choice is itself a clean-room proof, made to answer "was this based on
+former code" rather than on technical fit.
+
+**That proof holds only while bolt stays Go.** A port to Rust could be alleged to
+be a translation of the Go one, so the argument would be spent rather than kept.
+Anyone reading the preference above and proposing to port bolt, on the reasonable
+grounds that Rust does subprocess orchestration perfectly well, would be
+destroying something not visible in the code.
+
+The two reasons happen to agree. Go is also genuinely right for bolt: subprocess
+orchestration, evidence collection, and a single static binary with no runtime to
+install, which is the property that made a dangling `~/bin/bolt` a one-line fix
+rather than an install problem. **Only one of those reasons survives a rewrite.**
 
 What follows from it:
 
