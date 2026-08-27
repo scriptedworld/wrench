@@ -53,6 +53,27 @@ to wrench's emitter that would diverge from infobot now fails two suites.
 a coincidence; a fixture is a contract. If infobot's emitter ever changes, that
 fixture is where the disagreement surfaces.
 
+## That fixture is half of a two-repository contract
+
+Named by infobot as its FR-1.11n, after this measurement turned an agreement into
+something with two ends and no statement of what it is.
+
+**The form is pinned independently at both ends, and neither suite reaches into
+the other's tree.** wrench holds a copy of infobot's bytes and checks itself
+against it; infobot checks itself against its own. They agree because both match
+the same bytes, not because one imports the other.
+
+FACT 2026-08-26: no check here resolves an infobot path. `grep -rn infobot` in
+this repository hits prose in this file and the fixture's directory name.
+`/home/ancient/.projects/infobot` appears twice inside the fixture, as the value
+of a `cwd` key, which is data in the case rather than a path anything opens. So a
+fresh clone of wrench passes with infobot absent, which is what the rule is for: a
+check needing a sibling repository present fails for the wrong reason.
+
+**So if that fixture ever fails, the question is which end moved, and the answer
+is not automatically wrench.** Ask infobot before changing the fixture, the way
+you would ask bolt before reshaping a schema.
+
 ## The third option, left open
 
 The finding also offered "wrench takes a schema for the file", so a reader has

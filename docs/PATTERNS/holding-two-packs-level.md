@@ -35,6 +35,23 @@ the tree broken in the others.
    schema reshape breaks bolt at its HEAD. Extending a schema is free; changing
    the shape of something already written is not. Tell whoever holds bolt first.
 
+### A compiled consumer carries the schema from its own build time
+
+The Go pack embeds the schemas with `go:embed`, so **a binary holds whatever
+`schemas/` said when it was compiled**, not what the working tree says now.
+
+That makes one verification route quietly wrong. `go build` and `go test` in a
+consumer are a real check of this tree, because both recompile. **Running a
+prebuilt binary is a check of whenever it was last built**, and it will report
+your change as absent or the old shape as still valid.
+
+FACT 2026-08-26: this cost bolt ten minutes twice in one day. A binary built
+before `cdef684` reported `needs-repository-root` as accepted on a jig task,
+which looked like wrench's claim was wrong. It was a stale binary.
+
+So when asking a consumer to verify a schema change, **say "rebuild first"**, and
+when verifying one yourself, prefer `go test` over anything already compiled.
+
 ## Adding a schema
 
 Put the file in `schemas/` with an `$id`, and nothing else is needed: both packs
