@@ -117,6 +117,19 @@ tasks:
     description: every test cites what it discharges, and every settled requirement has one
     command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} .
 
+  - name: retired-rows-are-deliberate
+    # REQUIREMENTS.md is one file and `## Retired` is its LAST section, so a row
+    # appended to the end of the file is silently retired rather than added, and
+    # appending is what a person does when adding a requirement. No checker can
+    # catch that: nothing distinguishes a live row that fell under the heading
+    # from a genuine retirement. Pinning the count is the only defence that has
+    # teeth, so retiring something becomes a deliberate edit to this number.
+    #
+    # DELETE THIS TASK WITH THE SPLIT. clank/tasks/wrench/requirements/10 moves
+    # each row to its own file, and a per-file switch cannot reach a new file.
+    description: nothing has drifted below the Retired heading, which is 11 rows
+    command: test "$(awk '/^## Retired/{f=1} f&&/^\| FR-/{c++} END{print c+0}' REQUIREMENTS.md)" = 11
+
   - name: suite-parity
     description: every pack's suite covers the same tests
     # Compares the suites AGAINST EACH OTHER, so it stands at the root and cannot
