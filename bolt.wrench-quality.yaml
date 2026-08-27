@@ -79,7 +79,13 @@ tasks:
     #
     # Not `jq` or `yq`: both are processors, not validators. Measured 2026-08-27,
     # `jq -n 'builtins | map(select(test("schema")))'` returns [].
-    command: deno run -A npm:ajv-cli@5 compile --spec=draft2020 -s schemas/envelope.schema.json -s schemas/manifest.schema.json -s schemas/jig.schema.json -r schemas/definitions.schema.json
+    #
+    # bin/check-schemas.ts rather than ajv-cli. The library is first class, at
+    # 377 million downloads a week and released 2026-04-24. Its CLI is not:
+    # ajv-cli 5.0.0 was last released 2023-04-28. Fifteen lines here beats a
+    # three-year-stale wrapper, and reading schemas/ as a directory means a fifth
+    # schema is checked without editing anything.
+    command: deno run --allow-read --allow-net bin/check-schemas.ts
 
   # ---- the packs ------------------------------------------------------------
 
