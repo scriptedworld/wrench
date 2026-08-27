@@ -35,10 +35,16 @@ from pathlib import Path
 # calls level. Measured in wrench, that hid three of them.
 COVERS = re.compile(r"COVERS:\s*([^|\n]+)\|\s*(\w+)")
 
-# `| FR-6.1 | ... | [A] |` and the optional scope that says which suites are
-# expected to discharge it: `| FR-6.1 | ... | [A] [python] |`
-ROW = re.compile(r"^\|\s*(FR-[0-9A-Za-z.]+)\s*\|(.*)\|\s*(\[[^|]*\])\s*\|\s*$")
-SCOPE = re.compile(r"\[([a-z][a-z0-9_-]*)\]")
+# `| FR-6.1 | ... | [A] |` and the optional scope naming the suites expected to
+# discharge it, inside the SAME bracket: `| FR-6.1 | ... | [A python] |`.
+#
+# One bracket, and no `|` inside it. toolbox's test-traceability.py takes a row's
+# marker to be its last bracketed cell and matches `^\[[^\]]*\]$`, so a second
+# bracket reads as no marker at all and a `|` splits the cell in two. Both were
+# tried and both broke that checker quietly, which is the argument for the
+# spelling being awkward rather than pretty.
+ROW = re.compile(r"^\|\s*(FR-[0-9A-Za-z.]+)\s*\|(.*)\|\s*(\[[^|\]]*\])\s*\|\s*$")
+SCOPE = re.compile(r"\b([a-z][a-z0-9_-]*)\b")
 
 # A row under this heading has been retired and is not expected to be covered.
 RETIRED = re.compile(r"^##\s+Retired\s*$", re.MULTILINE)

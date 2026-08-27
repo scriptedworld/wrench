@@ -25,18 +25,16 @@ the check, and nowhere else holds a second copy of that list. Adding a scope
 marker to silence a failure is the one wrong use of it: the marker is for a row a
 pack **cannot** discharge, where a row merely untested in one pack is the finding.
 
-**One settled row carries no test.** FACT 2026-08-26, from
-`python3 ~/.projects/toolbox/bin/test-traceability.py --requirements
-REQUIREMENTS.md .`
+**Every settled row carries a test.** FACT 2026-08-27:
 
-FR-6.2a states what `/usr/bin/python3` does not supply, which is a property of
-this machine rather than of wrench, so a test here would assert the platform
-rather than the pack. `NEXT_STEPS.md` question 1 is the open half of it, and
-FR-7.4 is the open row that settles it.
+    python3 ~/.projects/toolbox/bin/test-traceability.py \
+        --requirements REQUIREMENTS.md .        # exits 0
 
-The four rows that previously stood uncovered as design notes were retired to
-`docs/DECISIONS/` on 2026-08-26, and FR-6.1 and FR-6.2 were covered when the
-Python pack landed.
+**Read the exit status, not the summary.** That checker prints a count and exits
+non-zero when a settled row has no test, and this document stood in that state
+from before this session until 2026-08-27 while the printed line was being quoted
+as a pass. The rows that caused it were design notes and a platform note; each was
+retired to `docs/DECISIONS/` or struck once its purpose had gone, never excluded.
 
 ---
 
@@ -102,7 +100,7 @@ test, and four rows saying so were retired from this table on 2026-08-26.
 
 ## 6. Reaching the library
 
-**FR-6.1, FR-6.2 and FR-6.2a are the Python pack's alone**, and are the only rows
+**FR-6.1 and FR-6.2 are the Python pack's alone**, and are the only rows
 here that one pack holds and another cannot. They are about a Python pack reaching
 a Python environment; the Go pack cannot discharge them and should not try. Every
 other row states one contract that every pack implements, and both suites cite it.
@@ -113,9 +111,8 @@ suite and not the other is the divergence FR-5.7 exists to catch.
 
 | ID | Requirement | |
 |---|---|---|
-| FR-6.1 | The Python pack is importable from a source checkout, with no install having run. Its own suite runs that way, on `PYTHONPATH`, and the pack reads `schemas/` from the repository rather than from package data, which is why an editable install is the only supported form. ~~`dotfiles/bin/setup` runs on `/usr/bin/python3` before mise exists~~ **restated 2026-08-26**: that was the original motivation and it was disproven. Nothing in the bootstrap window imports wrench, and nothing is planned to. See `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`. | [A/D] [python] |
-| FR-6.2 | The pack's dependencies are on names being importable in the environment it is installed into, not on a resolver having run there. It imports `yaml`, `jsonschema` and `referencing` by name, so a platform package and a pip install satisfy it identically. ~~Debian's `python3-yaml` through the one channel available before any other is~~ **restated 2026-08-26**: that framing rested on the bootstrap window, which does not consume this pack. | [A/D] [python] |
-| FR-6.2a | Validation needs the platform to supply `jsonschema` as well, and that is the half FR-6.2 missed. **This is about the bootstrap window's interpreter and no other.** FACT 2026-08-26: `/usr/bin/python3` here is 3.13.5 with `yaml` and no `jsonschema`, so `import wrench` fails outright there rather than degrading; `env python3` resolves to mise's 3.14.7, which has all three, and imports fine. A consumer with a `#!/usr/bin/env python3` shebang gets the second, so the failure is the bootstrap's and not every caller's. Reading this row as "wrench cannot be imported" has already misled one project. Debian packages it as `python3-jsonschema`. | [A] [python] |
+| FR-6.1 | The Python pack is importable from a source checkout, with no install having run. Its own suite runs that way, on `PYTHONPATH`, and the pack reads `schemas/` from the repository rather than from package data, which is why an editable install is the only supported form. ~~`dotfiles/bin/setup` runs on `/usr/bin/python3` before mise exists~~ **restated 2026-08-26**: that was the original motivation and it was disproven. Nothing in the bootstrap window imports wrench, and nothing is planned to. See `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`. | [A/D python] |
+| FR-6.2 | The pack's dependencies are on names being importable in the environment it is installed into, not on a resolver having run there. It imports `yaml`, `jsonschema` and `referencing` by name, so a platform package and a pip install satisfy it identically. ~~Debian's `python3-yaml` through the one channel available before any other is~~ **restated 2026-08-26**: that framing rested on the bootstrap window, which does not consume this pack. | [A/D python] |
 | FR-6.3 | A write is atomic: the file is written beside its target and renamed into place, so a reader sees the previous content or the new one and never a partial file. | [A] |
 
 ## 7. Open
@@ -154,6 +151,7 @@ cleaning up.
 | ID | Retired | Superseded by |
 |---|---|---|
 | FR-1.3 | 2026-08-26 | `docs/DECISIONS/wrench-owns-the-contract-and-consumers-do-not.md`. It stated who decides rather than a property of wrench. The Go test citing it was testing FR-2.3 and now cites that alone. |
+| FR-6.2a | 2026-08-27 | Nothing. Its purpose went with FR-7.4. It recorded that `/usr/bin/python3` supplies no `jsonschema`, which mattered only while the bootstrap window was believed to be a consumer of this pack. It is not, so the row stated a fact about an interpreter nothing here uses, and no test could ever have discharged it. `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md` keeps the measurement. |
 | FR-7.4 | 2026-08-26 | Answered, not superseded. There is no bootstrap consumer to reach: nothing in `dotfiles/bin/` imports wrench or reads YAML, and the pack is installed after mise exists. `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md` |
 | FR-5.1 | 2026-08-26 | `docs/DECISIONS/a-library-per-language-not-a-c-core.md` |
 | FR-5.1a | 2026-08-26 | `docs/DECISIONS/a-library-per-language-not-a-c-core.md` |

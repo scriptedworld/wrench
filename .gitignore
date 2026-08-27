@@ -10,3 +10,8 @@ START_HERE.md
 # egg-info lands beside the source rather than in a build directory.
 __pycache__/
 *.egg-info/
+
+# bolt writes its evidence to .bolt-<iso8601> at the base unless told otherwise,
+# so a run from the repository root leaves one of these behind. Run it with
+# --output-dir .ephemera/gate to keep evidence where working files belong.
+.bolt-*/

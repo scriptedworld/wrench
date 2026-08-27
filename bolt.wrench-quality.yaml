@@ -1,0 +1,90 @@
+# bolt.wrench-quality.yaml, the gate for wrench itself.
+#
+#     bolt wrench-quality .
+#
+# WHY THIS IS WRENCH'S OWN AND NOT THE SHARED JIGS. toolbox's bolt.*-std-quality
+# files are still in the retired format: they carry `version: 1`, `id:`, `tags:`
+# and `result_command:`, none of which wrench's own jig.schema.json accepts. So
+# wrench cannot adopt them until `clank/tasks/toolbox/port-the-jigs` lands, and
+# waiting for that meant gating nothing at all.
+#
+# This runs a project's own checks in the meantime. It is not a substitute for
+# the shared standard, and `clank/tasks/wrench/gate/10-a-composite-jig` is still
+# the destination: four jig tasks, each language paired with common at its own
+# base. Read that before extending this.
+#
+# ORDERED CHEAPEST FIRST, so a failure surfaces before the slow checks run.
+#
+# EVERY TASK EXITS NON-ZERO ON ITS OWN FAILURE. Nothing here needs an adapter to
+# turn output into a verdict, which is deliberate: an adapter is a second thing
+# to keep working, and `gofmt -l` is the only tool that would have needed one.
+# `test -z` gives it an exit status instead.
+
+version: 1.0.0
+
+requires: [go, gofmt, python3, jq, deno, bolt]
+
+definitions:
+  requirements: REQUIREMENTS.md
+
+tasks:
+  # ---- the structured files this project exists to define --------------------
+
+  # Cheapest and most specific to wrench: the schemas are the product, so they
+  # are checked before anything that merely uses them.
+
+  - name: json-parses
+    description: every JSON file is JSON
+    command: jq empty {each_path}
+    matching: ["**/*.json"]
+    excluding: [".ephemera/**", "**/node_modules/**"]
+
+  - name: json-formatted
+    description: every JSON file is formatted, and formatting preserves how it was written
+    # deno rather than `jq --indent 2`, which is a processor and not a formatter:
+    # it strips the blank lines grouping a schema and explodes short inline
+    # arrays, so enforcing it would make a hand-written schema worse. Measured
+    # 2026-08-27.
+    command: deno fmt --check {each_path}
+    matching: ["**/*.json"]
+    excluding: [".ephemera/**", "**/node_modules/**"]
+
+  - name: schema-declares-its-dialect-and-id
+    description: a shipped schema says which JSON Schema it is and what it is called
+    # The $id is what a schema is named by in an error and what another schema
+    # references it by. A shipped schema without one cannot be referenced and
+    # puts a local path into evidence that travels.
+    command: jq -e 'has("$schema") and has("$id")' {each_path} > /dev/null
+    matching: ["schemas/*.schema.json"]
+
+  # ---- the packs ------------------------------------------------------------
+
+  - name: go-format
+    description: every Go file is gofmt-clean
+    # gofmt -l lists unformatted files and exits 0 either way, so its exit status
+    # answers "did gofmt run" and never "is this formatted". test -z makes the
+    # empty list the success condition.
+    command: test -z "$(gofmt -l .)"
+
+  - name: go-vet
+    command: go vet ./...
+
+  - name: go-test
+    description: the Go pack, uncached
+    command: go test -count=1 ./...
+
+  - name: python-test
+    description: the Python pack, run from the repository root so it finds schemas/
+    command: PYTHONPATH=python python3 -m pytest python/tests -q
+
+  # ---- the contract ---------------------------------------------------------
+
+  - name: traceability
+    description: every test cites what it discharges, and every settled requirement has one
+    command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} .
+
+  - name: suite-parity
+    description: every pack's suite covers the same tests
+    # Compares the suites AGAINST EACH OTHER, so it stands at the root and cannot
+    # become a per-language task. Adding a pack means adding a --suite here.
+    command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='*_test.go' --suite python='python/tests/*.py' .

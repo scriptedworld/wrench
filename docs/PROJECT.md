@@ -63,18 +63,33 @@ asymmetry is known and is a problem for the gate rather than for the code:
 `clank/tasks/wrench/gate/10-a-composite-jig.planning` wants the Go pack moved to
 `go/` so the two are symmetric bases.
 
-## The gate: there is not one
+## The gate
 
-**FACT 2026-08-26: `ls bolt.*.yaml` returns nothing, and there is no `bin/` or
-`adapters/`.** wrench is not a bolt adopter. Neither pack is gated by anything
-but a person typing a command.
+    bolt wrench-quality .
 
-That is the largest single gap in this repository. The Python pack has no ruff,
-no mypy, no coverage and no test task that runs unattended, and the Go pack's
-green run is equally nobody's job. `docs/LESSONS/` carries what that already cost
-once.
+**FACT 2026-08-27: passes, 18 executions, `success: true` in `result.yaml`.**
+`bolt.wrench-quality.yaml` is wrench's own jig, nine tasks over the schemas, both
+packs and the contract.
 
-What a person runs, and what the gate will run when it exists:
+**Read `result.yaml`, never the exit status.** bolt exits 0 whenever the run
+completed, whatever the tools concluded, and says so in its own usage. The verdict
+is the `success` key.
+
+**This is wrench's own jig and not the shared standard.** toolbox's
+`bolt.*-std-quality.yaml` are still in the retired format, carrying `version: 1`,
+`id:`, `tags:` and `result_command:`, none of which the current `jig.schema.json`
+accepts. So wrench cannot adopt them until `clank/tasks/toolbox/port-the-jigs`
+lands, and waiting for that meant gating nothing at all.
+
+So the Python pack still has no ruff, no mypy and no coverage: those come with the
+shared Python jig. `clank/tasks/wrench/gate/10-a-composite-jig` is the
+destination, and it is now one blocker away rather than three.
+
+**Every task exits non-zero on its own failure**, so nothing needs an adapter.
+`gofmt -l` was the only tool that would have, and `test -z "$(gofmt -l .)"` gives
+it an exit status instead.
+
+The same checks, run by hand:
 
     go test -count=1 ./... && gofmt -l . && go vet ./...
     PYTHONPATH=python python3 -m pytest python/tests -q
@@ -82,11 +97,17 @@ What a person runs, and what the gate will run when it exists:
     ./bin/test-suite-parity.py --requirements REQUIREMENTS.md \
         --suite go='*_test.go' --suite python='python/tests/*.py' .
 
-FACT 2026-08-26, all three at `fc6be8a`: Go ok, `gofmt` and `vet` clean, 32
-Python tests passed, traceability 29 of 34 covered with 1 open and exempt.
+FACT 2026-08-27: Go ok, `gofmt` and `vet` clean, 53 Python tests passed,
+traceability 33 of 34 covered with 0 open and **exit 0**, parity 47 tests held
+level across both suites.
+
+**The traceability checker exits non-zero when a settled row has no test, and its
+printed summary looks like a pass either way.** This document quoted that summary
+as a pass while the check was failing, from before 2026-08-26 until it was caught
+by the jig on 2026-08-27. `docs/LESSONS/read-the-artifact-not-the-summary-line.md`.
 
 `clank/tasks/wrench/gate/10-a-composite-jig.planning` has the design for the
-gate, and names the three things outside wrench that block it.
+shared-jig gate this one stands in for.
 
 ## Requirements stay one file, and why
 
