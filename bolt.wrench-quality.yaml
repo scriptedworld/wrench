@@ -63,10 +63,15 @@ tasks:
     # schemas cannot catch both bindings misreading the specification the same
     # way, and nothing outside wrench had ever read these files.
     #
-    # ajv, in JavaScript. JavaScript is the only runtime with no wrench pack
-    # planned, so it is the only choice that stays independent: a Ruby or Rust
-    # validator would stop being a second opinion the day that pack binds it.
-    # Go's santhosh-tekuri and Python's jsonschema are already ours.
+    # ajv, in JavaScript. The rule is that the gate's validator must not be a
+    # library any pack binds: Go's santhosh-tekuri and Python's jsonschema are
+    # already ours, and a Rust pack would take boon.
+    #
+    # ADDING TYPESCRIPT PUTS THIS AT RISK. A TypeScript pack would naturally bind
+    # ajv, and the gate would then be asking one of wrench's own bindings. It has
+    # to move to another implementation before that pack is written, and
+    # @hyperjump/json-schema is the measured alternative. See
+    # clank/tasks/wrench/schemas/50-typescript-binds-the-validator-the-gate-uses.
     #
     # Run through deno, which is installed and declared, so this needs no global
     # npm install and no package.json in a repository that has no JavaScript.

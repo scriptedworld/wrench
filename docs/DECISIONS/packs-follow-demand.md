@@ -21,12 +21,29 @@ but "what is blocked without it".
 |---|---|---|
 | Go | bolt, which reads and writes every structured file through it | Built |
 | Python | toolbox's adapters and checkers | Built |
-| Ruby | Named as wanted, consumer not yet identified here | Not built |
-| Rust | Named as wanted, consumer not yet identified here | Not built |
+| Rust | Consumer not yet identified here | Not built |
+| TypeScript | Consumer not yet identified here | Not built |
 
-CLAIM 2026-08-26: Ruby and Rust are wanted eventually, stated in session. What
-they unblock is not written down yet, and this decision says that is the thing to
-establish before either is built.
+**Ruby was dropped on 2026-08-27** and TypeScript added in its place. Nothing was
+blocking Ruby: `json_schemer` covers 2020-12 and is maintained, so the pack was
+buildable and simply is not wanted.
+`clank/tasks/wrench/library/30-a-ruby-pack.cancelled` records it, and the ordinal
+is not reused.
+
+**Toolbox's checkers and adapters are not fixed to Python.** Any of Go, Python,
+Rust or TypeScript is allowed, stated 2026-08-27, so "what needs this" is a live
+question for toolbox rather than a hypothetical for the two unbuilt packs.
+
+**For a checker the choice is mostly startup cost**, because a jig task using
+`{each_path}` pays it once per file. FACT 2026-08-27, do-nothing program, mean of
+20 runs on this machine:
+
+    rust binary   2ms      node    20ms
+    go binary     3ms      python3 21ms, and 59ms once it imports wrench
+                           deno    21ms
+
+So a per-path checker wants a compiled binary and a once-per-gate checker does
+not care.
 
 ## wrench is upstream of the checkers
 

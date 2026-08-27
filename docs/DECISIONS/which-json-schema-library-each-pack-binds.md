@@ -20,8 +20,13 @@ implementation covering the 2020-12 dialect wrench declares.
 |---|---|---|---|
 | Go | `santhosh-tekuri/jsonschema/v6` | yes | In use, `go.mod` |
 | Python | `jsonschema` | yes | In use, `pyproject.toml` |
-| Ruby | `json_schemer` 2.5.0 | yes | The gem's own summary |
 | Rust | `boon` 0.6.1 | yes | Its crates.io description |
+| TypeScript | undecided, `ajv` or `@hyperjump/json-schema` | both yes | Both run against wrench's schemas 2026-08-27 |
+
+**Ruby was dropped 2026-08-27** and its row is gone from the live table rather
+than struck, because no Ruby pack is planned. `json_schemer` was surveyed and
+found suitable before that decision, which is recorded in
+`clank/tasks/wrench/library/30-a-ruby-pack.cancelled` rather than kept here.
 
 **Go was the one worth checking**, since a gap there would have been a problem
 rather than an inconvenience. It is not a gap. The library declares `Draft4`,

@@ -157,7 +157,7 @@ against it at `clank/inbox/wrench/`. Neither is in this repository.
 |---|---|---|
 | Go | bolt | Built, at the repository root |
 | Python | toolbox's adapters and checkers | Built, under `python/` |
-| Ruby | Consumer not yet identified | Not built |
+| TypeScript | Consumer not yet identified | Not built |
 | Rust | Consumer not yet identified | Not built |
 
 `docs/DECISIONS/packs-follow-demand.md` says what decides when a pack gets

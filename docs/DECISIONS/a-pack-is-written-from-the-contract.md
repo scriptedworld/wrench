@@ -32,7 +32,7 @@ So the guarantee in force is "two implementations agree on a declared set of
 cases", not "two implementations were derived independently". Those are different
 strengths and only the first has been demonstrated.
 
-**A Ruby or Rust pack is where this decision can still be kept.** Write it from
+**A Rust or TypeScript pack is where this decision can still be kept.** Write it from
 `REQUIREMENTS.md` and `schemas/`, run it against `testdata/canonical/`, and do
 not open `wrench.go` or `codec.py` while doing it. If the contract turns out to
 be insufficient to write a pack from, that is the finding, and it is worth more

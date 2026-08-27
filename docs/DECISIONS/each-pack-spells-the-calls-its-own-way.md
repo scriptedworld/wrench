@@ -25,11 +25,13 @@ conclude the names drifted from the contract. They did not: the contract is
 
 This matters most for the packs not yet built.
 
-    Ruby      load_formatted_file  save_formatted_file
-    Rust      load_formatted_file  save_formatted_file
+    Rust        load_formatted_file  save_formatted_file
+    TypeScript  loadFormattedFile    saveFormattedFile
 
-Both of those languages spell functions in snake case, so both match the contract
-directly and Go stays the only one that transforms it.
+Rust spells functions in snake case, so it matches the contract directly.
+**TypeScript does not**, and camel case is what its ecosystem expects, so it
+transforms the contract exactly as Go does. Two of the four planned packs
+therefore rename, which is the rule working rather than an exception to it.
 
 ## What does not vary
 
