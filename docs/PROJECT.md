@@ -156,16 +156,26 @@ install is live.
 `dotfiles/bin/setup` gets every tool and no wrench. Filed at
 `clank/inbox/dotfiles/declare-wrench-and-its-bootstrap-dependency/`.
 
-### `import wrench` fails on `/usr/bin/python3`, and that is recorded not broken
+### `import wrench` fails on `/usr/bin/python3`, and no longer matters
 
-FACT 2026-08-26: that interpreter has `yaml` 6.0.2 and no `jsonschema`, and
-`schema.py` imports `jsonschema` at module level. It works on the interpreter on
-PATH, which is what bolt invokes an adapter with. FR-6.2a states it, and
-`NEXT_STEPS.md` question 1 is the open half.
+FACT 2026-08-26: that interpreter is 3.13.5 with `yaml` and no `jsonschema`, and
+`schema.py` imports `jsonschema` at module level. `env python3` resolves to mise's
+3.14.7, which has all three modules and imports fine, so **anything with a
+`#!/usr/bin/env python3` shebang gets the working one.**
 
-Owed to a person, because a Claude shell cannot run it:
+**This used to be a constraint and is not one now.** The pack was shaped around
+`dotfiles/bin/setup` running on the system interpreter before mise exists. That
+premise was disproven on 2026-08-26: nothing in `dotfiles/bin/` imports wrench or
+reads YAML at all, its manifests are TOML read with stdlib `tomllib`, and wrench
+is installed after mise. FR-7.4 is answered and retired;
+`docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md` has the
+measurements.
 
-    sudo apt install python3-jsonschema
+So `sudo apt install python3-jsonschema` is **no longer owed**. Do not run it on
+wrench's account.
+
+Read FR-6.2a as being about which interpreter, not about whether wrench can be
+imported. Read the other way, it has already misled one project.
 
 ## What holds the packs level
 

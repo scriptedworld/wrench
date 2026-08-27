@@ -93,8 +93,8 @@ test, and four rows saying so were retired from this table on 2026-08-26.
 
 | ID | Requirement | |
 |---|---|---|
-| FR-6.1 | The Python pack is importable without an install having run. `dotfiles/bin/setup` runs on `/usr/bin/python3` before mise, uv or pip exist, so a pack needing `pip install` first would mean installing requires the installer. | [A] |
-| FR-6.2 | Its YAML support is whatever the platform supplies under that name. Debian's `python3-yaml` satisfies that through the one channel available before any other is, and a pip-installed PyYAML satisfies every consumer that is not the bootstrap case. The dependency is on the name being importable rather than on a resolver having run. | [A] |
+| FR-6.1 | The Python pack is importable from a source checkout, with no install having run. Its own suite runs that way, on `PYTHONPATH`, and the pack reads `schemas/` from the repository rather than from package data, which is why an editable install is the only supported form. ~~`dotfiles/bin/setup` runs on `/usr/bin/python3` before mise exists~~ **restated 2026-08-26**: that was the original motivation and it was disproven. Nothing in the bootstrap window imports wrench, and nothing is planned to. See `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`. | [A/D] |
+| FR-6.2 | The pack's dependencies are on names being importable in the environment it is installed into, not on a resolver having run there. It imports `yaml`, `jsonschema` and `referencing` by name, so a platform package and a pip install satisfy it identically. ~~Debian's `python3-yaml` through the one channel available before any other is~~ **restated 2026-08-26**: that framing rested on the bootstrap window, which does not consume this pack. | [A/D] |
 | FR-6.2a | Validation needs the platform to supply `jsonschema` as well, and that is the half FR-6.2 missed. **This is about the bootstrap window's interpreter and no other.** FACT 2026-08-26: `/usr/bin/python3` here is 3.13.5 with `yaml` and no `jsonschema`, so `import wrench` fails outright there rather than degrading; `env python3` resolves to mise's 3.14.7, which has all three, and imports fine. A consumer with a `#!/usr/bin/env python3` shebang gets the second, so the failure is the bootstrap's and not every caller's. Reading this row as "wrench cannot be imported" has already misled one project. Debian packages it as `python3-jsonschema`. | [A] |
 | FR-6.3 | A write is atomic: the file is written beside its target and renamed into place, so a reader sees the previous content or the new one and never a partial file. | [A] |
 
@@ -105,7 +105,10 @@ The questions that would settle them are in `NEXT_STEPS.md`.
 
 | ID | Requirement | |
 |---|---|---|
-| FR-7.4 | The Python pack reaches its bootstrap consumer by a stated route, whether that is apt's `python3-yaml` as the declared floor or vendoring into dotfiles. | [?] |
+This section is empty. FR-7.4 was the last open row and it was answered on
+2026-08-26; see `## Retired`. An empty section is left standing rather than
+deleted, because the numbering continues from it and a reader meeting `FR-7.x`
+elsewhere should find where the series went.
 
 ## Retired
 
@@ -130,6 +133,7 @@ cleaning up.
 
 | ID | Retired | Superseded by |
 |---|---|---|
+| FR-7.4 | 2026-08-26 | Answered, not superseded. There is no bootstrap consumer to reach: nothing in `dotfiles/bin/` imports wrench or reads YAML, and the pack is installed after mise exists. `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md` |
 | FR-5.1 | 2026-08-26 | `docs/DECISIONS/a-library-per-language-not-a-c-core.md` |
 | FR-5.1a | 2026-08-26 | `docs/DECISIONS/a-library-per-language-not-a-c-core.md` |
 | FR-5.3 | 2026-08-26 | `docs/DECISIONS/a-pack-is-written-from-the-contract.md` |

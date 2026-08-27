@@ -10,37 +10,23 @@ settled.
 
 ---
 
-## Two open questions
+## One open question
 
-Both are tasks in `.questions` state, because each needs an answer before it can
-be specified. The context is here; the task is the queue.
+### ~~1. How does the Python pack reach `dotfiles/bin/setup`?~~ Answered 2026-08-26
 
-### 1. How does the Python pack reach `dotfiles/bin/setup`?
+**It does not, and it never needed to.** Nothing in `dotfiles/bin/` imports
+wrench or reads YAML at any level; the manifests are TOML read with stdlib
+`tomllib`; and wrench is installed via a `python_projects` list into mise's
+Python, after mise exists.
 
-`clank/tasks/wrench/packaging/10-how-the-python-pack-reaches-bootstrap.questions`
+So the question dissolved rather than being decided. No apt package is declared on
+dotfiles' account, nothing is vendored, and `sudo apt install python3-jsonschema`
+is no longer owed. FR-7.4 is retired as answered, and FR-6.1 and FR-6.2 keep their
+property while losing the bootstrap justification that motivated them.
 
-**Default: declare the apt packages as prerequisites and import by name.**
-
-Sharpened 2026-08-26 by building the pack: it needs `python3-jsonschema` as well
-as `python3-yaml`, and that one is not installed here. The pack imports on mise's
-interpreter, which has both, and not on `/usr/bin/python3`, which has neither
-validation nor a way to get it without apt. So the prerequisite is two packages,
-not one, and the bootstrap window is the case that has neither.
-
-FR-6.1, FR-6.2 and FR-6.2a fix the constraint. What is open is only whether that
-is enough, or whether the pack gets vendored into dotfiles as well. **Vendoring is
-the fallback, worth choosing rather than arriving at.**
-
-Nothing is blocked by it today, because the manifests are still TOML and
-`tomllib` is in the standard library.
-
-Owed to a person, since a Claude shell cannot run it:
-
-    sudo apt install python3-jsonschema
-
-`packages.toml` already declares `python3-yaml` for the bootstrap window with the
-reasoning beside it. This is its sibling and it is one line with an exact
-precedent.
+`docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md` carries the
+measurements, including what is still unverified about `python3-yaml` and what is
+still owed by dotfiles.
 
 ### 2. Is the envelope schema versioned?
 
