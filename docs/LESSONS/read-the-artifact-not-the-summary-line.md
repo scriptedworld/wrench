@@ -83,3 +83,9 @@ sequence reports `parse`. That is what made the answer mean something.
 `silo/docs/LESSONS/read-the-artifact-not-the-exit-status/` says this, and the
 global rules carry it as hard rule 6. Knowing it did not help. **What helped was a
 gate**, because a gate cannot decide the number looked fine.
+
+## And once more, one layer down, in the evidence
+
+`a-silent-build-failure-prints-the-number-you-wanted.md` records the third
+instance: a `repro.sh` whose build silently produced no binary, so it timed a
+program that did not exist and printed 0ms, which reads as a better result.
