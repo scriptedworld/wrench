@@ -99,6 +99,45 @@ func TestAValueWithNoCanonicalFormIsRefused(t *testing.T) {
 	}
 }
 
+// COVERS: FR-2.9 | regression
+func TestATimestampDecodesToAStringSoItCanBeWrittenBack(t *testing.T) {
+	// YAML has a native timestamp type and JSON does not. Before this, an
+	// unquoted date decoded to a time.Time, reached the validator, which has no
+	// type for it, and then could not be encoded: wrench could read a file it
+	// could not write back.
+	value, err := wrench.YAML.Decode([]byte("day: 2026-01-01\nstamp: 2026-01-01T07:32:00Z\n"))
+	if err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+
+	mapping, ok := value.(map[string]any)
+	if !ok {
+		t.Fatalf("got %T, want a mapping", value)
+	}
+	for _, name := range []string{"day", "stamp"} {
+		if _, isString := mapping[name].(string); !isString {
+			t.Errorf("%s decoded to %T, want a string so it is a JSON value", name, mapping[name])
+		}
+	}
+
+	// The point of the coercion: what was read can be written.
+	encoded, err := wrench.YAML.Encode(value)
+	if err != nil {
+		t.Fatalf("encoding what was just decoded: %v", err)
+	}
+	again, err := wrench.YAML.Decode(encoded)
+	if err != nil {
+		t.Fatalf("decoding again: %v", err)
+	}
+	second, err := wrench.YAML.Encode(again)
+	if err != nil {
+		t.Fatalf("encoding again: %v", err)
+	}
+	if string(second) != string(encoded) {
+		t.Errorf("not a fixed point:\n%s\n%s", encoded, second)
+	}
+}
+
 // COVERS: FR-4.1 | edge
 func TestNaNAndTheInfinitiesAreRefused(t *testing.T) {
 	schema := compileAnything(t)

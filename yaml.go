@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	yaml "go.yaml.in/yaml/v3"
 )
@@ -56,8 +57,22 @@ func (yamlCodec) Encode(value any) ([]byte, error) {
 // validator expects: string-keyed maps, lists, and scalars. A mapping with a
 // key that is not a string has no JSON equivalent and is refused rather than
 // coerced, because coercing invents a document nobody wrote.
+//
+// A TIMESTAMP IS THE ONE VALUE THAT IS COERCED, and it is the exception that
+// proves the rule. YAML has a native timestamp type and JSON does not, so an
+// unquoted 2026-01-01 decoded to a time.Time and the structure stopped being the
+// maps, lists and JSON scalars everything downstream assumes. It reached the
+// validator, which has no type for it, and the save call then refused to write
+// back a file the load call had just read.
+//
+// RFC 3339 is lossless for the value and is what the timestamp was written as,
+// so the string carries everything the time.Time did. Refusing instead would
+// mean wrench cannot read an ordinary YAML file, and leaving it alone is what
+// broke the round trip.
 func normalise(value any) (any, error) {
 	switch v := value.(type) {
+	case time.Time:
+		return v.Format(time.RFC3339), nil
 	case map[string]any:
 		return normaliseMap(v)
 	case map[any]any:

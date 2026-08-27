@@ -157,6 +157,24 @@ def test_a_value_with_no_canonical_form_is_refused():
     assert writer.written is None, "the writer ran despite encoding failing"
 
 
+# COVERS: FR-2.9 | regression
+def test_a_timestamp_decodes_to_a_string_so_it_can_be_written_back():
+    """YAML has a native timestamp type and JSON does not. Before this, an
+    unquoted date decoded to a date object, reached the validator, which has no
+    type for it, and then could not be encoded: wrench could read a file it could
+    not write back."""
+    value = wrench.YAML.decode(b"day: 2026-01-01\nstamp: 2026-01-01T07:32:00Z\n")
+
+    for name in ("day", "stamp"):
+        assert isinstance(value[name], str), (
+            f"{name} decoded to {type(value[name]).__name__}, want a string so it is a JSON value"
+        )
+
+    # The point of the coercion: what was read can be written.
+    encoded = wrench.YAML.encode(value)
+    assert wrench.YAML.encode(wrench.YAML.decode(encoded)) == encoded, "not a fixed point"
+
+
 # COVERS: FR-4.1 | edge
 def test_nan_and_the_infinities_are_refused():
     for value in (float("nan"), float("inf"), float("-inf")):

@@ -59,6 +59,7 @@ retired to `docs/DECISIONS/` or struck once its purpose had gone, never excluded
 | FR-2.6 | A failing call says which of the two steps failed: the parser could not load the file, or the structure it produced did not match the schema. The two have different causes and different fixes. | [D] |
 | FR-2.7 | YAML is the codec that ships. Every structured file in the ecosystem is YAML, so a second has no consumer today; the codec argument exists so that adding one later is not a change to the two calls. | [D] |
 | FR-2.8 | A local file reader and a local file writer ship, and nothing else. Everything wrench serves reads and writes on the machine it is running on, and a test substitutes its own reader rather than needing one shipped to do it. | [D] |
+| FR-2.9 | **What a decoder produces is maps, lists and JSON scalars, and nothing else.** A format with a type JSON does not have is reconciled at the decoder rather than left for everything downstream, because that shape is what makes one schema validate a file whichever codec read it, and what makes a codec interchangeable at all. A value with no JSON equivalent is coerced where the spelling is lossless and refused where it is not: a YAML timestamp becomes its ISO 8601 string, a mapping key that is not a string is refused. | [A/D] |
 
 ## 3. Schemas
 

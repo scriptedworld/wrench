@@ -15,6 +15,7 @@ ambiguous rather than by what the value is.
 
 from __future__ import annotations
 
+import datetime
 import math
 
 import yaml
@@ -42,7 +43,21 @@ def _normalise(value: object) -> object:
 
     A mapping key that is not a string has no JSON equivalent, so it is refused
     rather than coerced: coercing invents a document nobody wrote.
+
+    A TIMESTAMP IS THE ONE VALUE THAT IS COERCED, and it is the exception that
+    proves the rule. YAML has a native timestamp type and JSON does not, so an
+    unquoted 2026-01-01 decoded to a date and the structure stopped being the
+    maps, lists and JSON scalars everything downstream assumes. It reached the
+    validator, which has no type for it, and the save call then refused to write
+    back a file the load call had just read.
+
+    ISO 8601 is lossless for the value and is what the timestamp was written as,
+    so the string carries everything the date did. Refusing instead would mean
+    wrench cannot read an ordinary YAML file, and leaving it alone is what broke
+    the round trip.
     """
+    if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+        return value.isoformat()
     if isinstance(value, dict):
         out = {}
         for key, item in value.items():
