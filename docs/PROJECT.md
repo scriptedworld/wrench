@@ -136,14 +136,30 @@ shared-jig gate this one stands in for.
 The standard layout is `docs/REQUIREMENTS/<category>/<requirement>.md`, one file
 per requirement. **wrench does not use it yet**, deliberately.
 
-`test-traceability.py` takes a single path and calls `read_text()` on it, so
-pointing `--requirements` at a directory raises `IsADirectoryError`. Splitting
-`REQUIREMENTS.md` would turn the one check this repository actually runs into a
-crash.
+**The reason changed on 2026-08-27 and the blocker is now wrench's own.**
+toolbox's `cc65aad` taught `test-traceability.py` to read a directory, so that
+half is done. Measured: pointed at a directory holding no rows it prints
+`docs declares no requirements; refusing to pass vacuously` and **exits 1**,
+which is the right answer rather than a vacuous pass.
 
-`clank/tasks/toolbox/shared-checkers/10-read-a-directory-of-requirements.ready`
-is the task that unblocks it. Until it lands, `REQUIREMENTS.md` stays one
-document and this paragraph is the record of why.
+What blocks the split now is `bin/test-suite-parity.py`, wrench's own, which
+still calls `read_text()` on a single path and raises `IsADirectoryError`. So
+splitting today would trade one working check for one crash.
+`clank/tasks/wrench/requirements/10-split-the-contract-into-files` carries it.
+
+**There is a live hazard in keeping one file, and it is worth knowing before the
+split lands.** The checkers read a `## Retired` heading as a per-file switch:
+every row below it in that file is retired, and the switch dies at end of file.
+wrench's `## Retired` is the **last** section, so a row appended to the end of
+`REQUIREMENTS.md` is silently retired rather than added. Appending is what a
+person does when adding a requirement.
+
+Nothing is wrong today, checked 2026-08-27: 11 rows sit below the heading and all
+of them are meant to. **Add a live row inside its own numbered section, never at
+the end of the file.** The split removes the hazard by construction, which is a
+second reason to do it. The mechanism is silo `5addaad`, and toolbox's reading of
+it is that a retired section sharing a file with live rows is the one arrangement
+that can retire something silently.
 
 Nothing is silenced and nothing is mocked here, so there is no `docs/SUPPRESSIONS/`
 and no `docs/MOCKS/`. Those directories are claimed when something needs them,
