@@ -107,6 +107,10 @@ tasks:
     description: the Python pack, run from the repository root so it finds schemas/
     command: PYTHONPATH=python python3 -m pytest python/tests -q
 
+  - name: rust-test
+    description: the Rust pack, which bolt builds against
+    command: cargo test --manifest-path rust/Cargo.toml
+
   # ---- the contract ---------------------------------------------------------
 
   - name: traceability
