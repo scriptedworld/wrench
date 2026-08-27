@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 from pathlib import Path
 
 import jsonschema
@@ -30,6 +31,38 @@ import referencing
 
 # python/wrench/schema.py -> python/wrench -> python -> the repository root.
 SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schemas"
+
+# The environment variable that lets a schema reference something outside the
+# shipped set. Unset, which is the ordinary case, a $ref resolves only against
+# the shipped schemas and the document's own fragments.
+#
+# THE UNSAFE BEHAVIOUR IS THE ONE YOU ASK FOR. Set to "1" it restores whatever
+# the underlying implementation would do, which includes reading files.
+#
+# Measured 2026-08-27, before this existed: a $ref of
+# "file:///tmp/x.schema.json" loaded that file off disk, so a schema's meaning
+# depended on files outside it and a consumer could reference a local copy of a
+# shipped schema instead of the shipped one. Nothing was fetched over the
+# network, then or now, in either pack.
+#
+# THE ESCAPE HATCH IS ON BORROWED TIME AND SHOULD NOT BE BUILT ON. Setting it
+# makes jsonschema emit:
+#
+#     DeprecationWarning: Automatically retrieving remote references can be a
+#     security vulnerability and is discouraged by the JSON Schema
+#     specifications. Relying on this behavior is deprecated and will shortly
+#     become an error.
+#
+# So the library wrench binds already considers this a vulnerability and is
+# removing it. The variable exists to unblock a caller who needs it today, not
+# to be a supported mode, and it will stop working whether or not wrench changes.
+ALLOW_EXTERNAL_REFS = "WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS"
+
+
+def _external_refs_allowed() -> bool:
+    """Read on every compile rather than cached, so a test can set it and a long
+    running process picks it up. It is one environment lookup."""
+    return os.environ.get(ALLOW_EXTERNAL_REFS) == "1"
 
 
 @functools.lru_cache(maxsize=None)
@@ -86,7 +119,21 @@ class Schema:
                 self._validator = cls(self._document)
             else:
                 self._validator = cls(self._document, registry=self._registry)
-        error = jsonschema.exceptions.best_match(self._validator.iter_errors(value))
+
+        # A reference this schema cannot resolve surfaces from the referencing
+        # library as its own exception type, which is not the ValueError every
+        # caller of this method is told to expect. Wrapping it keeps one error
+        # contract and stops a third-party internal type reaching a consumer,
+        # the way the Go pack wraps everything into its own.
+        try:
+            error = jsonschema.exceptions.best_match(self._validator.iter_errors(value))
+        except Exception as unresolved:
+            raise ValueError(
+                f"{self.name}: cannot resolve a reference: {unresolved}. "
+                f"A schema may reference the shipped schemas and its own fragments, "
+                f"and nothing else unless {ALLOW_EXTERNAL_REFS}=1"
+            ) from unresolved
+
         if error is not None:
             where = "/".join(str(part) for part in error.absolute_path)
             at = f" at '/{where}'" if where else ""
@@ -120,11 +167,22 @@ def compile_schema(name: str, document: "str | dict") -> Schema:
 
     The shipped set are not special: anything in the ecosystem can attach a
     schema to its own structured files and hand it to the same two calls.
+
+    A caller's schema MAY reference a shipped one by its `$id`, because the
+    shipped registry is handed to it. That is the case a consumer most wants: an
+    adapter extending the envelope schema references it rather than copying it,
+    and a copy is the drift FR-3.2 exists to prevent.
+
+    It may reference NOTHING ELSE. See ALLOW_EXTERNAL_REFS.
     """
     parsed = json.loads(document) if isinstance(document, str) else document
+    if name in _shipped_documents():
+        raise ValueError(f"wrench: {name} is a shipped schema and cannot be redefined")
+
     cls = jsonschema.validators.validator_for(parsed)
     cls.check_schema(parsed)
-    return Schema(name, parsed)
+    registry = None if _external_refs_allowed() else _shipped_registry()
+    return Schema(name, parsed, registry)
 
 
 ENVELOPE_SCHEMA = _Shipped("https://scriptedworld.github.io/wrench/envelope.schema.json")

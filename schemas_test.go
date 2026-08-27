@@ -339,6 +339,94 @@ func TestTheVersionFieldIsTheSameInEveryFormatThatCarriesIt(t *testing.T) {
 	}
 }
 
+// consumerSchema is a caller's own schema whose one property references the
+// target, which is what an adapter extending a shipped schema would write.
+func consumerSchema(target string) string {
+	return `{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object",` +
+		`"properties":{"d":{"$ref":"` + target + `"}}}`
+}
+
+// COVERS: FR-3.10 | positive
+func TestAConsumerSchemaMayReferenceAShippedOne(t *testing.T) {
+	// The case a consumer most wants: an adapter extending the envelope schema
+	// references it rather than copying it, and a copy is the drift FR-3.2
+	// exists to prevent.
+	schema, err := wrench.CompileSchema("mine.schema.json",
+		strings.NewReader(consumerSchema("https://scriptedworld.github.io/wrench/definitions.schema.json")))
+	if err != nil {
+		t.Fatalf("compiling a schema that references a shipped one: %v", err)
+	}
+
+	if err := schema.Validate(map[string]any{"d": map[string]any{"a": "x"}}); err != nil {
+		t.Errorf("a flat definitions mapping was refused: %v", err)
+	}
+
+	// A nested value is refused by a rule only the referenced schema states, so
+	// a refusal here is what proves the reference resolved rather than being
+	// skipped.
+	if err := schema.Validate(map[string]any{"d": map[string]any{"a": map[string]any{"b": 1}}}); err == nil {
+		t.Error("a nested value was accepted, so the reference did not resolve")
+	}
+}
+
+// COVERS: FR-3.10 | negative
+func TestASchemaMayReferenceNothingOutsideTheShippedSet(t *testing.T) {
+	// Measured before this existed: file:// and a bare absolute path both loaded
+	// that file off disk, so a schema's meaning depended on files outside it.
+	// Nothing was ever fetched over the network.
+	local := filepath.Join(t.TempDir(), "local.schema.json")
+	if err := os.WriteFile(local, []byte(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}`), 0o644); err != nil {
+		t.Fatalf("seeding: %v", err)
+	}
+
+	for what, target := range map[string]string{
+		"a file url":          "file://" + local,
+		"an absolute path":    local,
+		"a relative path":     "local.schema.json",
+		"an http url":         "http://example.com/x.schema.json",
+		"an https url":        "https://example.com/x.schema.json",
+		"an unshipped wrench": "https://scriptedworld.github.io/wrench/not-shipped.schema.json",
+	} {
+		_, err := wrench.CompileSchema("mine.schema.json", strings.NewReader(consumerSchema(target)))
+		if err == nil {
+			t.Errorf("%s (%s) resolved, so validation depends on something outside the process", what, target)
+		}
+	}
+}
+
+// COVERS: FR-3.10 | edge
+func TestTheEnvironmentCanRestoreExternalReferences(t *testing.T) {
+	// An escape hatch nobody exercises is one that may not work. This asserts
+	// the hatch opens, not that opening it is a good idea.
+	local := filepath.Join(t.TempDir(), "local.schema.json")
+	if err := os.WriteFile(local, []byte(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}`), 0o644); err != nil {
+		t.Fatalf("seeding: %v", err)
+	}
+	document := consumerSchema("file://" + local)
+
+	if _, err := wrench.CompileSchema("mine.schema.json", strings.NewReader(document)); err == nil {
+		t.Fatal("a file reference resolved with the variable unset")
+	}
+
+	t.Setenv(wrench.AllowExternalRefs, "1")
+	if _, err := wrench.CompileSchema("mine.schema.json", strings.NewReader(document)); err != nil {
+		t.Errorf("%s=1 did not restore external references: %v", wrench.AllowExternalRefs, err)
+	}
+}
+
+// COVERS: FR-3.10 | edge
+func TestACallerCannotRedefineAShippedSchema(t *testing.T) {
+	// Registering a shipped id twice would let a document decide what the
+	// envelope schema means, which is the one thing a shipped schema fixes.
+	for id := range exported {
+		_, err := wrench.CompileSchema(id, strings.NewReader(
+			`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}`))
+		if err == nil {
+			t.Errorf("%s was redefined by a caller", id)
+		}
+	}
+}
+
 // COVERS: FR-3.2, FR-3.3 | negative
 func TestADefinitionsFileTakesOneLevelOfScalars(t *testing.T) {
 	scalars := "requirements: ../REQUIREMENTS.md\nline_length: 100\nstrict: true\nempty: \"\"\n"

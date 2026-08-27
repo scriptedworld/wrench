@@ -9,6 +9,7 @@ exists to catch, and neither pack is the oracle for the other.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -470,6 +471,108 @@ def test_a_jig_may_declare_it_stands_at_the_repository_root():
         wrench.load_formatted_file(
             "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(on_task)
         )
+
+
+def _consumer_schema(target):
+    """A caller's own schema whose one property references the target, which is
+    what an adapter extending a shipped schema would write."""
+    return json.dumps(
+        {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {"d": {"$ref": target}},
+        }
+    )
+
+
+# COVERS: FR-3.10 | positive
+def test_a_consumer_schema_may_reference_a_shipped_one():
+    """The case a consumer most wants: an adapter extending the envelope schema
+    references it rather than copying it, and a copy is the drift FR-3.2 exists
+    to prevent."""
+    schema = wrench.compile_schema(
+        "mine.schema.json",
+        _consumer_schema("https://scriptedworld.github.io/wrench/definitions.schema.json"),
+    )
+
+    schema.validate({"d": {"a": "x"}})
+
+    # A nested value is refused by a rule only the referenced schema states, so
+    # a refusal here is what proves the reference resolved rather than being
+    # skipped.
+    _refuses(schema, {"d": {"a": {"b": 1}}}, "a nested value, so the reference did not resolve")
+
+
+# COVERS: FR-3.10 | negative
+def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
+    """Measured before this existed: a file:// reference loaded that file off
+    disk, so a schema's meaning depended on files outside it. Nothing was ever
+    fetched over the network."""
+    local = tmp_path / "local.schema.json"
+    local.write_text('{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}')
+
+    targets = {
+        "a file url": f"file://{local}",
+        "an absolute path": str(local),
+        "a relative path": "local.schema.json",
+        "an http url": "http://example.com/x.schema.json",
+        "an https url": "https://example.com/x.schema.json",
+        "an unshipped wrench": "https://scriptedworld.github.io/wrench/not-shipped.schema.json",
+    }
+    for what, target in targets.items():
+        schema = wrench.compile_schema("mine.schema.json", _consumer_schema(target))
+        try:
+            schema.validate({"d": "anything"})
+        except Exception:
+            continue
+        pytest.fail(f"{what} ({target}) resolved, so validation depends on something outside")
+
+
+# COVERS: FR-3.10 | edge
+def test_the_environment_can_restore_external_references(tmp_path):
+    """An escape hatch nobody exercises is one that may not work. This asserts
+    the hatch opens, not that opening it is a good idea.
+
+    os.environ directly rather than monkeypatch: this arranges an input, and
+    reaching for a patching fixture to do it blurs the line with mocking the
+    code under test, which is not allowed here without asking."""
+    from wrench.schema import ALLOW_EXTERNAL_REFS
+
+    local = tmp_path / "local.schema.json"
+    local.write_text('{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}')
+    document = _consumer_schema(f"file://{local}")
+
+    _refuses(
+        wrench.compile_schema("mine.schema.json", document),
+        {"d": "anything"},
+        "a file reference with the variable unset",
+    )
+
+    previous = os.environ.get(ALLOW_EXTERNAL_REFS)
+    os.environ[ALLOW_EXTERNAL_REFS] = "1"
+    try:
+        wrench.compile_schema("mine.schema.json", document).validate({"d": "anything"})
+    finally:
+        if previous is None:
+            del os.environ[ALLOW_EXTERNAL_REFS]
+        else:
+            os.environ[ALLOW_EXTERNAL_REFS] = previous
+
+
+# COVERS: FR-3.10 | edge
+def test_a_caller_cannot_redefine_a_shipped_schema():
+    """Registering a shipped id twice would let a document decide what the
+    envelope schema means, which is the one thing a shipped schema fixes."""
+    for path in sorted((ROOT / "schemas").glob("*.schema.json")):
+        identifier = json.loads(path.read_text())["$id"]
+        try:
+            wrench.compile_schema(
+                identifier,
+                '{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}',
+            )
+        except ValueError:
+            continue
+        pytest.fail(f"{identifier} was redefined by a caller")
 
 
 # COVERS: FR-3.2, FR-3.3 | negative

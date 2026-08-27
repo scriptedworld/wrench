@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
@@ -57,13 +58,80 @@ func CompileSchema(name string, document io.Reader) (Schema, error) {
 	return &readySchema{compiled: compiled}, nil
 }
 
+// AllowExternalRefs names the environment variable that lets a schema reference
+// something outside the shipped set. Unset, which is the ordinary case, a $ref
+// resolves only against the shipped schemas and the document's own fragments.
+//
+// THE UNSAFE BEHAVIOUR IS THE ONE YOU ASK FOR. Set to "1" it restores whatever
+// the underlying implementation would do, which includes reading files.
+//
+// IT IS ON BORROWED TIME AND SHOULD NOT BE BUILT ON. The Python pack's binding
+// emits a DeprecationWarning when this is set, saying that automatically
+// retrieving remote references is a security vulnerability, is discouraged by
+// the JSON Schema specifications, and will shortly become an error. So the
+// escape hatch exists to unblock a caller today rather than as a supported mode,
+// and it will close whether or not wrench decides to close it.
+const AllowExternalRefs = "WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS"
+
+// localOnly refuses every reference the compiler was not already given.
+//
+// Measured 2026-08-27, before this existed: a $ref of "file:///tmp/x.schema.json"
+// or of a bare absolute path loaded that file off disk, so a schema's meaning
+// depended on files outside it and a consumer could reference a local copy of a
+// shipped schema instead of the shipped one, which is the drift FR-3.2 exists to
+// prevent. Nothing was fetched over the network, then or now.
+type localOnly struct{}
+
+func (localOnly) Load(url string) (any, error) {
+	return nil, fmt.Errorf(
+		"refusing to resolve %s: a schema may reference the shipped schemas and its own fragments, "+
+			"and nothing else unless %s=1", url, AllowExternalRefs)
+}
+
+// newCompiler returns a compiler with every shipped schema registered by its own
+// $id, so a caller's schema may reference one, and with external resolution
+// refused unless the environment says otherwise.
+func newCompiler() (*jsonschema.Compiler, error) {
+	compiler := jsonschema.NewCompiler()
+	if os.Getenv(AllowExternalRefs) != "1" {
+		compiler.UseLoader(localOnly{})
+	}
+
+	entries, err := schemaFiles.ReadDir(schemaDir)
+	if err != nil {
+		return nil, fmt.Errorf("wrench: shipped schemas: %w", err)
+	}
+	for _, entry := range entries {
+		file := schemaDir + "/" + entry.Name()
+		document, declared, err := readShipped(file)
+		if err != nil {
+			return nil, err
+		}
+		if err := compiler.AddResource(declared, document); err != nil {
+			return nil, fmt.Errorf("wrench: adding schema %s: %w", file, err)
+		}
+	}
+	return compiler, nil
+}
+
 func compile(name string, document io.Reader) (*jsonschema.Schema, error) {
 	decoded, err := jsonschema.UnmarshalJSON(document)
 	if err != nil {
 		return nil, fmt.Errorf("wrench: reading schema %s: %w", name, err)
 	}
 
-	compiler := jsonschema.NewCompiler()
+	compiler, err := newCompiler()
+	if err != nil {
+		return nil, err
+	}
+
+	// A caller may not redefine a shipped $id. Registering one twice would let a
+	// document decide what the envelope schema means, which is the one thing a
+	// shipped schema exists to fix.
+	if _, shipped := shippedIDs()[name]; shipped {
+		return nil, fmt.Errorf("wrench: %s is a shipped schema and cannot be redefined", name)
+	}
+
 	if err := compiler.AddResource(name, decoded); err != nil {
 		return nil, fmt.Errorf("wrench: adding schema %s: %w", name, err)
 	}
@@ -73,6 +141,22 @@ func compile(name string, document io.Reader) (*jsonschema.Schema, error) {
 		return nil, fmt.Errorf("wrench: compiling schema %s: %w", name, err)
 	}
 	return compiled, nil
+}
+
+// shippedIDs is the set of $ids the shipped schemas declare, read from the
+// embedded directory so it cannot drift from what actually ships.
+func shippedIDs() map[string]bool {
+	ids := make(map[string]bool)
+	entries, err := schemaFiles.ReadDir(schemaDir)
+	if err != nil {
+		return ids
+	}
+	for _, entry := range entries {
+		if _, declared, err := readShipped(schemaDir + "/" + entry.Name()); err == nil {
+			ids[declared] = true
+		}
+	}
+	return ids
 }
 
 // shipped defers compiling until something validates against it, so importing
@@ -93,21 +177,9 @@ func shipped(id string) Schema {
 // then written once instead of copied, which is the drift a shipped schema
 // exists to prevent.
 func compileShipped(id string) (*jsonschema.Schema, error) {
-	compiler := jsonschema.NewCompiler()
-
-	entries, err := schemaFiles.ReadDir(schemaDir)
+	compiler, err := newCompiler()
 	if err != nil {
-		return nil, fmt.Errorf("wrench: shipped schemas: %w", err)
-	}
-	for _, entry := range entries {
-		file := schemaDir + "/" + entry.Name()
-		document, declared, err := readShipped(file)
-		if err != nil {
-			return nil, err
-		}
-		if err := compiler.AddResource(declared, document); err != nil {
-			return nil, fmt.Errorf("wrench: adding schema %s: %w", file, err)
-		}
+		return nil, err
 	}
 
 	compiled, err := compiler.Compile(id)
