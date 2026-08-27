@@ -2,6 +2,7 @@ package wrench_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,6 +20,42 @@ var exported = map[string]wrench.Schema{
 	"https://scriptedworld.github.io/wrench/jig.schema.json":         wrench.JigSchema,
 	"https://scriptedworld.github.io/wrench/manifest.schema.json":    wrench.ManifestSchema,
 	"https://scriptedworld.github.io/wrench/definitions.schema.json": wrench.DefinitionsSchema,
+}
+
+// mustSchemaFiles lists the shipped schema filenames, failing rather than
+// returning an empty set that would make a caller assert nothing.
+func mustSchemaFiles(t *testing.T) []string {
+	t.Helper()
+
+	entries, err := os.ReadDir("schemas")
+	if err != nil {
+		t.Fatalf("schemas/ is not readable: %v", err)
+	}
+	var names []string
+	for _, entry := range entries {
+		if strings.HasSuffix(entry.Name(), ".schema.json") {
+			names = append(names, entry.Name())
+		}
+	}
+	if len(names) == 0 {
+		t.Fatal("schemas/ holds no schemas")
+	}
+	return names
+}
+
+// mustDecodeSchema reads one shipped schema as a plain document.
+func mustDecodeSchema(t *testing.T, name string) map[string]any {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join("schemas", name))
+	if err != nil {
+		t.Fatalf("%s is not readable: %v", name, err)
+	}
+	var document map[string]any
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("%s is not JSON: %v", name, err)
+	}
+	return document
 }
 
 // declaredIDs reads schemas/ and returns the $id each file declares. The
@@ -214,6 +251,91 @@ func TestAJigMayDeclareItStandsAtTheRepositoryRoot(t *testing.T) {
 	onTask := "tasks:\n  - name: child\n    jig: other\n    needs-repository-root: true\n"
 	if _, err := wrench.LoadFormattedFile("bolt.q.yaml", wrench.JigSchema, wrench.YAML, &stubReader{data: []byte(onTask)}); err == nil {
 		t.Error("a jig task carrying needs-repository-root was accepted")
+	}
+}
+
+// versioned names the shipped schemas that carry a top-level version, with a
+// document each that is otherwise valid. definitions is absent on purpose: it is
+// an open mapping where every key is a placeholder name, so reserving one costs
+// something the other three do not pay.
+var versioned = map[string]struct {
+	schema wrench.Schema
+	rest   string
+}{
+	"envelope": {wrench.EnvelopeSchema, "success: true\n"},
+	"jig":      {wrench.JigSchema, "tasks:\n  - name: check\n    command: \"true\"\n"},
+	"manifest": {wrench.ManifestSchema, manifestWith("")},
+}
+
+// COVERS: FR-3.9 | edge
+func TestAFormatMayDeclareTheVersionItConformsTo(t *testing.T) {
+	// Optional, because every document written before the field existed carries
+	// none and claiming nothing is the honest reading of that. Present, it is
+	// semver, so a consumer can refuse a major rather than failing later on a
+	// field it cannot find.
+	accepted := []string{"1.0.0", "0.1.0", "10.20.30", "1.0.0-alpha.1", "1.0.0+build.5", "1.0.0-rc.1+build.5"}
+	refused := []string{"1", "1.0", "v1.0.0", "1.0.0.0", "01.0.0", "", "latest", "1.0.0-"}
+
+	for name, format := range versioned {
+		t.Run(name, func(t *testing.T) {
+			// Absent is valid, which is what makes the field additive.
+			if _, err := wrench.LoadFormattedFile("f.yaml", format.schema, wrench.YAML, &stubReader{data: []byte(format.rest)}); err != nil {
+				t.Errorf("a document with no version was refused: %v", err)
+			}
+
+			for _, version := range accepted {
+				document := "version: \"" + version + "\"\n" + format.rest
+				if _, err := wrench.LoadFormattedFile("f.yaml", format.schema, wrench.YAML, &stubReader{data: []byte(document)}); err != nil {
+					t.Errorf("version %q was refused: %v", version, err)
+				}
+			}
+
+			for _, version := range refused {
+				document := "version: \"" + version + "\"\n" + format.rest
+				if _, err := wrench.LoadFormattedFile("f.yaml", format.schema, wrench.YAML, &stubReader{data: []byte(document)}); err == nil {
+					t.Errorf("version %q was accepted and is not semver", version)
+				}
+			}
+
+			// A bare number is the mistake this pattern exists to catch: YAML
+			// reads 1.0 as a float, and a float is not a version.
+			bare := "version: 1.0\n" + format.rest
+			if _, err := wrench.LoadFormattedFile("f.yaml", format.schema, wrench.YAML, &stubReader{data: []byte(bare)}); err == nil {
+				t.Error("an unquoted 1.0 was accepted, so it was read as a float and passed as a version")
+			}
+		})
+	}
+}
+
+// COVERS: FR-3.9 | property
+func TestTheVersionFieldIsTheSameInEveryFormatThatCarriesIt(t *testing.T) {
+	// Written into each schema rather than referenced, because it constrains a
+	// scalar rather than describing a shape, and a shipped schema exists to be
+	// an instance of something. Repetition is the cost, so drift is what this
+	// checks.
+	var first map[string]any
+	var firstName string
+
+	for _, entry := range mustSchemaFiles(t) {
+		document := mustDecodeSchema(t, entry)
+		properties, ok := document["properties"].(map[string]any)
+		if !ok {
+			continue
+		}
+		version, ok := properties["version"].(map[string]any)
+		if !ok {
+			continue
+		}
+		if first == nil {
+			first, firstName = version, entry
+			continue
+		}
+		if fmt.Sprint(version) != fmt.Sprint(first) {
+			t.Errorf("the version field in %s differs from the one in %s", entry, firstName)
+		}
+	}
+	if first == nil {
+		t.Fatal("no shipped schema declares a version field, so this test asserts nothing")
 	}
 }
 

@@ -332,6 +332,76 @@ def test_a_manifest_variable_says_which_layer_supplied_it():
         _refuses(wrench.MANIFEST_SCHEMA, _manifest(requirements=variable), what)
 
 
+def _versioned():
+    """The shipped schemas carrying a top-level version, with a document each
+    that is otherwise valid. definitions is absent on purpose: it is an open
+    mapping where every key is a placeholder name, so reserving one costs
+    something the other three do not pay."""
+    return {
+        "envelope": (wrench.ENVELOPE_SCHEMA, b"success: true\n"),
+        "jig": (wrench.JIG_SCHEMA, b'tasks:\n  - name: check\n    command: "true"\n'),
+        "manifest": (wrench.MANIFEST_SCHEMA, _manifest_yaml()),
+    }
+
+
+def _manifest_yaml():
+    lines = [b"task: build\n", b"ordinal: 0\n", b"command: go build\n", b"variables:\n"]
+    for name in LOCATIONS:
+        lines.append(f"  {name}:\n    value: /p\n    from: bolt\n".encode())
+    return b"".join(lines)
+
+
+# COVERS: FR-3.9 | edge
+def test_a_format_may_declare_the_version_it_conforms_to():
+    """Optional, because every document written before the field existed carries
+    none and claiming nothing is the honest reading of that. Present, it is
+    semver, so a consumer can refuse a major rather than failing later on a field
+    it cannot find."""
+    accepted = ["1.0.0", "0.1.0", "10.20.30", "1.0.0-alpha.1", "1.0.0+build.5", "1.0.0-rc.1+build.5"]
+    refused = ["1", "1.0", "v1.0.0", "1.0.0.0", "01.0.0", "", "latest", "1.0.0-"]
+
+    for name, (schema, rest) in _versioned().items():
+        # Absent is valid, which is what makes the field additive.
+        wrench.load_formatted_file("f.yaml", schema, wrench.YAML, Stub(rest))
+
+        for version in accepted:
+            document = f'version: "{version}"\n'.encode() + rest
+            wrench.load_formatted_file("f.yaml", schema, wrench.YAML, Stub(document))
+
+        for version in refused:
+            document = f'version: "{version}"\n'.encode() + rest
+            try:
+                wrench.load_formatted_file("f.yaml", schema, wrench.YAML, Stub(document))
+            except wrench.ValidationError:
+                continue
+            pytest.fail(f"{name}: version {version!r} was accepted and is not semver")
+
+        # A bare number is the mistake this pattern exists to catch: YAML reads
+        # 1.0 as a float, and a float is not a version.
+        try:
+            wrench.load_formatted_file("f.yaml", schema, wrench.YAML, Stub(b"version: 1.0\n" + rest))
+        except wrench.ValidationError:
+            continue
+        pytest.fail(f"{name}: an unquoted 1.0 was accepted, so a float passed as a version")
+
+
+# COVERS: FR-3.9 | property
+def test_the_version_field_is_the_same_in_every_format_that_carries_it():
+    """Written into each schema rather than referenced, because it constrains a
+    scalar rather than describing a shape, and a shipped schema exists to be an
+    instance of something. Repetition is the cost, so drift is what this checks."""
+    seen = {}
+    for path in sorted((ROOT / "schemas").glob("*.schema.json")):
+        properties = json.loads(path.read_text()).get("properties") or {}
+        if "version" in properties:
+            seen[path.name] = properties["version"]
+
+    assert seen, "no shipped schema declares a version field, so this asserts nothing"
+    first = next(iter(seen))
+    for name, block in seen.items():
+        assert block == seen[first], f"the version field in {name} differs from the one in {first}"
+
+
 # COVERS: FR-3.1, FR-3.3, FR-3.6 | positive
 def test_a_jigs_definitions_block_is_held_to_the_shared_shape():
     """The block and the file are one shape, written once and referenced across

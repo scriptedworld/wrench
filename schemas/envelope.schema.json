@@ -8,6 +8,12 @@
   "required": ["success"],
 
   "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "The version of this format the document claims to conform to, as semver. Optional, and absent means the document claims nothing, which is every document written before this field existed. Present, it lets a consumer refuse a major it does not understand rather than failing later on a field it cannot find."
+    },
+
     "success": {
       "type": "boolean",
       "description": "Whether what this envelope describes passed. The authoritative verdict."
