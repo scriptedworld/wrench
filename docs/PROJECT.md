@@ -151,14 +151,29 @@ never created empty.
 
 ## How it fits against its siblings
 
-**bolt is a Rust implementation and consumes the Rust pack**, by path:
-`bolt/Cargo.toml` carries `wrench = { path = "../wrench/rust" }`, and there is no
-`go.mod` in `bolt/` at all. So an uncommitted change under `rust/` is bolt's
-build. Reshaping a schema breaks bolt at its HEAD, and extending one does not.
+**bolt is two things at once and the distinction is source against binary.** Both
+halves are true, and reading only one of them misleads.
 
-**The Go pack's consumer is `bolt.go`**, the previous implementation, which still
-carries `replace github.com/scriptedworld/wrench => ../wrench`. Whether that tree
-is kept, retired or finished is bolt's call, and this document does not know.
+**bolt's source is Rust** and `bolt/Cargo.toml` carries
+`wrench = { path = "../wrench/rust" }`, with no `go.mod` in `bolt/` at all. So an
+uncommitted change under `rust/` is bolt's build, and the Rust pack is
+consumer-verified from there. Nothing in that tree builds a binary yet.
+
+**The `bolt` this gate executes is the Go one**, and it consumes the Go pack.
+`~/bin/bolt` resolves to `bolt/bin/bolt`, which `go version -m` reports as
+`go1.26.6`, `cmd/bolt`. It is a **deliberate bridge** kept in place while bolt is
+rebuilt, recorded at `bolt/NEXT_STEPS.md`, commit `535f86f`. Nothing about the
+rebuild takes it off PATH; that happens when the Rust bolt reaches parity and the
+link is moved on purpose.
+
+**So this gate's result is real and not reproducible from source.** That binary's
+module version carries `+dirty`, meaning it was built from an uncommitted tree, so
+no commit rebuilds it. bolt has measured that a build from `bolt.go` at `7604557`
+gives an identical `--help` and has proposed the swap, which is outward-facing and
+the user's to decide.
+
+Reshaping a schema breaks whichever bolt consumes it at its HEAD, and extending
+one does not.
 
 **toolbox** is the Python pack's intended consumer, through its adapters and
 checkers. FACT 2026-08-26: nothing in toolbox imports `wrench` yet. Those
