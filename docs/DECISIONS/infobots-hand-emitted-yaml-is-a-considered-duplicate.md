@@ -34,9 +34,42 @@ infobot's argument against importing wrench stands on its own terms and this
 measurement does not disturb it: the status line runs on every Claude Code event,
 19ms of its 29ms is already the interpreter, and a dependency that can fail to
 resolve is a dependency that can blank the line. wrench's Python pack imports
-`yaml`, `jsonschema` and `referencing` at module level, so it would add to that,
-and `import wrench` already fails outright on `/usr/bin/python3` (FR-6.2a). A
-status line is exactly the consumer that should not take this dependency.
+`yaml`, `jsonschema` and `referencing` at module level, so it would add to that.
+
+### ~~`import wrench` already fails outright on `/usr/bin/python3`~~ Corrected 2026-08-26
+
+**That was the wrong interpreter, so it was the wrong reason.** infobot caught it
+after I wrote it here.
+
+`bin/infobot` and `bin/forget-session` both say `#!/usr/bin/env python3`, and on
+this machine that resolves to mise's 3.14.7, not the system 3.13.5. Retested
+2026-08-26:
+
+    /usr/bin/python3        3.13.5   yaml=yes jsonschema=NO  referencing=NO
+    env python3             3.14.7   yaml=yes jsonschema=yes referencing=yes
+
+    env python3 -c "import wrench"   -> succeeds
+
+So under the interpreter infobot actually runs, importing wrench would have
+worked. FR-6.2a is about the bootstrap window's interpreter and remains true of
+it; applying it to infobot's runtime was my error.
+
+### The reason that survives, and it is the better one
+
+infobot's FR-1.12: **it imports the standard library and nothing else, so it runs
+under whatever `python3` resolves to** rather than under one particular
+interpreter. A dependency that resolves or not depending on which interpreter wins
+a PATH race is the thing infobot's FR-1.9 already calls half present, and for a
+status line that fails as a blank line rather than as an error anyone sees.
+
+That holds whether or not `jsonschema` is installed anywhere, where the old reason
+depended on a package state that is itself in motion: CLAIM 2026-08-26, from
+infobot, `python3-yaml` is an apt package pulled in for an abandoned manifest
+experiment and may be removed.
+
+**The conclusion did not change; the ground under it did.** A status line should
+not take this dependency, for a reason that does not expire when someone runs
+`apt remove`.
 
 ## What stops the two drifting apart from here
 
