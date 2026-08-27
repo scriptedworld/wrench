@@ -5,12 +5,12 @@ the context behind the open questions and nothing that is sized enough to be a
 task.
 
 `REQUIREMENTS.md` covers what the README, bolt's contract rows, silo's platform
-decision and wrench's inbox entries support, plus what building both packs
+decision and wrench's inbox entries support, plus what building all three packs
 settled.
 
 ---
 
-## One open question
+## Questions, answered and open
 
 ### ~~1. How does the Python pack reach `dotfiles/bin/setup`?~~ Answered 2026-08-26
 
@@ -28,23 +28,37 @@ property while losing the bootstrap justification that motivated them.
 measurements, including what is still unverified about `python3-yaml` and what is
 still owed by dotfiles.
 
-### 2. Is the envelope schema versioned?
+### ~~2. Is the envelope schema versioned?~~ Answered 2026-08-27
 
-`clank/tasks/wrench/schemas/10-is-the-envelope-schema-versioned.questions`
+**Yes.** An optional top-level `version`, a semver string, on the envelope, jig and
+manifest. Optional is what made it additive, so nothing broke.
 
-Every producer and consumer in the ecosystem validates against it, and bolt
-records the question as FR-13.10. **No default**, deliberately: it decides whether
-a schema change is a breaking change for everything at once, and that is worth an
-explicit answer rather than a convention arrived at.
+Not on `definitions`, and bolt's reasoning for that is the one to keep: it is the
+only shipped schema whose keys are entirely a user namespace, so `version` would
+be metadata and a placeholder name at once. `{version}` is an ordinary placeholder.
 
-The schema carries an `$id` today and no version, so the current answer is "not
-versioned" by omission, which is the state this question exists to replace with a
-decision.
+`docs/DECISIONS/a-format-carries-a-semver-version.md` carries it, including the
+layout for when a second major exists: one file per major with the major in the
+`$id`, and why a single file branching over versions with `oneOf` is refused.
 
-This got sharper on 2026-08-26. The shipped schemas now reference each other by
-`$id`, so a versioning scheme has to say what a `$ref` between two versioned
-schemas means, and bolt builds against this working tree through a `replace`
-directive, so "breaking" already has a live consumer to break.
+---
+
+## Three questions are open, and none is wrench's alone
+
+They live as tasks rather than here, because each needs somebody else:
+
+    codecs/10   JSON and TOML beside YAML, with per-format wrappers over the
+                two calls. TOML cannot represent null and has native dates
+                that are not JSON types, and Python's tomllib is read-only.
+
+    schemas/40  Should a document name its own schema, cross-checked rather
+                than trusted. It closes the hole FR-2.3 states as permanent.
+                bolt has agreed; the cost lands on every adapter that writes
+                an envelope, and toolbox has not been asked.
+
+    schemas/50  A TypeScript pack would bind ajv, which the gate uses as its
+                independent check. One of the two has to move before that
+                pack is written.
 
 ---
 
