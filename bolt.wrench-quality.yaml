@@ -121,4 +121,4 @@ tasks:
     description: every pack's suite covers the same tests
     # Compares the suites AGAINST EACH OTHER, so it stands at the root and cannot
     # become a per-language task. Adding a pack means adding a --suite here.
-    command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='*_test.go' --suite python='python/tests/*.py' .
+    command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='*_test.go' --suite python='python/tests/*.py' --suite rust='rust/tests/*.rs' .

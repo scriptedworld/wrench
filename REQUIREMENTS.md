@@ -80,11 +80,29 @@ retired to `docs/DECISIONS/` or struck once its purpose had gone, never excluded
 
 | ID | Requirement | |
 |---|---|---|
-| FR-4.1 | YAML is emitted in canonical form: block style, one key to a line, and a scalar quoted exactly when it is meant to be a string, so its type is never in question. Booleans and numbers stay bare. | [A] |
+| FR-4.1 | YAML is emitted in canonical form: block style, one key to a line, and a scalar quoted exactly when it is meant to be a string, so its type is never in question. Booleans and numbers stay bare. A value with no canonical form is refused rather than guessed at. | [A go,python:edge,negative] |
 | FR-4.2 | `no`, `1.20` and `null` therefore survive a round trip as the strings they were, and a boolean stays a boolean. Quoting marks intent, so nothing downstream has to guess which was meant. **The complement is the surprising half:** an *unquoted* `1.20` was a number, and that number has no trailing zero, so it round-trips as `1.2`. That is the rule working rather than a defect, and it is the case somebody writing a version number unquoted meets once. FACT 2026-08-27, checked in all three packs. | [A] |
 | FR-4.3 | Canonical form belongs to the save call, so a caller cannot emit something valid but written another way. | [A/D] |
 | FR-4.4 | Flow style is valid YAML and so is JSON, and neither is what wrench emits. Two files then differ by the lines that changed rather than by one long line. | [A] |
 | FR-4.5 | A structure saved and loaded back yields the structure that went in. | [D] |
+
+**FR-4.1's refusal half is scoped to Go and Python, and the type system is why.**
+Every pack covers the row for `property`: all three emit canonical form and are
+held to the same fixtures. Its `edge` and `negative` cases test refusing a value
+that has no canonical form, and in Rust no such value can be constructed.
+Measured 2026-08-27: `serde_json::Number::from_f64` returns `None` for NaN and
+for both infinities, and every one of `Value`'s six variants encodes. Go reaches
+the case with a channel under `any`, and Python with `float("nan")`.
+
+So Rust holds the rule at compile time, as it holds FR-3.10, and there is no
+runtime consequence left to assert. The scope names those two kinds rather than
+the whole row, because scoping the row would stop the checker noticing if Rust
+ever dropped its `property` test.
+
+FR-2.2 is the same situation with a different answer. Its negative case is a call
+naming no codec or no IO, which in Rust does not compile, and `trybuild` asserts
+that it does not. Where a compile failure is what there is to observe, observe
+it; scope the row only when there is nothing.
 
 ## 5. Language packs
 
