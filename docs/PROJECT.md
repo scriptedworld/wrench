@@ -71,8 +71,8 @@ moved to `go/` so the three are symmetric bases.
 
     bolt wrench-quality .
 
-2026-08-27: passes, 19 executions, `success: true` in `result.yaml`.
-`bolt.wrench-quality.yaml` is wrench's own jig, ten tasks over the schemas, the
+2026-08-27: passes, 20 executions, `success: true` in `result.yaml`.
+`bolt.wrench-quality.yaml` is wrench's own jig, eleven tasks over the schemas, the
 packs and the contract.
 
 **Read `result.yaml`, never the exit status.** bolt exits 0 whenever the run
@@ -105,19 +105,23 @@ The same checks, run by hand:
     cargo test --manifest-path rust/Cargo.toml
     python3 ~/.projects/toolbox/bin/test-traceability.py --requirements REQUIREMENTS.md .
     ./bin/test-suite-parity.py --requirements REQUIREMENTS.md \
-        --suite go='*_test.go' --suite python='python/tests/*.py' .
+        --suite go='*_test.go' --suite python='python/tests/*.py' \
+        --suite rust='rust/tests/*.rs' .
 
-2026-08-27: Go ok, `gofmt` and `vet` clean, 58 Python tests passed, 16 Rust tests
-plus 2 doc tests, traceability 35 of 35 with **exit 0**, parity 51 tests held
-level across the Go and Python suites.
+2026-08-27: Go ok, `gofmt` and `vet` clean, 58 Python tests passed, 35 Rust tests
+plus 1 compile-fail case and 2 doc tests, traceability 35 of 35 with **exit 0**,
+parity 51 tests held level across all three suites.
 
 **The traceability figure moved without wrench moving.** It read 33 of 34 earlier
 the same day. toolbox's `8daa584` taught the checker that a `## Retired` section
 takes rows out of the live set, so numerator and denominator both changed and the
 summary is worded differently. That is the checker working, not drift here.
 
-`cargo test` and `--suite rust` are absent from the jig on purpose while the Rust
-suite is short of level. `clank/tasks/wrench/parity/20` adds both.
+**The gate holds all three packs level.** `rust-test` runs the Rust suite and
+`suite-parity` compares all three, both added when `clank/tasks/wrench/parity/20`
+closed. Read that from the run's own artifact rather than from this line:
+
+    grep command .ephemera/<run>/work/suite-parity-0/manifest.yaml
 
 **The traceability checker exits non-zero when a settled row has no test, and its
 printed summary looks like a pass either way.** This document quoted that summary
@@ -179,7 +183,7 @@ against it at `clank/inbox/wrench/`. Neither is in this repository.
 |---|---|---|
 | Go | `bolt.go`, the previous Go implementation | Built, at the repository root |
 | Python | toolbox's adapters and checkers | Built, under `python/` |
-| Rust | bolt, which is now a Rust implementation | Built, under `rust/`, suite 25 tests short of level |
+| Rust | bolt, which is now a Rust implementation | Built, under `rust/`, suite level with the others |
 | TypeScript | Consumer not yet identified | Not built |
 | Ruby | Consumer not yet identified | Not built |
 
@@ -236,19 +240,24 @@ the fixture is right.
 2026-08-27: all three packs produce byte-identical canonical output for all nine
 cases, each checked by its own suite. That is the acceptance test for a pack.
 
-**The Go and Python suites cover the same rows. The Rust suite is 25 tests
-short**, which is `clank/tasks/wrench/parity/20` and is missing coverage rather
-than missing function: a consumer exercised the whole write path through the Rust
-pack on 2026-08-27 and every file a run writes round-tripped.
+**All three suites cover the same rows**, since `clank/tasks/wrench/parity/20`
+closed. What divergence remains is declared rather than accidental:
 
-From the `COVERS:` marks, 2026-08-26:
+    FR-6.1, FR-6.2         python only. A Python pack reaching a Python
+                           environment, which no other pack can discharge.
+    FR-4.1 edge, negative   go and python only. Refusing a value with no
+                           canonical form needs a value Rust cannot construct.
 
-    cited by Go and not Python    (none)
-    cited by Python and not Go    FR-6.1 FR-6.2
+**A scope may name kinds as well as suites**, which is what FR-4.1 needs: every
+pack covers it for `property`, and only two can cover its `edge` and `negative`
+cases. `[A go,python:edge,negative]` says exactly that, and scoping the whole row
+instead was measured to break, reporting the `property` test Rust does hold as
+wrongly cited.
 
-Those two are the Python pack's own, about a Python pack reaching a Python
-environment, and the Go pack cannot discharge them. `REQUIREMENTS.md` section 6
-says so, which makes that divergence a statement rather than a gap.
+**FR-2.2 is the same situation with the other answer.** Its negative case is a
+call naming no codec or no IO, which in Rust does not compile, so `trybuild`
+asserts the compiler refuses it instead of scoping the row away. Where a compile
+failure is what there is to observe, observe it.
 
 Regenerate it rather than trusting this paragraph. `bin/test-suite-parity.py` is
 the check, it names every divergence, and **it exits non-zero when it finds one**:
@@ -257,8 +266,8 @@ the check, it names every divergence, and **it exits non-zero when it finds one*
         --suite go='*_test.go' --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' . ; echo $?
 
-2026-08-27: 25 divergences, all `in go, python but not in rust`, exit 1. Drop
-`--suite rust` and it reports 51 held level with 2 rows scoped to a subset, exit 0.
+2026-08-27: 51 tests held level across go, python and rust, with 2 rows and 2
+requirement/kind pairs scoped to a subset, exit 0.
 
 **This was not bookkeeping.** It started at seven rows the Go pack held alone,
 and a row exercised in one pack is a row the other can break silently. That is
@@ -272,11 +281,10 @@ pattern is unchanged by it.
 
 ## What is not done
 
-`clank/tasks/wrench/` is the register. In summary: the Rust suite is 25 tests
-short of level and neither `cargo test` nor `--suite rust` is in the gate yet, the
-gate is wrench's own jig rather than the shared standard, the Go pack is at the
-root rather than under `go/`, and three questions in `NEXT_STEPS.md` are open and
-not blocking.
+`clank/tasks/wrench/` is the register. In summary: the gate is wrench's own jig
+rather than the shared standard, so the Python pack still has no ruff, mypy or
+coverage; the Go pack is at the root rather than under `go/`; and three questions
+in `NEXT_STEPS.md` are open and not blocking.
 
 There is no git remote. FACT 2026-08-26: `git remote -v` prints nothing. That is
 the expected state across this ecosystem while the history rewrite settles, and
