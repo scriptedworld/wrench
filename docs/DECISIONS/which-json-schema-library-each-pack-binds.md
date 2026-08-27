@@ -22,11 +22,16 @@ implementation covering the 2020-12 dialect wrench declares.
 | Python | `jsonschema` | yes | In use, `pyproject.toml` |
 | Rust | `boon` 0.6.1 | yes | Its crates.io description |
 | TypeScript | undecided, `ajv` or `@hyperjump/json-schema` | both yes | Both run against wrench's schemas 2026-08-27 |
+| Ruby | `json_schemer` 2.5.0 | yes | The gem's own summary |
 
-**Ruby was dropped 2026-08-27** and its row is gone from the live table rather
-than struck, because no Ruby pack is planned. `json_schemer` was surveyed and
-found suitable before that decision, which is recorded in
-`clank/tasks/wrench/library/30-a-ruby-pack.cancelled` rather than kept here.
+**A library is not why a pack does or does not get built.** Ruby was dropped and
+restored on 2026-08-27, and `json_schemer` was solid throughout: 76,948,643 total
+downloads, 6,792,182 on 2.5.0, MIT, released 2025-12-09. What each pack waits for
+is a consumer, per `docs/DECISIONS/packs-follow-demand.md`.
+
+**Two library names were doubted for sounding unsupported**, `json_schemer` and
+`ajv`, and both turned out to be first class when measured. That is the reason
+this table carries numbers rather than adjectives.
 
 **Go was the one worth checking**, since a gap there would have been a problem
 rather than an inconvenience. It is not a gap. The library declares `Draft4`,

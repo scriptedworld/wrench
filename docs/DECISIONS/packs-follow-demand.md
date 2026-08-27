@@ -23,12 +23,16 @@ but "what is blocked without it".
 | Python | toolbox's adapters and checkers | Built |
 | Rust | Consumer not yet identified here | Not built |
 | TypeScript | Consumer not yet identified here | Not built |
+| Ruby | Consumer not yet identified here | Not built |
 
-**Ruby was dropped on 2026-08-27** and TypeScript added in its place. Nothing was
-blocking Ruby: `json_schemer` covers 2020-12 and is maintained, so the pack was
-buildable and simply is not wanted.
-`clank/tasks/wrench/library/30-a-ruby-pack.cancelled` records it, and the ordinal
-is not reused.
+**Three unbuilt packs are in the same state**, waiting on a consumer rather than on
+a decision or a library. Ruby was dropped and restored on 2026-08-27, and the
+round trip is worth keeping: it was doubted because `json_schemer` **sounded**
+unsupported, and measuring showed it is not. **A library is never why a pack does
+or does not get built.**
+
+FACT 2026-08-27: there is no Ruby anywhere in `~/.projects`, and the option is
+kept open anyway. Absence is the current condition rather than a verdict.
 
 **Toolbox's checkers and adapters are not fixed to Python.** Any of Go, Python,
 Rust or TypeScript is allowed, stated 2026-08-27, so "what needs this" is a live

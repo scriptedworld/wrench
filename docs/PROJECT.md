@@ -159,9 +159,12 @@ against it at `clank/inbox/wrench/`. Neither is in this repository.
 | Python | toolbox's adapters and checkers | Built, under `python/` |
 | TypeScript | Consumer not yet identified | Not built |
 | Rust | Consumer not yet identified | Not built |
+| Ruby | Consumer not yet identified | Not built |
 
 `docs/DECISIONS/packs-follow-demand.md` says what decides when a pack gets
-written.
+written, and it is a consumer rather than a library:
+`docs/DECISIONS/which-json-schema-library-each-pack-binds.md` shows every one of
+these languages has a maintained JSON Schema implementation to bind.
 
 ### The Python pack is installed editable and must stay that way
 
