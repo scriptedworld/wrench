@@ -38,6 +38,30 @@ kept open anyway. Absence is the current condition rather than a verdict.
 Rust or TypeScript is allowed, stated 2026-08-27, so "what needs this" is a live
 question for toolbox rather than a hypothetical for the two unbuilt packs.
 
+### PREFERENCE 2026-08-27: Python or Rust, not Go everywhere
+
+**Go stays where it already is and does not spread.** bolt is Go, wrench's first
+pack is Go, and some tooling is wanted as a deliberate example of working with it.
+**The system at large should be Python or Rust.**
+
+This is a preference, chosen rather than derived, so there is nothing to be right
+about and it is not re-argued from the numbers below. Leave it alone unless it is
+changed by the person who set it.
+
+What follows from it:
+
+    once per gate, write speed matters       Python
+    per path, or a TUI, or a shipped binary  Rust
+    bolt, wrench's Go pack, worked examples  Go
+
+**Rust covers what Go was being recommended for.** Both give a single static
+binary with no interpreter to install, which is the failure this ecosystem keeps
+hitting, and Rust starts marginally faster. What Go had over it was the build
+loop, and that is a cost paid by whoever writes the tool rather than by everyone
+who runs it.
+
+### The measurements the preference sits on top of
+
 **For a checker the choice is mostly startup cost**, because a jig task using
 `{each_path}` pays it once per file. FACT 2026-08-27, do-nothing program, mean of
 20 runs on this machine:
@@ -48,6 +72,12 @@ question for toolbox rather than a hypothetical for the two unbuilt packs.
 
 So a per-path checker wants a compiled binary and a once-per-gate checker does
 not care.
+
+**The build loop is the cost that lands on the author**, and for Go it is smaller
+than it looks. FACT 2026-08-27, bolt at 5,807 lines with dependencies: 110ms cold,
+55ms with no change, **22ms after editing one file**. CLAIM: an equivalent Rust CLI
+with a dependency tree is seconds rather than milliseconds incrementally. That is
+the trade the preference accepts.
 
 ## wrench is upstream of the checkers
 
