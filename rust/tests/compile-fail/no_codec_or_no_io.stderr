@@ -1,0 +1,85 @@
+error[E0277]: the trait bound `Io: Codec` is not satisfied
+  --> tests/compile-fail/no_codec_or_no_io.rs:34:61
+   |
+34 |     let _ = load_formatted_file("f.yaml", &ENVELOPE_SCHEMA, &io);
+   |                                                             ^^^ unsatisfied trait bound
+   |
+help: the trait `Codec` is not implemented for `Io`
+  --> tests/compile-fail/no_codec_or_no_io.rs:11:1
+   |
+11 | struct Io;
+   | ^^^^^^^^^
+help: the trait `Codec` is implemented for `YamlCodec`
+  --> src/codec.rs
+   |
+   | impl Codec for YamlCodec {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for the cast from `&Io` to `&dyn Codec`
+
+error[E0061]: this function takes 4 arguments but 3 arguments were supplied
+  --> tests/compile-fail/no_codec_or_no_io.rs:34:13
+   |
+34 |     let _ = load_formatted_file("f.yaml", &ENVELOPE_SCHEMA, &io);
+   |             ^^^^^^^^^^^^^^^^^^^--------------------------------- argument #4 of type `&dyn Reader` is missing
+   |
+note: function defined here
+  --> src/lib.rs
+   |
+   | pub fn load_formatted_file(
+   |        ^^^^^^^^^^^^^^^^^^^
+help: provide the argument
+   |
+34 |     let _ = load_formatted_file("f.yaml", &ENVELOPE_SCHEMA, &io, /* &dyn Reader */);
+   |                                                                +++++++++++++++++++
+
+error[E0277]: the trait bound `YamlCodec: Reader` is not satisfied
+  --> tests/compile-fail/no_codec_or_no_io.rs:38:68
+   |
+38 |     let _ = load_formatted_file("f.yaml", &ENVELOPE_SCHEMA, &YAML, &YAML);
+   |                                                                    ^^^^^ the trait `Reader` is not implemented for `YamlCodec`
+   |
+help: the following other types implement trait `Reader`
+  --> tests/compile-fail/no_codec_or_no_io.rs:13:1
+   |
+13 | impl Reader for Io {
+   | ^^^^^^^^^^^^^^^^^^ `Io`
+   |
+  ::: src/localfile.rs
+   |
+   | impl Reader for LocalFileIo {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `LocalFileIo`
+   = note: required for the cast from `&YamlCodec` to `&dyn Reader`
+
+error[E0061]: this function takes 5 arguments but 4 arguments were supplied
+  --> tests/compile-fail/no_codec_or_no_io.rs:41:13
+   |
+41 |     let _ = save_formatted_file(&value, "f.yaml", &ENVELOPE_SCHEMA, &YAML);
+   |             ^^^^^^^^^^^^^^^^^^^------------------------------------------- argument #5 of type `&dyn Writer` is missing
+   |
+note: function defined here
+  --> src/lib.rs
+   |
+   | pub fn save_formatted_file(
+   |        ^^^^^^^^^^^^^^^^^^^
+help: provide the argument
+   |
+41 |     let _ = save_formatted_file(&value, "f.yaml", &ENVELOPE_SCHEMA, &YAML, /* &dyn Writer */);
+   |                                                                          +++++++++++++++++++
+
+error[E0277]: the trait bound `YamlCodec: Writer` is not satisfied
+  --> tests/compile-fail/no_codec_or_no_io.rs:44:76
+   |
+44 |     let _ = save_formatted_file(&value, "f.yaml", &ENVELOPE_SCHEMA, &YAML, &YAML);
+   |                                                                            ^^^^^ the trait `Writer` is not implemented for `YamlCodec`
+   |
+help: the following other types implement trait `Writer`
+  --> tests/compile-fail/no_codec_or_no_io.rs:19:1
+   |
+19 | impl Writer for Io {
+   | ^^^^^^^^^^^^^^^^^^ `Io`
+   |
+  ::: src/localfile.rs
+   |
+   | impl Writer for LocalFileIo {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `LocalFileIo`
+   = note: required for the cast from `&YamlCodec` to `&dyn Writer`

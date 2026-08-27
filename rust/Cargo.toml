@@ -52,3 +52,13 @@ thiserror = "2"
 # derive: it hands back serde_json::Value and a caller deserialises if it wants
 # to. The example compiles so that claim is checked rather than asserted.
 serde = { version = "1", features = ["derive"] }
+
+# FR-2.2 says nothing reads or writes without naming what the file must conform
+# to. Go and Python discharge that with a runtime test passing nil or None; this
+# pack takes &dyn Schema, &dyn Codec and &dyn Reader, so the same call does not
+# COMPILE and there is no runtime refusal to observe.
+#
+# trybuild runs the compiler on a file that is meant to fail and asserts it did,
+# comparing stderr against a checked-in expectation. That turns a guarantee which
+# would otherwise live only in the signature into something the suite checks.
+trybuild = "1"
