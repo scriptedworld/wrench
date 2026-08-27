@@ -284,6 +284,42 @@ def test_a_jigs_definitions_block_is_held_to_the_shared_shape():
         )
 
 
+# COVERS: FR-3.1, FR-3.4 | edge
+def test_a_jig_may_declare_it_stands_at_the_repository_root():
+    """The field reaches the working directory and nothing else. The walk, the
+    containment, the filter patterns and {base_dir} stay what the caller
+    granted, which is why it is a boolean on the jig rather than a base a jig
+    task can be talked into widening."""
+    tasks = b'tasks:\n  - name: check\n    command: "true"\n'
+
+    for declared in (b"needs-repository-root: true\n", b"needs-repository-root: false\n", b""):
+        wrench.load_formatted_file(
+            "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(declared + tasks)
+        )
+
+    refused = {
+        "a string": b'needs-repository-root: "true"\n',
+        "a number": b"needs-repository-root: 1\n",
+        "an empty key": b"needs-repository-root:\n",
+    }
+    for what, declared in refused.items():
+        try:
+            wrench.load_formatted_file(
+                "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(declared + tasks)
+            )
+        except wrench.ValidationError:
+            continue
+        pytest.fail(f"{what} was accepted as needs-repository-root")
+
+    # It is the jig's, not a jig task's. A tool needing the root needs it
+    # wherever it is placed, so a caller cannot grant it per placement.
+    on_task = b"tasks:\n  - name: child\n    jig: other\n    needs-repository-root: true\n"
+    with pytest.raises(wrench.ValidationError):
+        wrench.load_formatted_file(
+            "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(on_task)
+        )
+
+
 # COVERS: FR-3.2, FR-3.3 | negative
 def test_a_definitions_file_takes_one_level_of_scalars():
     scalars = b'requirements: ../REQUIREMENTS.md\nline_length: 100\nstrict: true\nempty: ""\n'

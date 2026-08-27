@@ -19,6 +19,12 @@
       "description": "Default values for the placeholders this jig's commands name. Optional, and so is any entry in it: a jig leaving a value to its adopter names the placeholder and defines nothing. A definitions file named on the invocation merges over this."
     },
 
+    "needs-repository-root": {
+      "type": "boolean",
+      "default": false,
+      "description": "This jig's commands stand at the repository root rather than at their base. It reaches the working directory and nothing else: the walk, the containment, the filter patterns and {base_dir} all stay what the caller granted. A property of the tool the jig runs rather than of any one caller placing it, so it sits on the jig and not on the jig task."
+    },
+
     "tasks": {
       "type": "array",
       "description": "Executed in declaration order. A task names either a command or a jig, never both.",
@@ -104,7 +110,8 @@
             "in": false,
             "config-dir": false,
             "output-dir": false,
-            "definitions": false
+            "definitions": false,
+            "needs-repository-root": false
           }
         },
         {
@@ -116,7 +123,8 @@
             "adapter-command": false,
             "evidence": false,
             "matching": false,
-            "excluding": false
+            "excluding": false,
+            "needs-repository-root": false
           }
         }
       ]

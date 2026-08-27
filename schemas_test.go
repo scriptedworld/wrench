@@ -183,6 +183,40 @@ func TestAJigsDefinitionsBlockIsHeldToTheSharedShape(t *testing.T) {
 	}
 }
 
+// COVERS: FR-3.1, FR-3.4 | edge
+func TestAJigMayDeclareItStandsAtTheRepositoryRoot(t *testing.T) {
+	// The field reaches the working directory and nothing else. The walk, the
+	// containment, the filter patterns and {base_dir} stay what the caller
+	// granted, which is why it is a boolean on the jig rather than a base a jig
+	// task can be talked into widening.
+	tasks := "tasks:\n  - name: check\n    command: \"true\"\n"
+
+	for _, declared := range []string{"needs-repository-root: true\n", "needs-repository-root: false\n", ""} {
+		document := declared + tasks
+		if _, err := wrench.LoadFormattedFile("bolt.q.yaml", wrench.JigSchema, wrench.YAML, &stubReader{data: []byte(document)}); err != nil {
+			t.Errorf("a jig declaring %q was refused: %v", declared, err)
+		}
+	}
+
+	refused := map[string]string{
+		"a string":     "needs-repository-root: \"true\"\n",
+		"a number":     "needs-repository-root: 1\n",
+		"an empty key": "needs-repository-root:\n",
+	}
+	for what, declared := range refused {
+		if _, err := wrench.LoadFormattedFile("bolt.q.yaml", wrench.JigSchema, wrench.YAML, &stubReader{data: []byte(declared + tasks)}); err == nil {
+			t.Errorf("%s was accepted as needs-repository-root", what)
+		}
+	}
+
+	// It is the jig's, not a jig task's. A tool needing the root needs it
+	// wherever it is placed, so a caller cannot grant it per placement.
+	onTask := "tasks:\n  - name: child\n    jig: other\n    needs-repository-root: true\n"
+	if _, err := wrench.LoadFormattedFile("bolt.q.yaml", wrench.JigSchema, wrench.YAML, &stubReader{data: []byte(onTask)}); err == nil {
+		t.Error("a jig task carrying needs-repository-root was accepted")
+	}
+}
+
 // COVERS: FR-3.2, FR-3.3 | negative
 func TestADefinitionsFileTakesOneLevelOfScalars(t *testing.T) {
 	scalars := "requirements: ../REQUIREMENTS.md\nline_length: 100\nstrict: true\nempty: \"\"\n"
