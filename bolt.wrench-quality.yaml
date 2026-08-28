@@ -155,3 +155,21 @@ tasks:
     # Compares the suites AGAINST EACH OTHER, so it stands at the root and cannot
     # become a per-language task. Adding a pack means adding a --suite here.
     command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='*_test.go' --suite python='python/tests/*.py' --suite rust='rust/tests/*.rs' .
+
+  # THE CHECKER ABOVE IS THE ONE THING NOTHING ELSE CHECKS. It decides whether
+  # three suites agree, and until 2026-08-28 it could report `exit 0` on a real
+  # divergence: it split its requirements text at the first `## Retired` and
+  # treated the rest of the file as gone, where test-traceability.py resets at
+  # every heading. Same file, two answers, and the pass came from this side.
+  #
+  # WHY THE TESTS ARE UNDER testdata/ AND NOT BESIDE A SUITE. They must contain
+  # `COVERS:` marks as fixture data, and this checker greps that string out of
+  # every file matching a suite glob. Measured: a file in a python suite whose
+  # only mention of FR-9.2 was inside a string turned a reported divergence into
+  # a pass. `testdata/` is in test-traceability.py's SKIP_DIRS and matches no
+  # suite glob, so it is the one directory both checkers ignore.
+  #
+  # Run explicitly by path because that is not a directory pytest would find.
+  - name: checker-tests
+    description: wrench's own parity checker does what it claims
+    command: python3 -m pytest testdata/checkers -q
