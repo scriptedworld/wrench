@@ -26,6 +26,56 @@ dependencies = [
 [tool.setuptools]
 packages = ["wrench"]
 
+# Ruff does everything it can; pylint does only what ruff cannot. That split is
+# what the shared jig's header describes and never configured.
+[tool.ruff]
+line-length = 150
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812", "ISC001",  # ruff documents these as fighting its own formatter
+    "CPY001",            # per-file copyright; LICENSE and NOTICE carry it once
+    "ANN",               # annotations everywhere: work, not configuration
+    "S101",              # an assert in a test IS the test; bandit already scopes this
+    "ERA001",            # commented-out code, by heuristic, wrong on prose
+    "EM", "TRY003",      # exception message style; these errors are read by people
+    "D203", "D213",      # each contradicts a rule kept below
+    "FBT",               # boolean arguments; the interfaces are fixed by the contract
+    # Docstring LAYOUT, not coverage. D100-D107 stay on, which is the half that
+    # asks whether a docstring exists. D401 wants an imperative first line and
+    # the writing standard wants what is true: "A mapping, one key to a line".
+    "D205", "D209", "D401", "D403",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "D103",     # open question, filed at clank/inbox/toolbox/two-docstring-thresholds
+    "PLR2004",  # a magic value is the point of a fixture
+    "PT011",    # the exception type IS the assertion
+    "PLC0415",  # a local import is how a module is reloaded under a changed env
+    "INP001",   # the suite is not a package
+]
+
+# An allowlist, not a denylist: a denylist would have to be remembered every
+# time ruff gains a rule, and would not be. Every entry needs more than one file
+# in view or needs type inference, which is what pylint's slowness buys.
+[tool.pylint."MESSAGES CONTROL"]
+disable = ["all"]
+enable = [
+    "duplicate-code", "cyclic-import",
+    "no-member", "not-callable", "no-value-for-parameter",
+    "unexpected-keyword-arg", "import-error",
+    "arguments-differ", "abstract-method", "attribute-defined-outside-init",
+    "inconsistent-return-statements",
+]
+# Deliberately NOT enabled: too-few-public-methods and too-many-instance-attributes
+# are single-file design heuristics, not whole-program analysis, so they fail the
+# test this list is built on. protected-access is ruff's SLF001.
+
+[tool.pylint.MAIN]
+ignore-paths = ['^\.ephemera/.*', '^bin/.*', '^adapters/.*', '^\.venv/.*']
+
 # INSTALL THIS EDITABLE. The schemas are read from `schemas/` at the repository
 # root, two levels above this package, so a copied install would leave the pack
 # looking for files that are not beside it. Editable keeps one copy of the

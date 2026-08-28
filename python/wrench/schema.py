@@ -92,8 +92,7 @@ def _shipped_registry() -> referencing.Registry:
     """The shipped schemas as a resolution registry, so a `$ref` between two of
     them resolves locally and nothing reaches the network to validate a file."""
     return referencing.Registry().with_resources(
-        (identifier, referencing.Resource.from_contents(document))
-        for identifier, document in _shipped_documents().items()
+        (identifier, referencing.Resource.from_contents(document)) for identifier, document in _shipped_documents().items()
     )
 
 
@@ -134,10 +133,7 @@ class Schema:
         if validator is None:
             cls = jsonschema.validators.validator_for(self._document)
             cls.check_schema(self._document)
-            if self._registry is None:
-                validator = cls(self._document)
-            else:
-                validator = cls(self._document, registry=self._registry)
+            validator = cls(self._document) if self._registry is None else cls(self._document, registry=self._registry)
             self._validator = validator
 
         # A reference this schema cannot resolve surfaces from the referencing
@@ -214,16 +210,10 @@ def compile_schema(name: str, document: str | dict) -> Schema:
     return Schema(name, parsed, registry)
 
 
-ENVELOPE_SCHEMA = _Shipped(
-    "https://scriptedworld.github.io/wrench/envelope.schema.json"
-)
+ENVELOPE_SCHEMA = _Shipped("https://scriptedworld.github.io/wrench/envelope.schema.json")
 
 JIG_SCHEMA = _Shipped("https://scriptedworld.github.io/wrench/jig.schema.json")
 
-MANIFEST_SCHEMA = _Shipped(
-    "https://scriptedworld.github.io/wrench/manifest.schema.json"
-)
+MANIFEST_SCHEMA = _Shipped("https://scriptedworld.github.io/wrench/manifest.schema.json")
 
-DEFINITIONS_SCHEMA = _Shipped(
-    "https://scriptedworld.github.io/wrench/definitions.schema.json"
-)
+DEFINITIONS_SCHEMA = _Shipped("https://scriptedworld.github.io/wrench/definitions.schema.json")

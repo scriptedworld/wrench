@@ -16,6 +16,7 @@ deciding that a directory should exist belongs to whoever chose the path.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import tempfile
 from pathlib import Path
@@ -47,23 +48,22 @@ class LocalFileIO:
         to survive being handed around.
         """
         target = Path(path)
-        handle, temporary = tempfile.mkstemp(
-            dir=str(target.parent), prefix=f".{target.name}.", suffix=".tmp"
-        )
+        handle, name = tempfile.mkstemp(dir=str(target.parent), prefix=f".{target.name}.", suffix=".tmp")
+        temporary = Path(name)
         try:
             with os.fdopen(handle, "wb") as out:
                 out.write(data)
                 out.flush()
                 os.fsync(out.fileno())
-            os.chmod(temporary, FILE_MODE)
-            os.replace(temporary, str(target))
+            temporary.chmod(FILE_MODE)
+            # `Path.replace` is `os.replace`, so the rename is still atomic on
+            # the same filesystem, which is what FR-6.3 rests on.
+            temporary.replace(target)
         except Exception:
             # Until the rename lands the temporary is litter. Any path out of
             # here that is not the successful one takes it along.
-            try:
-                os.unlink(temporary)
-            except OSError:
-                pass
+            with contextlib.suppress(OSError):
+                temporary.unlink()
             raise
 
 

@@ -79,9 +79,7 @@ def declared_schema(case):
     if not path.exists():
         return None
     identifier = path.read_text().strip()
-    assert identifier in SHIPPED_BY_ID, (
-        f"{case} declares {identifier}, which this pack does not ship"
-    )
+    assert identifier in SHIPPED_BY_ID, f"{case} declares {identifier}, which this pack does not ship"
     return getattr(wrench, SHIPPED_BY_ID[identifier])
 
 
@@ -92,9 +90,7 @@ def test_canonical_form_matches_the_shared_fixtures(case):
     pack is held to the same file."""
     directory = FIXTURES / case
     value = wrench.YAML.decode((directory / "input.yaml").read_bytes())
-    assert (
-        wrench.YAML.encode(value).decode() == (directory / "canonical.yaml").read_text()
-    )
+    assert wrench.YAML.encode(value).decode() == (directory / "canonical.yaml").read_text()
 
     # A fixture that is an instance of a shipped schema says so, and is held to
     # it. Byte-identical output between two packs says they agree on the
@@ -120,9 +116,7 @@ def test_every_shipped_schema_has_an_instance_fixture():
         if not path.exists():
             continue
         identifier = path.read_text().strip()
-        assert identifier in declared, (
-            f"fixture {case} declares {identifier}, which no schema does"
-        )
+        assert identifier in declared, f"fixture {case} declares {identifier}, which no schema does"
         declared[identifier] = True
 
     uncovered = sorted(i for i, seen in declared.items() if not seen)
@@ -162,9 +156,7 @@ def test_a_value_with_no_canonical_form_is_refused():
     writer = Stub()
 
     with pytest.raises(wrench.EncodeError) as caught:
-        wrench.save_formatted_file(
-            {"c": object()}, "f.yaml", ANYTHING, wrench.YAML, writer
-        )
+        wrench.save_formatted_file({"c": object()}, "f.yaml", ANYTHING, wrench.YAML, writer)
 
     assert 'at key "c"' in str(caught.value), "the error does not say where"
     assert writer.written is None, "the writer ran despite encoding failing"
@@ -179,15 +171,11 @@ def test_a_timestamp_decodes_to_a_string_so_it_can_be_written_back():
     value = wrench.YAML.decode(b"day: 2026-01-01\nstamp: 2026-01-01T07:32:00Z\n")
 
     for name in ("day", "stamp"):
-        assert isinstance(value[name], str), (
-            f"{name} decoded to {type(value[name]).__name__}, want a string so it is a JSON value"
-        )
+        assert isinstance(value[name], str), f"{name} decoded to {type(value[name]).__name__}, want a string so it is a JSON value"
 
     # The point of the coercion: what was read can be written.
     encoded = wrench.YAML.encode(value)
-    assert wrench.YAML.encode(wrench.YAML.decode(encoded)) == encoded, (
-        "not a fixed point"
-    )
+    assert wrench.YAML.encode(wrench.YAML.decode(encoded)) == encoded, "not a fixed point"
 
 
 # COVERS: FR-4.1 | edge
@@ -202,18 +190,14 @@ def test_nan_and_the_infinities_are_refused():
 
 # COVERS: FR-2.1, FR-2.2 | positive
 def test_load_returns_the_validated_structure():
-    value = wrench.load_formatted_file(
-        "output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(VALID_ENVELOPE)
-    )
+    value = wrench.load_formatted_file("output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(VALID_ENVELOPE))
     assert value == {"success": True}
 
 
 # COVERS: FR-2.5a | positive
 def test_the_reader_is_handed_the_path():
     reader = Stub(VALID_ENVELOPE)
-    wrench.load_formatted_file(
-        "nowhere/output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, reader
-    )
+    wrench.load_formatted_file("nowhere/output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, reader)
     assert reader.saw_path == "nowhere/output.yaml"
 
 
@@ -254,18 +238,14 @@ def test_a_failure_says_which_step_failed():
         )
 
     with pytest.raises(wrench.ValidationError):
-        wrench.load_formatted_file(
-            "f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(b'success: "yes"\n')
-        )
+        wrench.load_formatted_file("f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(b'success: "yes"\n'))
 
 
 # COVERS: FR-2.4 | negative
 def test_save_refuses_a_structure_it_would_not_read_back():
     writer = Stub()
     with pytest.raises(wrench.ValidationError):
-        wrench.save_formatted_file(
-            {"success": "yes"}, "f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, writer
-        )
+        wrench.save_formatted_file({"success": "yes"}, "f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, writer)
     assert writer.written is None, "the writer ran despite validation failing"
 
 
@@ -279,10 +259,7 @@ def test_save_writes_canonical_form():
         wrench.YAML,
         writer,
     )
-    assert (
-        writer.written.decode()
-        == '"reasons":\n  - "kind": "k"\n    "message": "m"\n"success": false\n'
-    )
+    assert writer.written.decode() == '"reasons":\n  - "kind": "k"\n    "message": "m"\n"success": false\n'
 
 
 # ---- schemas ----------------------------------------------------------------
@@ -325,9 +302,7 @@ def test_all_four_shipped_schemas_load_from_the_one_copy():
     ):
         assert isinstance(schema, wrench.Schema), f"{schema!r} is not a Schema"
     wrench.ENVELOPE_SCHEMA.validate({"success": True})
-    wrench.JIG_SCHEMA.validate(
-        {"tasks": [{"name": "build", "command": "go build ./..."}]}
-    )
+    wrench.JIG_SCHEMA.validate({"tasks": [{"name": "build", "command": "go build ./..."}]})
     wrench.MANIFEST_SCHEMA.validate(_manifest())
     wrench.DEFINITIONS_SCHEMA.validate({"requirements": "../REQUIREMENTS.md"})
 
@@ -345,21 +320,13 @@ def test_every_shipped_schema_is_exported():
         assert document.get("$id"), f"{path.name} declares no $id"
         declared[document["$id"]] = path.name
 
-    exported = {
-        schema.name: name
-        for name in wrench.__all__
-        if isinstance(schema := getattr(wrench, name), wrench.Schema)
-    }
+    exported = {schema.name: name for name in wrench.__all__ if isinstance(schema := getattr(wrench, name), wrench.Schema)}
 
     for identifier, filename in declared.items():
-        assert identifier in exported, (
-            f"{filename} declares {identifier} and this pack exports no schema for it"
-        )
+        assert identifier in exported, f"{filename} declares {identifier} and this pack exports no schema for it"
 
     for identifier in exported:
-        assert identifier in declared, (
-            f"this pack exports {identifier} and no file in schemas/ declares it"
-        )
+        assert identifier in declared, f"this pack exports {identifier} and no file in schemas/ declares it"
 
 
 # COVERS: FR-3.1, FR-3.4 | edge
@@ -396,8 +363,7 @@ def _versioned():
 
 def _manifest_yaml():
     lines = [b"task: build\n", b"ordinal: 0\n", b"command: go build\n", b"variables:\n"]
-    for name in LOCATIONS:
-        lines.append(f"  {name}:\n    value: /p\n    from: bolt\n".encode())
+    lines.extend(f"  {name}:\n    value: /p\n    from: bolt\n".encode() for name in LOCATIONS)
     return b"".join(lines)
 
 
@@ -428,9 +394,7 @@ def test_a_format_may_declare_the_version_it_conforms_to():
         for version in refused:
             document = f'version: "{version}"\n'.encode() + rest
             try:
-                wrench.load_formatted_file(
-                    "f.yaml", schema, wrench.YAML, Stub(document)
-                )
+                wrench.load_formatted_file("f.yaml", schema, wrench.YAML, Stub(document))
             except wrench.ValidationError:
                 continue
             pytest.fail(f"{name}: version {version!r} was accepted and is not semver")
@@ -438,14 +402,10 @@ def test_a_format_may_declare_the_version_it_conforms_to():
         # A bare number is the mistake this pattern exists to catch: YAML reads
         # 1.0 as a float, and a float is not a version.
         try:
-            wrench.load_formatted_file(
-                "f.yaml", schema, wrench.YAML, Stub(b"version: 1.0\n" + rest)
-            )
+            wrench.load_formatted_file("f.yaml", schema, wrench.YAML, Stub(b"version: 1.0\n" + rest))
         except wrench.ValidationError:
             continue
-        pytest.fail(
-            f"{name}: an unquoted 1.0 was accepted, so a float passed as a version"
-        )
+        pytest.fail(f"{name}: an unquoted 1.0 was accepted, so a float passed as a version")
 
 
 # COVERS: FR-3.9 | property
@@ -462,9 +422,7 @@ def test_the_version_field_is_the_same_in_every_format_that_carries_it():
     assert seen, "no shipped schema declares a version field, so this asserts nothing"
     first = next(iter(seen))
     for name, block in seen.items():
-        assert block == seen[first], (
-            f"the version field in {name} differs from the one in {first}"
-        )
+        assert block == seen[first], f"the version field in {name} differs from the one in {first}"
 
 
 # COVERS: FR-3.1, FR-3.3, FR-3.6 | positive
@@ -474,15 +432,11 @@ def test_a_jigs_definitions_block_is_held_to_the_shared_shape():
     rule the jig schema does not itself state, which is what proves the
     reference between them resolved."""
     flat = b'definitions:\n  requirements: REQUIREMENTS.md\n  line_length: 100\ntasks:\n  - name: check\n    command: "true"\n'
-    wrench.load_formatted_file(
-        "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(flat)
-    )
+    wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(flat))
 
     nested = b'definitions:\n  python:\n    line_length: 100\ntasks:\n  - name: check\n    command: "true"\n'
     with pytest.raises(wrench.ValidationError):
-        wrench.load_formatted_file(
-            "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(nested)
-        )
+        wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(nested))
 
 
 # COVERS: FR-3.1, FR-3.4 | edge
@@ -498,9 +452,7 @@ def test_a_jig_may_declare_it_stands_at_the_repository_root():
         b"needs-repository-root: false\n",
         b"",
     ):
-        wrench.load_formatted_file(
-            "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(declared + tasks)
-        )
+        wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(declared + tasks))
 
     refused = {
         "a string": b'needs-repository-root: "true"\n',
@@ -509,22 +461,16 @@ def test_a_jig_may_declare_it_stands_at_the_repository_root():
     }
     for what, declared in refused.items():
         try:
-            wrench.load_formatted_file(
-                "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(declared + tasks)
-            )
+            wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(declared + tasks))
         except wrench.ValidationError:
             continue
         pytest.fail(f"{what} was accepted as needs-repository-root")
 
     # It is the jig's, not a jig task's. A tool needing the root needs it
     # wherever it is placed, so a caller cannot grant it per placement.
-    on_task = (
-        b"tasks:\n  - name: child\n    jig: other\n    needs-repository-root: true\n"
-    )
+    on_task = b"tasks:\n  - name: child\n    jig: other\n    needs-repository-root: true\n"
     with pytest.raises(wrench.ValidationError):
-        wrench.load_formatted_file(
-            "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(on_task)
-        )
+        wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(on_task))
 
 
 def _consumer_schema(target):
@@ -546,9 +492,7 @@ def test_a_consumer_schema_may_reference_a_shipped_one():
     to prevent."""
     schema = wrench.compile_schema(
         "mine.schema.json",
-        _consumer_schema(
-            "https://scriptedworld.github.io/wrench/definitions.schema.json"
-        ),
+        _consumer_schema("https://scriptedworld.github.io/wrench/definitions.schema.json"),
     )
 
     schema.validate({"d": {"a": "x"}})
@@ -569,9 +513,7 @@ def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
     disk, so a schema's meaning depended on files outside it. Nothing was ever
     fetched over the network."""
     local = tmp_path / "local.schema.json"
-    local.write_text(
-        '{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}'
-    )
+    local.write_text('{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}')
 
     targets = {
         "a file url": f"file://{local}",
@@ -602,9 +544,7 @@ def test_the_environment_can_restore_external_references(tmp_path):
     from wrench.schema import ALLOW_EXTERNAL_REFS
 
     local = tmp_path / "local.schema.json"
-    local.write_text(
-        '{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}'
-    )
+    local.write_text('{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}')
     document = _consumer_schema(f"file://{local}")
 
     _refuses(
@@ -642,12 +582,8 @@ def test_a_caller_cannot_redefine_a_shipped_schema():
 
 # COVERS: FR-3.2, FR-3.3 | negative
 def test_a_definitions_file_takes_one_level_of_scalars():
-    scalars = (
-        b'requirements: ../REQUIREMENTS.md\nline_length: 100\nstrict: true\nempty: ""\n'
-    )
-    wrench.load_formatted_file(
-        "d.yaml", wrench.DEFINITIONS_SCHEMA, wrench.YAML, Stub(scalars)
-    )
+    scalars = b'requirements: ../REQUIREMENTS.md\nline_length: 100\nstrict: true\nempty: ""\n'
+    wrench.load_formatted_file("d.yaml", wrench.DEFINITIONS_SCHEMA, wrench.YAML, Stub(scalars))
 
     refused = {
         "a list value": b"tags:\n  - one\n  - two\n",
@@ -658,9 +594,7 @@ def test_a_definitions_file_takes_one_level_of_scalars():
     }
     for what, document in refused.items():
         try:
-            wrench.load_formatted_file(
-                "d.yaml", wrench.DEFINITIONS_SCHEMA, wrench.YAML, Stub(document)
-            )
+            wrench.load_formatted_file("d.yaml", wrench.DEFINITIONS_SCHEMA, wrench.YAML, Stub(document))
         except wrench.ValidationError:
             continue
         pytest.fail(f"{what} was accepted")
@@ -671,9 +605,7 @@ def test_a_validation_error_names_the_schema_by_id_not_by_local_path():
     """The identifier lands in the error, the error lands in a reason, and a
     reason travels as evidence."""
     with pytest.raises(wrench.ValidationError) as caught:
-        wrench.load_formatted_file(
-            "f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(b'success: "yes"\n')
-        )
+        wrench.load_formatted_file("f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(b'success: "yes"\n'))
     message = str(caught.value)
     assert "scriptedworld.github.io/wrench/envelope.schema.json" in message
     assert str(ROOT) not in message, "the error carries a local filesystem path"
@@ -684,9 +616,7 @@ def test_validation_is_indifferent_to_serialisation():
     block = b"success: false\nreasons:\n  - kind: k\n    message: m\n"
     flow = b"{success: false, reasons: [{kind: k, message: m}]}\n"
     for data in (block, flow):
-        wrench.load_formatted_file(
-            "f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(data)
-        )
+        wrench.load_formatted_file("f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(data))
 
 
 # COVERS: FR-3.4 | edge
@@ -714,12 +644,8 @@ def test_round_trip_through_the_real_filesystem(tmp_path):
     path = str(tmp_path / "output.yaml")
     value = {"success": True, "metadata": {"statistics": {"checked": 12}}}
 
-    wrench.save_formatted_file(
-        value, path, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE
-    )
-    back = wrench.load_formatted_file(
-        path, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE
-    )
+    wrench.save_formatted_file(value, path, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE)
+    back = wrench.load_formatted_file(path, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE)
 
     assert back == value
     assert back["metadata"]["statistics"]["checked"] == 12
@@ -808,11 +734,7 @@ def test_a_manifest_keeps_the_five_locations():
     """Every execution has them whatever else it has, so a manifest missing one
     is not a smaller manifest, it is a broken one."""
     for missing in LOCATIONS:
-        variables = {
-            name: {"value": "/p", "from": "bolt"}
-            for name in LOCATIONS
-            if name != missing
-        }
+        variables = {name: {"value": "/p", "from": "bolt"} for name in LOCATIONS if name != missing}
         _refuses(
             wrench.MANIFEST_SCHEMA,
             {
@@ -836,9 +758,7 @@ def test_a_failed_write_leaves_no_temporary_behind(tmp_path):
         wrench.LOCAL_FILE.write(str(not_a_dir / "output.yaml"), b"x\n")
 
     entries = list(tmp_path.iterdir())
-    assert entries == [not_a_dir], (
-        f"directory holds {entries}, want only the seeded file"
-    )
+    assert entries == [not_a_dir], f"directory holds {entries}, want only the seeded file"
 
 
 # COVERS: FR-1.1 | positive
@@ -864,9 +784,7 @@ def test_an_envelope_missing_success_is_refused():
     """Validation is JSON Schema over the decoded structure, and wrench does not
     get to differ from that decision. It is where it is implemented."""
     with pytest.raises(wrench.ValidationError) as caught:
-        wrench.load_formatted_file(
-            "output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(b"reasons: []\n")
-        )
+        wrench.load_formatted_file("output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(b"reasons: []\n"))
     assert "success" in str(caught.value), "the error does not name the missing key"
 
 
@@ -879,9 +797,7 @@ def test_codec_and_io_are_independent():
         "second": Stub(b"success: false\nreasons:\n  - kind: k\n    message: m\n"),
     }
     for name, reader in readers.items():
-        envelope = wrench.load_formatted_file(
-            "output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, reader
-        )
+        envelope = wrench.load_formatted_file("output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, reader)
         assert "success" in envelope, f"the {name} reader produced no envelope"
 
     # YAML is the codec that ships, and it is the only one. The argument exists
@@ -927,9 +843,7 @@ def test_a_task_may_allow_an_empty_selection():
     }
     for what, document in accepted.items():
         try:
-            wrench.load_formatted_file(
-                "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document)
-            )
+            wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document))
         except wrench.ValidationError as problem:  # pragma: no cover - failure path
             pytest.fail(f"{what} was refused: {problem}")
 
@@ -939,9 +853,7 @@ def test_a_task_may_allow_an_empty_selection():
     }
     for what, document in refused.items():
         try:
-            wrench.load_formatted_file(
-                "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document)
-            )
+            wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document))
         except wrench.ValidationError:
             continue
         pytest.fail(f"{what} was accepted")

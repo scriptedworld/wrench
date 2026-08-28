@@ -62,9 +62,7 @@ def _normalise(value: object) -> object:
         out = {}
         for key, item in value.items():
             if not isinstance(key, str):
-                raise TypeError(
-                    f"mapping key {key!r} is {type(key).__name__}, not a string"
-                )
+                raise TypeError(f"mapping key {key!r} is {type(key).__name__}, not a string")
             out[key] = _normalise(item)
         return out
     if isinstance(value, (list, tuple)):
@@ -200,12 +198,6 @@ def _scalar(value: object) -> str:
         # A whole float formats as "1", which reads back as an integer.
         return text if ("." in text or "e" in text or "E" in text) else text + ".0"
     if isinstance(value, str):
-        escaped = (
-            value.replace("\\", "\\\\")
-            .replace('"', '\\"')
-            .replace("\n", "\\n")
-            .replace("\t", "\\t")
-            .replace("\r", "\\r")
-        )
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
         return f'"{escaped}"'
     raise ValueError(f"cannot write {type(value).__name__} in canonical form")
