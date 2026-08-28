@@ -29,20 +29,15 @@ infobot session hit it while measuring whether it could use the Go pack's
 encoder. Its board matches `[0-9.]+` against a value, so `1e+06` reads as `1`: a
 count of a million displayed as one, with no error anywhere.
 
-Nothing inside wrench was going to find it. The fixture set reported agreement,
+Nothing inside wrench was going to find it: the fixture set reported agreement,
 both checkers were green, and `bin/test-suite-parity.py` compares *which rows are
 tested* rather than what the tests assert.
 
 **And the measurement that followed was itself too small.** `clank parity/30`
-measured the three YAML codecs. JSON and TOML shipped hours later, so by the time
-the fix was written the real surface was **nine emitters**, and two packs
-disagreed with themselves:
-
-    Go    yaml/toml 1e+06        json 1000000     (a float written as an integer)
-    Rust  yaml/toml 1000000.0    json 1e+06
-
-Go's JSON dropped a whole float's decimal point entirely, so a value Python read
-back as an integer had been written as a float. Fixed at `7076801`, FR-4.8.
+measured the three YAML codecs; JSON and TOML had shipped hours later, so the
+real surface was **nine emitters** and two packs disagreed with themselves. Go's
+JSON wrote `1000000` for a float Python then read back as an integer, where its
+own YAML wrote `1e+06`. Fixed at `7076801`, FR-4.8.
 
 ## The general shape
 
@@ -87,16 +82,16 @@ whole C1 block, five Unicode specials — the answer is **61**. The C1 range was
 invisible to the sample, and the error was sevenfold in the direction that
 flattered this repository's own pack.
 
-**A sample has no baseline, which is the deeper problem.** Measuring PyYAML alone
-with no wrench in the path gives 6 ok, 61 unreadable, 3 changed. So the 61 is the
-*parser's* rule and no emitter can move it, and wrench's Python pack is that
-baseline plus exactly two escapes. The number that looked like a score was a
-constant. Only the swept range and the baseline together showed which column
-actually varied, and it was the smallest one: silent corruptions, 0, 0, 1.
+**A sample has no baseline, which is the deeper problem.** PyYAML alone, with no
+wrench in the path, gives 6 ok, 61 unreadable, 3 changed. So the 61 is the
+*parser's* rule that no emitter can move, and wrench's Python pack is that
+baseline plus two escapes. The number that read as a score was a constant, and
+only the sweep and the baseline together showed which column varied: silent
+corruptions, 0, 0, 1.
 
-**So sweep the range and measure the baseline before quoting either.** Both are
-cheap: the sweep is a loop over code points, and the baseline is the same loop
-with the library called directly. Neither needs the pack under test.
+**So sweep the range and measure the baseline before quoting either.** The sweep
+is a loop over code points and the baseline is the same loop calling the library
+directly; neither needs the pack under test.
 
 ## Publish the set, not the verdict
 
@@ -111,11 +106,22 @@ consumer's "your escaping is strictly better than mine" survived neither sweep.
 
 The corollary is what to send. A verdict invites assent; a set invites a check.
 
+### Implementations of the same version are one witness, not three
+
+FACT 2026-08-28. Three YAML parsers were asked whether raw U+2028 survives; all
+three said yes and all three were wrong. YAML 1.1 makes it a line break and 1.2
+does not, so **they agreed because they share an era, not an argument.**
+
+A poll of implementations answers *what happens here today*, never *what the
+contract is*. Where a specification exists it is the only independent witness,
+and reading it took minutes where three probes took an hour and were confident.
+
+**The tell is a question about a rule wearing a question about behaviour's
+clothes.** "Does this round trip" is answerable by probing; "is this a line
+break" is not.
+
 ## What does not help
 
 **Adding the value that just bit you.** `floats-never-use-an-exponent` is now the
 tenth fixture and it closes this instance. It does nothing about the next scalar
 type, which is why the lesson is the enumeration rather than the case.
-
-**Trusting that three implementations agreeing is corroboration.** They agreed
-because they were never asked the question.
