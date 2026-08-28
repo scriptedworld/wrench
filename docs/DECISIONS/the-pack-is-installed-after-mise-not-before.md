@@ -84,8 +84,11 @@ no caller lacks the module.
 ## What is still owed, and it is dotfiles'
 
 A machine rebuilt from `bin/setup` gets every tool and no wrench, because the
-`python_projects` list does not exist. `clank/inbox/dotfiles/declare-wrench-and-its-bootstrap-dependency/`
-was promoted to a dotfiles task rather than resolved inline: it needs the manifest
+`python_projects` list does not exist, re-measured 2026-08-28: nothing under
+`dotfiles/bin/` mentions wrench.
+`clank/inbox/dotfiles/declare-wrench-and-its-bootstrap-dependency/`, now deleted
+as a resolved entry is, was promoted to a dotfiles task rather than resolved
+inline: it needs the manifest
 list, `bin/setup` emitting `-e <path>` into the generated `requirements.in`, and a
 `converge` step so an undeclared editable install is visible.
 

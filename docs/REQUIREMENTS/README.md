@@ -6,7 +6,12 @@ tree, so a category may nest as deep as the grouping wants.
 Derived from four sources and nothing else: `README.md`, the rows in
 `bolt/REQUIREMENTS.md` that state the contract rather than bolt's use of it,
 `silo/docs/DECISIONS/yaml-everywhere-validated-against-the-decoded-structure.md`,
-and `clank/inbox/wrench/python-library-runs-before-pip-exists/`.
+and `clank/inbox/wrench/python-library-runs-before-pip-exists/`, an inbox entry
+that was resolved and therefore deleted. **The path is kept because it names
+where a source came from, not where to find it now**; what it established lives
+in `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`, and its
+premise was later disproven there. Checked 2026-08-28: the entry is gone, as a
+resolved one should be.
 
 Those rows have left bolt, which now states only its own use of the contract.
 The move landed as bolt 3d40517.

@@ -1,7 +1,9 @@
 # infobot's hand-emitted YAML is a considered duplicate, not a second dialect
 
 Resolves `clank/inbox/wrench/infobot-hand-emits-a-file-wrench-owns-the-form-of/`,
-filed from infobot 2026-08-26.
+filed from infobot 2026-08-26. That entry is gone, because resolving one means
+deleting it and this document is the resolution. The path names where the
+question came from, not somewhere to look.
 
 ## The question
 

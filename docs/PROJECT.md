@@ -171,8 +171,15 @@ printed summary looks like a pass either way.** This document quoted that summar
 as a pass while the check was failing, from before 2026-08-26 until it was caught
 by the jig on 2026-08-27. `docs/LESSONS/read-the-artifact-not-the-summary-line.md`.
 
-`clank/tasks/wrench/gate/10-a-composite-jig.planning` has the design for the
-shared-jig gate this one stands in for.
+`clank/tasks/wrench/gate/10-a-composite-jig` has the design for the shared-jig
+gate this one stands in for. It was `.ready` on 2026-08-28.
+
+**The suffix is deliberately not part of that path.** Task state is carried by
+the directory's suffix, so a citation including one is a claim about state that
+goes stale silently and still resolves, pointing at a task in a different state
+than the sentence says. This one said `.planning` after the task became `.ready`.
+Cite the stem, which is stable, and date the state separately so the two can
+disagree out loud.
 
 ## The contract is one file per requirement
 
@@ -378,9 +385,18 @@ print(pathlib.Path(wrench.__file__).resolve())"` prints
 `/home/ancient/.projects/wrench/python/wrench/__init__.py`, so the editable
 install is live.
 
-**That install is not reproducible from any manifest.** A machine rebuilt from
-`dotfiles/bin/setup` gets every tool and no wrench. Filed at
-`clank/inbox/dotfiles/declare-wrench-and-its-bootstrap-dependency/`.
+**That install is not reproducible from any manifest**, still true and
+re-measured 2026-08-28: nothing under `dotfiles/bin/` mentions wrench at all. A
+machine rebuilt from `dotfiles/bin/setup` gets every tool and no wrench.
+`dotfiles/repos.live.toml` names wrench, but that is the repository roster rather
+than anything that installs it.
+
+It was filed at `clank/inbox/dotfiles/declare-wrench-and-its-bootstrap-dependency/`,
+which no longer exists because resolving an inbox entry means deleting it.
+**Deleted does not mean fixed**, and from this side the three resolutions are
+indistinguishable: acted on, promoted to a task, or rejected all leave the same
+absence. That is why the claim above is re-measured here rather than inferred
+from the entry being gone.
 
 ### `import wrench` fails on `/usr/bin/python3`, and no longer matters
 
