@@ -2,4 +2,4 @@
 
 | ID | Requirement | |
 |---|---|---|
-| FR-2.7 | YAML is the codec that ships. Every structured file in the ecosystem is YAML, so a second has no consumer today; the codec argument exists so that adding one later is not a change to the two calls. | [D] |
+| FR-2.7 | Three codecs ship: YAML, JSON and TOML. ~~YAML is the codec that ships, and a second has no consumer today~~ **restated 2026-08-28**: the second and third were built, and the row is kept rather than retired because the reason it gave is what held. The codec argument existed so that adding one later would not be a change to the two calls, and adding two was not. | [A] |

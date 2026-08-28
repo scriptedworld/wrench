@@ -53,11 +53,15 @@
 //! after deserialising instead.
 
 pub mod codec;
+pub mod json_codec;
+pub mod toml_codec;
 pub mod errors;
 pub mod localfile;
 pub mod schema;
 
 pub use codec::{Codec, YamlCodec, YAML};
+pub use json_codec::{JsonCodec, JSON};
+pub use toml_codec::{TomlCodec, TOML};
 pub use errors::{Error, Result};
 pub use localfile::{LocalFileIo, Reader, Writer, LOCAL_FILE};
 pub use schema::{
@@ -122,4 +126,61 @@ pub fn save_formatted_file(
         path: path.to_string(),
         source,
     })
+}
+
+// ---- per-format wrappers ----------------------------------------------------
+//
+// These add no behaviour. Each supplies one argument to the two calls above, so
+// validation still sits in the signature and the seam is unchanged.
+//
+// NAMED RATHER THAN INFERRED FROM THE SUFFIX. Choosing a parser by filename
+// makes behaviour depend on what a file is called, so renaming one would
+// silently change how it is read. FR-2.2 exists to remove that implicitness.
+
+/// Load a YAML file, validated against `schema`.
+pub fn load_yaml_file(path: &str, schema: &dyn Schema, reader: &dyn Reader) -> Result<Value> {
+    load_formatted_file(path, schema, &YAML, reader)
+}
+
+/// Save a structure as canonical YAML, validated against `schema`.
+pub fn save_yaml_file(
+    value: &Value,
+    path: &str,
+    schema: &dyn Schema,
+    writer: &dyn Writer,
+) -> Result<()> {
+    save_formatted_file(value, path, schema, &YAML, writer)
+}
+
+/// Load a JSON file, validated against `schema`.
+pub fn load_json_file(path: &str, schema: &dyn Schema, reader: &dyn Reader) -> Result<Value> {
+    load_formatted_file(path, schema, &JSON, reader)
+}
+
+/// Save a structure as canonical JSON, validated against `schema`.
+pub fn save_json_file(
+    value: &Value,
+    path: &str,
+    schema: &dyn Schema,
+    writer: &dyn Writer,
+) -> Result<()> {
+    save_formatted_file(value, path, schema, &JSON, writer)
+}
+
+/// Load a TOML file, validated against `schema`. A native date, time or
+/// datetime decodes to its ISO 8601 string, which is what FR-2.9 requires.
+pub fn load_toml_file(path: &str, schema: &dyn Schema, reader: &dyn Reader) -> Result<Value> {
+    load_formatted_file(path, schema, &TOML, reader)
+}
+
+/// Save a structure as canonical TOML, validated against `schema`. Refuses a
+/// structure containing null, which TOML cannot spell, and one that is not a
+/// table, which TOML has no way to be.
+pub fn save_toml_file(
+    value: &Value,
+    path: &str,
+    schema: &dyn Schema,
+    writer: &dyn Writer,
+) -> Result<()> {
+    save_formatted_file(value, path, schema, &TOML, writer)
 }

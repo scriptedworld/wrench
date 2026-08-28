@@ -45,6 +45,7 @@ yaml-rust2 = "0.12"
 # FR-2.6 needs a distinct error per step, and bolt's FR-6.11 is unimplementable
 # if parse and validate collapse into one type.
 thiserror = "2"
+toml = "1.1.4"
 
 [dev-dependencies]
 

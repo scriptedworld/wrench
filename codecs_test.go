@@ -1,0 +1,186 @@
+package wrench_test
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/scriptedworld/wrench"
+)
+
+// The expected bytes below are asserted identically in all three suites. A table
+// that differs between packs is packs that differ, which is the whole argument
+// of docs/PATTERNS/holding-two-packs-level.md.
+
+func threeFormats() map[string]any {
+	return map[string]any{
+		"b": int64(1),
+		"a": map[string]any{"z": []any{int64(1), int64(2)}, "y": "x"},
+		"d": true,
+	}
+}
+
+const canonicalJSON = "{\n  \"a\": {\n    \"y\": \"x\",\n    \"z\": [\n      1,\n      2\n    ]\n  },\n  \"b\": 1,\n  \"d\": true\n}\n"
+
+const canonicalTOML = "b = 1\nd = true\n\n[a]\ny = \"x\"\nz = [1, 2]\n"
+
+// COVERS: FR-2.7, FR-4.6 | property
+func TestJSONCanonicalForm(t *testing.T) {
+	encoded, err := wrench.JSON.Encode(threeFormats())
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	if string(encoded) != canonicalJSON {
+		t.Errorf("canonical JSON:\ngot:\n%s\nwant:\n%s", encoded, canonicalJSON)
+	}
+
+	// Decoded and re-encoded, because a form nothing reads back is not a form.
+	value, err := wrench.JSON.Decode([]byte(canonicalJSON))
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	again, err := wrench.JSON.Encode(value)
+	if err != nil {
+		t.Fatalf("re-encode: %v", err)
+	}
+	if string(again) != canonicalJSON {
+		t.Errorf("not a fixed point:\n%s", again)
+	}
+}
+
+// COVERS: FR-2.7, FR-4.7 | property
+func TestTOMLCanonicalForm(t *testing.T) {
+	encoded, err := wrench.TOML.Encode(threeFormats())
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	if string(encoded) != canonicalTOML {
+		t.Errorf("canonical TOML:\ngot:\n%s\nwant:\n%s", encoded, canonicalTOML)
+	}
+
+	value, err := wrench.TOML.Decode([]byte(canonicalTOML))
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	again, err := wrench.TOML.Encode(value)
+	if err != nil {
+		t.Fatalf("re-encode: %v", err)
+	}
+	if string(again) != canonicalTOML {
+		t.Errorf("not a fixed point:\n%s", again)
+	}
+}
+
+// COVERS: FR-4.7 | edge
+func TestTOMLWritesAnArrayOfTablesAsRepeatedSections(t *testing.T) {
+	// The most ordinary shape in a hand-written config, and the one TOML has no
+	// inline spelling for. Found by the skid session round-tripping a real
+	// config while FR-4.7 was still being written: the emitter sent every array
+	// down the inline path, so [[x]] had no route at all.
+	value := map[string]any{
+		"name": "x",
+		"substitution": []any{
+			map[string]any{"kind": "literal", "pattern": "kokoro"},
+			map[string]any{"kind": "regex", "pattern": "skid"},
+		},
+	}
+	want := "name = \"x\"\n\n[[substitution]]\nkind = \"literal\"\npattern = \"kokoro\"\n" +
+		"\n[[substitution]]\nkind = \"regex\"\npattern = \"skid\"\n"
+
+	encoded, err := wrench.TOML.Encode(value)
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	if string(encoded) != want {
+		t.Errorf("array of tables:\ngot:\n%s\nwant:\n%s", encoded, want)
+	}
+
+	// An empty array is not a table array, whatever it would have held.
+	empty, err := wrench.TOML.Encode(map[string]any{"a": []any{}})
+	if err != nil {
+		t.Fatalf("encode empty: %v", err)
+	}
+	if string(empty) != "a = []\n" {
+		t.Errorf("an empty array wrote %q", empty)
+	}
+}
+
+// COVERS: FR-4.7 | negative
+func TestTOMLRefusesANull(t *testing.T) {
+	_, err := wrench.TOML.Encode(map[string]any{"a": map[string]any{"b": nil}})
+	if err == nil {
+		t.Fatal("a null was accepted")
+	}
+	if !strings.Contains(err.Error(), "a.b") {
+		t.Errorf("the error does not say where: %v", err)
+	}
+}
+
+// COVERS: FR-4.7 | edge
+func TestTOMLRefusesADocumentThatIsNotATable(t *testing.T) {
+	if _, err := wrench.TOML.Encode([]any{1, 2}); err == nil {
+		t.Fatal("a top-level array was accepted")
+	}
+}
+
+// COVERS: FR-4.7 | regression
+func TestTOMLTemporalTypesDecodeToISOStrings(t *testing.T) {
+	value, err := wrench.TOML.Decode([]byte("d = 2026-01-01\ndt = 2026-01-01T07:32:00Z\n"))
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	table := value.(map[string]any)
+	if table["d"] != "2026-01-01" {
+		t.Errorf("a local date became %v, want the date alone", table["d"])
+	}
+	if got, _ := table["dt"].(string); !strings.HasPrefix(got, "2026-01-01T07:32:00") {
+		t.Errorf("an offset datetime became %v", table["dt"])
+	}
+}
+
+// COVERS: FR-2.10 | positive
+func TestAWrapperPerFormatSuppliesTheCodec(t *testing.T) {
+	writer := &stubWriter{}
+	if err := wrench.SaveJSONFile(map[string]any{"success": true}, "out.json", wrench.EnvelopeSchema, writer); err != nil {
+		t.Fatalf("save json: %v", err)
+	}
+	if string(writer.data) != "{\n  \"success\": true\n}\n" {
+		t.Errorf("json wrapper wrote %q", writer.data)
+	}
+
+	reader := &stubReader{data: []byte(`{"success": true}`)}
+	value, err := wrench.LoadJSONFile("out.json", wrench.EnvelopeSchema, reader)
+	if err != nil {
+		t.Fatalf("load json: %v", err)
+	}
+	if value.(map[string]any)["success"] != true {
+		t.Errorf("json wrapper read %v", value)
+	}
+
+	tomlWriter := &stubWriter{}
+	if err := wrench.SaveTOMLFile(map[string]any{"success": true}, "out.toml", wrench.EnvelopeSchema, tomlWriter); err != nil {
+		t.Fatalf("save toml: %v", err)
+	}
+	if string(tomlWriter.data) != "success = true\n" {
+		t.Errorf("toml wrapper wrote %q", tomlWriter.data)
+	}
+
+	yamlWriter := &stubWriter{}
+	if err := wrench.SaveYAMLFile(map[string]any{"success": true}, "out.yaml", wrench.EnvelopeSchema, yamlWriter); err != nil {
+		t.Fatalf("save yaml: %v", err)
+	}
+	if string(yamlWriter.data) != "\"success\": true\n" {
+		t.Errorf("yaml wrapper wrote %q", yamlWriter.data)
+	}
+}
+
+// COVERS: FR-2.10 | negative
+func TestAWrapperStillValidates(t *testing.T) {
+	writer := &stubWriter{}
+	err := wrench.SaveJSONFile(map[string]any{"success": "yes"}, "out.json", wrench.EnvelopeSchema, writer)
+	if err == nil {
+		t.Fatal("the wrapper accepted a structure the schema refuses")
+	}
+	if writer.data != nil {
+		t.Error("the writer ran despite validation failing")
+	}
+}

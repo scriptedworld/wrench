@@ -46,6 +46,10 @@ ignore = [
     # asks whether a docstring exists. D401 wants an imperative first line and
     # the writing standard wants what is true: "A mapping, one key to a line".
     "D205", "D209", "D401", "D403",
+    # The codecs raise ValueError for a value with no canonical form, in all
+    # three packs and both formats. TRY004 prefers TypeError; one error contract
+    # across the codecs beats matching the lint on one of them.
+    "TRY004",
 ]
 
 [tool.ruff.lint.per-file-ignores]

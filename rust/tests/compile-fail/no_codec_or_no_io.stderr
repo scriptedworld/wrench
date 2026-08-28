@@ -9,11 +9,21 @@ help: the trait `Codec` is not implemented for `Io`
    |
 11 | struct Io;
    | ^^^^^^^^^
-help: the trait `Codec` is implemented for `YamlCodec`
-  --> src/codec.rs
+help: the following other types implement trait `Codec`
+  --> src/json_codec.rs
+   |
+   | impl Codec for JsonCodec {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^ `JsonCodec`
+   |
+  ::: src/toml_codec.rs
+   |
+   | impl Codec for TomlCodec {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^ `TomlCodec`
+   |
+  ::: src/codec.rs
    |
    | impl Codec for YamlCodec {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^
+   | ^^^^^^^^^^^^^^^^^^^^^^^^ `YamlCodec`
    = note: required for the cast from `&Io` to `&dyn Codec`
 
 error[E0061]: this function takes 4 arguments but 3 arguments were supplied

@@ -31,6 +31,7 @@ from wrench.errors import (
     WrenchError,
     WriteError,
 )
+from wrench.json_codec import JSON, JSONCodec
 from wrench.localfile import LOCAL_FILE, LocalFileIO
 from wrench.schema import (
     DEFINITIONS_SCHEMA,
@@ -40,26 +41,37 @@ from wrench.schema import (
     Schema,
     compile_schema,
 )
+from wrench.toml_codec import TOML, TOMLCodec
 
 __all__ = [
     "DEFINITIONS_SCHEMA",
     "ENVELOPE_SCHEMA",
     "JIG_SCHEMA",
+    "JSON",
     "LOCAL_FILE",
     "MANIFEST_SCHEMA",
+    "TOML",
     "YAML",
     "EncodeError",
+    "JSONCodec",
     "LocalFileIO",
     "ParseError",
     "ReadError",
     "Schema",
+    "TOMLCodec",
     "ValidationError",
     "WrenchError",
     "WriteError",
     "YAMLCodec",
     "compile_schema",
     "load_formatted_file",
+    "load_json_file",
+    "load_toml_file",
+    "load_yaml_file",
     "save_formatted_file",
+    "save_json_file",
+    "save_toml_file",
+    "save_yaml_file",
 ]
 
 
@@ -113,6 +125,54 @@ def save_formatted_file(data, path, schema, codec, writer):
         writer.write(path, encoded)
     except Exception as err:
         raise WriteError(path, err) from err
+
+
+# ---- per-format wrappers ----------------------------------------------------
+#
+# These add no behaviour. Each supplies one argument to the two calls above, so
+# validation still sits in the signature and the seam is unchanged.
+#
+# NAMED RATHER THAN INFERRED FROM THE SUFFIX. Choosing a parser by filename makes
+# behaviour depend on what a file is called, so renaming one would silently
+# change how it is read. FR-2.2 exists to remove exactly that implicitness.
+
+
+def load_yaml_file(path, schema, reader):
+    """Load a YAML file, validated against `schema`."""
+    return load_formatted_file(path, schema, YAML, reader)
+
+
+def save_yaml_file(data, path, schema, writer):
+    """Save a structure as canonical YAML, validated against `schema`."""
+    save_formatted_file(data, path, schema, YAML, writer)
+
+
+def load_json_file(path, schema, reader):
+    """Load a JSON file, validated against `schema`."""
+    return load_formatted_file(path, schema, JSON, reader)
+
+
+def save_json_file(data, path, schema, writer):
+    """Save a structure as canonical JSON, validated against `schema`."""
+    save_formatted_file(data, path, schema, JSON, writer)
+
+
+def load_toml_file(path, schema, reader):
+    """Load a TOML file, validated against `schema`.
+
+    A native date, time or datetime decodes to its ISO 8601 string, which is what
+    FR-2.9 requires of every decoder.
+    """
+    return load_formatted_file(path, schema, TOML, reader)
+
+
+def save_toml_file(data, path, schema, writer):
+    """Save a structure as canonical TOML, validated against `schema`.
+
+    Refuses a structure containing null, which TOML cannot spell, and refuses one
+    that is not a table, which TOML has no way to be.
+    """
+    save_formatted_file(data, path, schema, TOML, writer)
 
 
 def _require(schema, codec, io, io_name: str) -> None:

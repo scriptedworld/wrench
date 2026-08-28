@@ -800,10 +800,15 @@ def test_codec_and_io_are_independent():
         envelope = wrench.load_formatted_file("output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, reader)
         assert "success" in envelope, f"the {name} reader produced no envelope"
 
-    # YAML is the codec that ships, and it is the only one. The argument exists
-    # so adding a second later is not a change to the two calls.
+    # Three codecs ship. The argument existed so adding one later would not be a
+    # change to the two calls, and adding two was not: the calls above are the
+    # ones they were before FR-2.7 was restated.
     assert isinstance(wrench.YAML, wrench.YAMLCodec)
-    assert [n for n in wrench.__all__ if n.endswith("Codec")] == ["YAMLCodec"]
+    assert sorted(n for n in wrench.__all__ if n.endswith("Codec")) == [
+        "JSONCodec",
+        "TOMLCodec",
+        "YAMLCodec",
+    ]
 
 
 # COVERS: FR-5.2 | property
@@ -857,3 +862,111 @@ def test_a_task_may_allow_an_empty_selection():
         except wrench.ValidationError:
             continue
         pytest.fail(f"{what} was accepted")
+
+
+# ---- the other two codecs ---------------------------------------------------
+#
+# The expected bytes below are asserted identically in all three suites. A table
+# that differs between packs is packs that differ, which is the whole argument of
+# docs/PATTERNS/holding-two-packs-level.md.
+
+THREE_FORMATS = {"b": 1, "a": {"z": [1, 2], "y": "x"}, "d": True}
+
+CANONICAL_JSON = b'{\n  "a": {\n    "y": "x",\n    "z": [\n      1,\n      2\n    ]\n  },\n  "b": 1,\n  "d": true\n}\n'
+
+CANONICAL_TOML = b'b = 1\nd = true\n\n[a]\ny = "x"\nz = [1, 2]\n'
+
+
+# COVERS: FR-2.7, FR-4.6 | property
+def test_json_canonical_form():
+    """Two-space indent, one key to a line, keys sorted, trailing newline. The
+    same bytes the Go and Rust packs emit for this structure."""
+    assert wrench.JSON.encode(THREE_FORMATS) == CANONICAL_JSON
+    assert wrench.JSON.decode(CANONICAL_JSON) == THREE_FORMATS
+
+
+# COVERS: FR-2.7, FR-4.7 | property
+def test_toml_canonical_form():
+    """Scalars first and sorted, then each sub-table as a section, arrays
+    inline, no indentation."""
+    assert wrench.TOML.encode(THREE_FORMATS) == CANONICAL_TOML
+    assert wrench.TOML.decode(CANONICAL_TOML) == THREE_FORMATS
+
+
+# COVERS: FR-4.7 | edge
+def test_toml_writes_an_array_of_tables_as_repeated_sections():
+    """The most ordinary shape in a hand-written config, and the one TOML has no
+    inline spelling for. Found by the skid session round-tripping a real config
+    while this row was still being written: the emitter sent every array down the
+    inline path, so `[[x]]` had no route at all."""
+    value = {
+        "name": "x",
+        "substitution": [
+            {"kind": "literal", "pattern": "kokoro"},
+            {"kind": "regex", "pattern": "skid"},
+        ],
+    }
+    encoded = wrench.TOML.encode(value)
+    assert encoded == (
+        b'name = "x"\n\n[[substitution]]\nkind = "literal"\npattern = "kokoro"\n\n[[substitution]]\nkind = "regex"\npattern = "skid"\n'
+    )
+    assert wrench.TOML.decode(encoded) == value
+
+    # An empty array is not a table array, whatever it would have held.
+    assert wrench.TOML.encode({"a": []}) == b"a = []\n"
+
+
+# COVERS: FR-4.7 | negative
+def test_toml_refuses_a_null():
+    """TOML cannot spell null, and substituting one would invent a document
+    nobody wrote. The message names where it sits."""
+    with pytest.raises(ValueError) as caught:
+        wrench.TOML.encode({"a": {"b": None}})
+    assert "a.b" in str(caught.value)
+
+
+# COVERS: FR-4.7 | edge
+def test_toml_refuses_a_document_that_is_not_a_table():
+    """There is no top-level scalar or array in TOML, so wrapping one in an
+    invented key is the alternative and is worse."""
+    with pytest.raises(ValueError):
+        wrench.TOML.encode([1, 2])
+
+
+# COVERS: FR-4.7 | regression
+def test_toml_temporal_types_decode_to_iso_strings():
+    """FR-2.9 applied to the second format with native dates. Each spelling is
+    what the type it was read as prints, so a date does not become a datetime."""
+    value = wrench.TOML.decode(b"d = 2026-01-01\ndt = 2026-01-01T07:32:00Z\n")
+    assert value["d"] == "2026-01-01"
+    assert value["dt"].startswith("2026-01-01T07:32:00")
+
+
+# COVERS: FR-2.10 | positive
+def test_a_wrapper_per_format_supplies_the_codec():
+    """The wrappers add no behaviour. Each is the core call with one argument
+    filled in, and validation still runs."""
+    writer = Stub()
+    wrench.save_json_file({"success": True}, "out.json", wrench.ENVELOPE_SCHEMA, writer)
+    assert writer.written == b'{\n  "success": true\n}\n'
+
+    reader = Stub(b'{"success": true}')
+    assert wrench.load_json_file("out.json", wrench.ENVELOPE_SCHEMA, reader) == {"success": True}
+
+    toml_writer = Stub()
+    wrench.save_toml_file({"success": True}, "out.toml", wrench.ENVELOPE_SCHEMA, toml_writer)
+    assert toml_writer.written == b"success = true\n"
+
+    yaml_writer = Stub()
+    wrench.save_yaml_file({"success": True}, "out.yaml", wrench.ENVELOPE_SCHEMA, yaml_writer)
+    assert yaml_writer.written == b'"success": true\n'
+
+
+# COVERS: FR-2.10 | negative
+def test_a_wrapper_still_validates():
+    """The codec is filled in; the schema is not. A wrapper that skipped
+    validation would be a way round FR-2.2."""
+    writer = Stub()
+    with pytest.raises(wrench.ValidationError):
+        wrench.save_json_file({"success": "yes"}, "out.json", wrench.ENVELOPE_SCHEMA, writer)
+    assert writer.written is None

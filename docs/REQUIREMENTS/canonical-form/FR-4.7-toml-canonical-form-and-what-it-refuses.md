@@ -1,0 +1,5 @@
+# FR-4.7
+
+| ID | Requirement | |
+|---|---|---|
+| FR-4.7 | TOML's canonical form is a table's scalars first and sorted, then its sections sorted, and no indentation. A sub-table is a `[path]` section; **an array whose every item is a table is repeated `[[path]]` sections**, because TOML has no inline form for one, so that is the only spelling rather than a choice between two. Every other array is inline on one line, including an empty one, which is `[]` whatever it would have held. Scalars precede sections for correctness rather than layout: TOML binds a bare key to the most recent header, so a scalar written after a section would land inside it. **A null is refused rather than substituted**, because TOML cannot spell one and FR-4.1 says a value with no canonical form is refused rather than guessed at. **A structure that is not a table is refused**, because TOML has no top-level scalar or array. **A native date, time or datetime decodes to its ISO 8601 string**, which is FR-2.9 applied to the second format that has temporal types. | [A/D] |
