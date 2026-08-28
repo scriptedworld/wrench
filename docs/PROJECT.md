@@ -71,9 +71,18 @@ moved to `go/` so the three are symmetric bases.
 
     bolt wrench-quality .
 
-2026-08-27: passes, 20 executions, `success: true` in `result.yaml`.
-`bolt.wrench-quality.yaml` is wrench's own jig, eleven tasks over the schemas, the
-packs and the contract.
+**2026-08-28: red, deliberately, and clearing it is
+`clank/tasks/wrench/gate/30`.** `result.yaml` carries `"success": false` with
+three reasons, `analyse`, `types` and `security-tests`. Those are what the shared
+Python standard found when the Python pack was wired to it in `4ca9005`, having
+never been measured by ruff, mypy, pylint, complexipy, vulture, bandit or
+coverage. **A red gate here is the adoption working rather than a regression, so
+do not open a session by trying to make it green.** `lint`, `docstrings` and
+`cognitive` are already cleared, at `9e72e6f`, `650aa30` and `69c8553`.
+
+`bolt.wrench-quality.yaml` is wrench's own jig over the schemas, the packs and the
+contract, and it now delegates the Python base to toolbox's `common-quality` and
+`python-std-quality`.
 
 **Read `result.yaml`, never the exit status.** bolt exits 0 whenever the run
 completed, whatever the tools concluded, and says so in its own usage. The verdict
@@ -84,15 +93,12 @@ is the `success` key.
 directory yields a failing verdict for a run that never happened. Give it a fresh
 `--output-dir`, or read the `reasons` before believing the verdict.
 
-**This is wrench's own jig and not the shared standard.** toolbox's
-`bolt.*-std-quality.yaml` are still in the retired format, carrying `version: 1`,
-`id:`, `tags:` and `result_command:`, none of which the current `jig.schema.json`
-accepts. So wrench cannot adopt them until `clank/tasks/toolbox/port-the-jigs`
-lands, and waiting for that meant gating nothing at all.
-
-So the Python pack still has no ruff, no mypy and no coverage: those come with the
-shared Python jig. `clank/tasks/wrench/gate/10-a-composite-jig` is the
-destination, and it is now one blocker away rather than three.
+**The shared standard is adopted for the Python base and nowhere else.** The jig
+runs `bolt common-quality python/` and `bolt python-std-quality python/` as two of
+its own tasks, so the Python pack does have ruff, mypy, pylint, complexipy,
+vulture, interrogate, bandit and coverage. The Go and Rust packs do not: Go has no
+base of its own, which is `gate/05`, and there is no shared Rust standard to join.
+`clank/tasks/wrench/gate/10-a-composite-jig` is where the rest of that goes.
 
 **Every task exits non-zero on its own failure**, so nothing needs an adapter.
 `gofmt -l` was the only tool that would have, and `test -z "$(gofmt -l .)"` gives
@@ -219,7 +225,9 @@ schemas: a jig whose only fault is `version: 1` passed under the old binary and
 is refused under the new one, at `/version`, got number want string. So the old
 build was issuing false greens, not merely unreproducible ones. **Any gate result
 in this estate from before 22:00 came from the older schema.** This gate was
-re-run afterwards and is unchanged at 21 executions, `success: true`.
+re-run afterwards and the swap did not change its verdict. What changed it half
+an hour later was `4ca9005` adopting the shared Python standard, so the verdict
+above is red for that reason and not for this one.
 
 ### A consumer enforces the schema it was built with, not the one shipped here
 
