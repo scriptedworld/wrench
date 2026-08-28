@@ -14,6 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import jsonschema.exceptions
 import pytest
 
 import wrench
@@ -575,15 +576,14 @@ def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
         "an https url": "https://example.com/x.schema.json",
         "an unshipped wrench": "https://scriptedworld.github.io/wrench/not-shipped.schema.json",
     }
-    for what, target in targets.items():
+    for target in targets.values():
         schema = wrench.compile_schema("mine.schema.json", _consumer_schema(target))
-        try:
+        # ValueError specifically, which is what Schema.validate raises for a
+        # reference it cannot resolve. Catching Exception here would pass on a
+        # typo in this test as readily as on the refusal it is checking for.
+        # `what` and `target` are in the failure's locals when one does resolve.
+        with pytest.raises(ValueError):
             schema.validate({"d": "anything"})
-        except Exception:
-            continue
-        pytest.fail(
-            f"{what} ({target}) resolved, so validation depends on something outside"
-        )
 
 
 # COVERS: FR-3.10 | edge
@@ -753,6 +753,9 @@ def test_the_pack_is_importable_without_an_install():
         env={"PYTHONPATH": str(ROOT / "python"), "PATH": "/usr/bin:/bin"},
         capture_output=True,
         text=True,
+        # The return code IS the assertion below, so a non-zero one must reach
+        # it rather than raising here.
+        check=False,
     )
     assert result.returncode == 0, result.stderr
     assert "YAMLCodec" in result.stdout
@@ -781,15 +784,18 @@ def test_yaml_support_is_whatever_the_platform_supplies():
 def test_an_unusable_schema_fails_when_it_is_compiled():
     """A schema that will not compile fails at the call that compiled it, so the
     failure does not surface later and somewhere else."""
-    for what, document in {
+    for document in {
         "not json": "{ not json at all",
         "not a schema": '{"type": 42}',
-    }.items():
-        try:
+    }.values():
+        # The two cases raise DIFFERENT third-party types, json's JSONDecodeError
+        # and jsonschema's SchemaError, neither of them wrench's own. That is a
+        # leak rather than a design: this pack wraps everywhere else, and the Go
+        # and Rust packs return their own error here. Asserting the types that
+        # are actually raised documents the leak instead of hiding it behind a
+        # blind except that would also pass on a typo.
+        with pytest.raises((json.JSONDecodeError, jsonschema.exceptions.SchemaError)):
             wrench.compile_schema("broken.schema.json", document)
-        except Exception:
-            continue
-        pytest.fail(f"compiling {what} succeeded")
 
 
 # COVERS: FR-3.1 | negative
@@ -821,7 +827,7 @@ def test_a_failed_write_leaves_no_temporary_behind(tmp_path):
     not_a_dir = tmp_path / "file"
     not_a_dir.write_bytes(b"")
 
-    with pytest.raises(Exception):
+    with pytest.raises(OSError):
         wrench.LOCAL_FILE.write(str(not_a_dir / "output.yaml"), b"x\n")
 
     entries = list(tmp_path.iterdir())
