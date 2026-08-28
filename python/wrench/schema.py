@@ -23,6 +23,7 @@ import functools
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 import jsonschema
 import jsonschema.exceptions
@@ -65,7 +66,7 @@ def _external_refs_allowed() -> bool:
     return os.environ.get(ALLOW_EXTERNAL_REFS) == "1"
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _shipped_documents() -> dict[str, dict]:
     """Every shipped schema, keyed by the `$id` it declares.
 
@@ -86,7 +87,7 @@ def _shipped_documents() -> dict[str, dict]:
     return documents
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _shipped_registry() -> referencing.Registry:
     """The shipped schemas as a resolution registry, so a `$ref` between two of
     them resolves locally and nothing reaches the network to validate a file."""
@@ -109,16 +110,23 @@ class Schema:
         self.name = name
         self._document = document
         self._registry = registry
-        self._validator = None
+        # Any, because jsonschema ships no stubs, so its validator type is not
+        # knowable here and a checker should not pretend otherwise.
+        self._validator: Any = None
 
     def validate(self, value: object) -> None:
-        if self._validator is None:
+        # Held in a local through the lazy build, because reading the attribute
+        # again after assigning it leaves a checker unable to prove it is no
+        # longer None.
+        validator = self._validator
+        if validator is None:
             cls = jsonschema.validators.validator_for(self._document)
             cls.check_schema(self._document)
             if self._registry is None:
-                self._validator = cls(self._document)
+                validator = cls(self._document)
             else:
-                self._validator = cls(self._document, registry=self._registry)
+                validator = cls(self._document, registry=self._registry)
+            self._validator = validator
 
         # A reference this schema cannot resolve surfaces from the referencing
         # library as its own exception type, which is not the ValueError every
@@ -126,7 +134,7 @@ class Schema:
         # contract and stops a third-party internal type reaching a consumer,
         # the way the Go pack wraps everything into its own.
         try:
-            error = jsonschema.exceptions.best_match(self._validator.iter_errors(value))
+            error = jsonschema.exceptions.best_match(validator.iter_errors(value))
         except Exception as unresolved:
             raise ValueError(
                 f"{self.name}: cannot resolve a reference: {unresolved}. "
@@ -162,7 +170,7 @@ class _Shipped(Schema):
         super().validate(value)
 
 
-def compile_schema(name: str, document: "str | dict") -> Schema:
+def compile_schema(name: str, document: str | dict) -> Schema:
     """Turn a JSON Schema document into a Schema.
 
     The shipped set are not special: anything in the ecosystem can attach a
@@ -185,11 +193,15 @@ def compile_schema(name: str, document: "str | dict") -> Schema:
     return Schema(name, parsed, registry)
 
 
-ENVELOPE_SCHEMA = _Shipped("https://scriptedworld.github.io/wrench/envelope.schema.json")
+ENVELOPE_SCHEMA = _Shipped(
+    "https://scriptedworld.github.io/wrench/envelope.schema.json"
+)
 
 JIG_SCHEMA = _Shipped("https://scriptedworld.github.io/wrench/jig.schema.json")
 
-MANIFEST_SCHEMA = _Shipped("https://scriptedworld.github.io/wrench/manifest.schema.json")
+MANIFEST_SCHEMA = _Shipped(
+    "https://scriptedworld.github.io/wrench/manifest.schema.json"
+)
 
 DEFINITIONS_SCHEMA = _Shipped(
     "https://scriptedworld.github.io/wrench/definitions.schema.json"

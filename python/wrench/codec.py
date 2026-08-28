@@ -62,7 +62,9 @@ def _normalise(value: object) -> object:
         out = {}
         for key, item in value.items():
             if not isinstance(key, str):
-                raise ValueError(f"mapping key {key!r} is {type(key).__name__}, not a string")
+                raise ValueError(
+                    f"mapping key {key!r} is {type(key).__name__}, not a string"
+                )
             out[key] = _normalise(item)
         return out
     if isinstance(value, (list, tuple)):
