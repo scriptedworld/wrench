@@ -30,18 +30,23 @@ class Stub:
     reader takes the path, so a test replaces the whole IO boundary."""
 
     def __init__(self, data: bytes = b"", error: Exception | None = None) -> None:
+        """Bytes to hand back, or an error to raise instead of handing any."""
         self.data = data
         self.error = error
         self.saw_path: str | None = None
         self.written: bytes | None = None
 
     def read(self, path: str) -> bytes:
+        """Record the path it was given, then answer. Recording is the point:
+        several tests assert the call passes the path through untouched."""
         self.saw_path = path
         if self.error:
             raise self.error
         return self.data
 
     def write(self, path: str, data: bytes) -> None:
+        """Capture the bytes rather than writing them, so a test can assert the
+        writer never ran when validation or encoding should have stopped it."""
         self.saw_path = path
         if self.error:
             raise self.error

@@ -85,6 +85,13 @@ def _at(where: str, error: ValueError) -> ValueError:
 
 
 def _canonical(value: object, depth: int = 0) -> str:
+    """Emit one value in canonical form, indented for its depth.
+
+    Written by hand rather than handed to a YAML library, because no emitter
+    produces these bytes: block style throughout, keys sorted and quoted, and a
+    scalar quoted exactly when it is a string. `testdata/canonical/` is what
+    defines them, and all three packs are held to the same files.
+    """
     pad = " " * (INDENT * depth)
 
     if isinstance(value, dict):
@@ -126,6 +133,11 @@ def _canonical(value: object, depth: int = 0) -> str:
 
 
 def _inline(value: object) -> str:
+    """The one-line spelling of a value that has no children to indent.
+
+    Only an empty collection and a scalar reach here. A populated one is written
+    across lines by `_canonical`, because block style is the whole point.
+    """
     if isinstance(value, dict):
         return "{}"
     if isinstance(value, list):
@@ -134,6 +146,12 @@ def _inline(value: object) -> str:
 
 
 def _scalar(value: object) -> str:
+    """One scalar, spelled so its type survives being read back.
+
+    A string is always quoted and everything else never is, which is what stops
+    `no`, `1.20` and `null` returning as a boolean, a float and a nothing. A
+    whole float keeps its decimal point for the same reason.
+    """
     if value is None:
         return "null"
     if isinstance(value, bool):

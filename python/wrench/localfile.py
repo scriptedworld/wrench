@@ -26,10 +26,26 @@ FILE_MODE = 0o644
 
 
 class LocalFileIO:
+    """The local filesystem, and the only IO that ships.
+
+    Everything wrench serves reads and writes on the machine it runs on, and a
+    test substitutes its own reader rather than needing a second one shipped to
+    do it.
+    """
+
     def read(self, path: str) -> bytes:
+        """The file's bytes. The path is handed in rather than an open handle,
+        which is what lets a test replace the whole IO boundary."""
         return Path(path).read_bytes()
 
     def write(self, path: str, data: bytes) -> None:
+        """Write atomically: beside the target, then renamed into place, so a
+        reader sees the previous bytes or the new ones and never a partial file.
+
+        The temporary is chmodded before the rename because `mkstemp` creates it
+        readable by its owner alone, and evidence meant to be handed around has
+        to survive being handed around.
+        """
         target = Path(path)
         handle, temporary = tempfile.mkstemp(
             dir=str(target.parent), prefix=f".{target.name}.", suffix=".tmp"

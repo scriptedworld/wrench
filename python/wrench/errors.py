@@ -12,6 +12,8 @@ class WrenchError(Exception):
     """Anything wrench refuses. Carries the path it was working on."""
 
     def __init__(self, path: str, cause: BaseException | str) -> None:
+        """Keep the path and the cause as attributes as well as in the message,
+        so a consumer can report on them without parsing the string."""
         self.path = path
         self.cause = cause
         super().__init__(f"wrench: {self._doing} {path}: {cause}")

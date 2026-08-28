@@ -107,6 +107,12 @@ class Schema:
         document: dict,
         registry: referencing.Registry | None = None,
     ) -> None:
+        """Hold the document and defer compiling it.
+
+        `name` is the `$id` a failure will quote, never a filename: a relative
+        filename resolves against whatever directory the process started in, and
+        that path then travels inside an envelope.
+        """
         self.name = name
         self._document = document
         self._registry = registry
@@ -115,6 +121,12 @@ class Schema:
         self._validator: Any = None
 
     def validate(self, value: object) -> None:
+        """Check a decoded structure, raising ValueError describing the first
+        problem and where in the document it sits.
+
+        Compiled here rather than at construction, so importing wrench costs
+        nothing and a broken schema surfaces from the call that needed it.
+        """
         # Held in a local through the lazy build, because reading the attribute
         # again after assigning it leaves a checker unable to prove it is no
         # longer None.
@@ -158,9 +170,18 @@ class _Shipped(Schema):
     """
 
     def __init__(self, identifier: str) -> None:
+        """Named by its `$id` and nothing else, with an empty document standing
+        in until first use. There is no filename here, so the two ways of naming
+        one schema cannot disagree."""
         super().__init__(identifier, {})
 
     def validate(self, value: object) -> None:
+        """Read the shipped set on first use, then validate as any schema does.
+
+        The registry is attached here rather than at construction, so a shipped
+        schema referencing another resolves without either being compiled until
+        something needs one.
+        """
         if not self._document:
             documents = _shipped_documents()
             if self.name not in documents:
