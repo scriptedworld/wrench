@@ -20,3 +20,7 @@ __pycache__/
 # library, and this is a library, so a consumer resolves its own versions.
 rust/target/
 rust/Cargo.lock
+
+# coverage writes this beside the pack when the shared jig runs its tests
+.coverage
+python/.coverage
