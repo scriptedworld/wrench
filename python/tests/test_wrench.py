@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
+import subprocess  # nosec B404 - registered in SUPPRESSIONS
 import sys
 from pathlib import Path
 
@@ -678,7 +678,7 @@ def test_a_written_file_is_readable_by_its_consumers(tmp_path):
 def test_the_pack_is_importable_without_an_install():
     """A fresh interpreter, given only the path to the package, imports it. No
     pip, no virtualenv, nothing that can be half present."""
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603 - registered in SUPPRESSIONS
         [sys.executable, "-c", "import wrench; print(wrench.YAML)"],
         cwd=str(ROOT),
         env={"PYTHONPATH": str(ROOT / "python"), "PATH": "/usr/bin:/bin"},

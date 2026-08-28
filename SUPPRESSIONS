@@ -1,0 +1,57 @@
+Register.
+
+Every `# nosec` in this repository appears below, with the question that was
+asked and the answer that was given. A pragma nobody justified is what this file
+exists to prevent, so an entry here is the justification and not a record that
+one was wanted.
+
+## B404 and B603, the subprocess in the Python suite
+
+**Asked 2026-08-28. Answered: allowed.**
+
+**Two lines are allowed, not the module.** Both pragmas are line-scoped, which
+is how bandit applies them, so a second `subprocess.run` added anywhere in this
+suite is reported and is not covered by anything here.
+
+    python/tests/test_wrench.py:13    import subprocess
+    python/tests/test_wrench.py:681   result = subprocess.run(
+
+Those are the lines as of wrench `8d27c06`. A line number drifts, so the source
+text is quoted beside it: if the number no longer names that text, this entry is
+describing something that has moved and needs re-reading rather than trusting.
+
+Both sit in `test_the_pack_is_importable_without_an_install`, and bandit reports
+`B404 blacklist` for the import and
+`B603 subprocess_without_shell_equals_true` for the call.
+
+**The question.** `test_the_pack_is_importable_without_an_install` discharges
+FR-6.1, which says the pack imports from a source checkout with no install
+having run. The only way to observe that is a fresh interpreter, which means a
+subprocess. Bandit is right that a subprocess is worth looking at and wrong that
+this one is a risk: the argument vector is a literal, the executable is
+`sys.executable`, no shell is involved, and nothing in it comes from outside the
+test.
+
+**Why config could not do it.** The shared jig invokes `bandit -r -q --skip B101
+tests` and passes no `-c`, so bandit never reads `[tool.bandit]` from
+`pyproject.toml` and a configured skip would not be seen. A skip that did reach
+it would also apply to the `security` task over the pack's own source, which
+would weaken a check that currently passes on its merits.
+
+**What is deliberately not suppressed.** `B101 assert_used` is skipped by the
+jig itself, on its own reasoning, and no pragma here touches it. The `security`
+task over `python/wrench/` carries no suppressions at all.
+
+## Index
+
+    python/tests/test_wrench.py   ×2   # nosec B404, B603
+
+**This register is not currently checked, and that is not wrench's doing.**
+`bin/suppression-register.py` reads `*.go` only, and its pragma pattern matches
+gosec's `G\d+` rather than bandit's `B\d+`, so it reports "no suppression
+pragmas anywhere, and none registered" against the two above and exits 0.
+Measured 2026-08-28. Filed by agent-support as
+`clank/inbox/toolbox/suppression-register-scans-go-only`.
+
+So the two entries here are held by hand until that lands. Anyone adding a third
+gets no warning from the gate.

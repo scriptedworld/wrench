@@ -224,8 +224,19 @@ correct.** `testdata/canonical/` and the three suites use it as an arbitrary
 value exercising the definitions, jig and manifest schemas. It never pointed at
 wrench's own contract, so the split does not touch it.
 
-Nothing is silenced and nothing is mocked here, so there is no `docs/SUPPRESSIONS/`
-and no `docs/MOCKS/`. Those directories are claimed when something needs them,
+**Two lines are silenced and nothing is mocked.** `SUPPRESSIONS` carries both,
+with the question asked and the answer given: `B404` and `B603` on the one test
+that runs a subprocess to prove the pack imports in a clean interpreter, which
+is the only way to observe FR-6.1. The pragmas are line-scoped, so a second
+subprocess anywhere in the suite is still reported.
+
+**That register is not currently checked.** `bin/suppression-register.py` reads
+`*.go` only and matches gosec's `G\d+` rather than bandit's `B\d+`, so it passes
+vacuously here. Filed by agent-support as
+`clank/inbox/toolbox/suppression-register-scans-go-only`. Until it lands, the
+register is held by hand.
+
+There is no `docs/MOCKS/`. That directory is claimed when something needs it,
 never created empty.
 
 ## How it fits against its siblings
