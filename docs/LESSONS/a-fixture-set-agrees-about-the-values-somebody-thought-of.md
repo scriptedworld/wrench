@@ -74,6 +74,43 @@ FR-4.8 landed was a *decode* defect: they happen before an emitter runs, and a
 fixture that is only ever an input to encoding cannot see them.
 `clank/tasks/wrench/parity/40` carries those.
 
+## A sample is a fixture set with one member per class
+
+FACT 2026-08-28, hours after the rest of this file was written. The section above
+names the escape set as an edge and does not test it. That edge was the next
+defect: three packs spell a control character three ways, and two write files
+they cannot read back.
+
+**Then the same mistake happened again inside the fix.** Twelve code points were
+sampled and the result reported as eight failures. Swept over 70 — C0, DEL, the
+whole C1 block, five Unicode specials — the answer is **61**. The C1 range was
+invisible to the sample, and the error was sevenfold in the direction that
+flattered this repository's own pack.
+
+**A sample has no baseline, which is the deeper problem.** Measuring PyYAML alone
+with no wrench in the path gives 6 ok, 61 unreadable, 3 changed. So the 61 is the
+*parser's* rule and no emitter can move it, and wrench's Python pack is that
+baseline plus exactly two escapes. The number that looked like a score was a
+constant. Only the swept range and the baseline together showed which column
+actually varied, and it was the smallest one: silent corruptions, 0, 0, 1.
+
+**So sweep the range and measure the baseline before quoting either.** Both are
+cheap: the sweep is a loop over code points, and the baseline is the same loop
+with the library called directly. Neither needs the pack under test.
+
+## Publish the set, not the verdict
+
+Both defects here were found by a consumer and this repository at once, and the
+mechanism was the same both times: one side published something checkable — a
+case list, an escape set — and the other checked it rather than agreeing with it.
+
+**Agreement between two implementations is not evidence, and neither is agreement
+between two agents.** What made the exchange work is that each side could re-run
+the other's measurement and get a different answer, which is what happened: the
+consumer's "your escaping is strictly better than mine" survived neither sweep.
+
+The corollary is what to send. A verdict invites assent; a set invites a check.
+
 ## What does not help
 
 **Adding the value that just bit you.** `floats-never-use-an-exponent` is now the
