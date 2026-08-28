@@ -516,6 +516,9 @@ and FR-4.8 is the rule; `clank/tasks/wrench/parity/30` carries the measurement.
 **Read that as the general caution rather than as a closed defect.** The set
 covers what somebody thought to put in it, and a gap in it looks exactly like
 agreement.
+`docs/LESSONS/a-fixture-set-agrees-about-the-values-somebody-thought-of.md`
+carries what it cost and what to do instead, which is to derive boundary cases
+from each type rather than from imagination.
 
 **All three suites cover the same rows**, since `clank/tasks/wrench/parity/20`
 closed. What divergence remains is declared rather than accidental:
