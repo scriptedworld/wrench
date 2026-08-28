@@ -86,10 +86,43 @@ to wrench's emitter that would diverge from infobot now fails two suites.
 a coincidence; a fixture is a contract. If infobot's emitter ever changes, that
 fixture is where the disagreement surfaces.
 
-## That fixture is half of a two-repository contract
+## ~~That fixture is half of a two-repository contract~~ It has one end now
 
-Named by infobot as its FR-1.11n, after this measurement turned an agreement into
-something with two ends and no statement of what it is.
+**FR-1.11n was retired by infobot on 2026-08-27**, along with FR-1.11d, and the
+retirement was correct on infobot's terms: its task 14 said both rows go if
+wrench's Go pack emits the same bytes, and it does. Verified from both ends that
+day. The Go pack reproduces the fixture byte for byte, checked against the golden
+having exactly one commit in its history so the comparison is not the pack being
+compared with itself; and infobot re-ran its own `_canonical()` and still
+produces those 256 bytes.
+
+**So the agreement holds and the guarantee does not.** What FR-1.11n bought was
+the *other* end: infobot pinned too, and a change there being a two-repository
+change. With it retired, infobot may move its emitter freely, nothing on its side
+fails, and nothing tells wrench.
+
+**The failure mode inverted, and this is the part to understand.** This section
+used to say that if the fixture fails, ask which end moved. **It can no longer
+fail from infobot moving.** wrench holds a frozen copy and never re-derives
+infobot's output, so if infobot drifts the fixture keeps passing and silently
+stops representing what it claims to. The check that would have surfaced the
+drift was the row that just went.
+
+**The fixture stays, and stops being described as a contract.** It earns its
+place on its own merits: a real hand-written document exercising quoted keys,
+escaped quotes and a backslash, a float keeping its decimal point, and numbers
+staying bare. Those are worth a case whoever wrote them. What it is *not*, from
+2026-08-27, is evidence about what infobot currently emits.
+
+**Do not repair this by reaching into infobot.** A check needing a sibling
+repository present fails for the wrong reason, which the section below already
+says and which has not changed. The two honest options are infobot's: re-run its
+probe when its emitter changes, or land its task 14 Go port so the second emitter
+stops existing. The second removes the duplication this whole document is about,
+so this decision is on borrowed time in the best way.
+
+The original framing, kept because the reasoning stands even though the row does
+not:
 
 **The form is pinned independently at both ends, and neither suite reaches into
 the other's tree.** wrench holds a copy of infobot's bytes and checks itself
@@ -106,6 +139,12 @@ check needing a sibling repository present fails for the wrong reason.
 **So if that fixture ever fails, the question is which end moved, and the answer
 is not automatically wrench.** Ask infobot before changing the fixture, the way
 you would ask bolt before reshaping a schema.
+
+**Still ask, and know it is now a courtesy rather than a contract.** With
+FR-1.11n retired the fixture cannot fail because infobot moved, so the only way
+it fails is wrench's emitter changing. Asking first is still right, because those
+bytes came from somewhere and infobot is who would know whether the new ones are
+also acceptable. It is no longer a rule either side is held to.
 
 ## The third option, left open
 
