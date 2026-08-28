@@ -1,0 +1,7 @@
+# FR-7.4, retired
+
+Retirement is carried by this file's name. The row is kept so the id stays registered as retired and can never be reused.
+
+| ID | Retired | Superseded by |
+|---|---|---|
+| FR-7.4 | 2026-08-26 | Answered, not superseded. There is no bootstrap consumer to reach: nothing in `dotfiles/bin/` imports wrench or reads YAML, and the pack is installed after mise exists. `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md` |

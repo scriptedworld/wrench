@@ -4,7 +4,7 @@
 the context behind the open questions and nothing that is sized enough to be a
 task.
 
-`REQUIREMENTS.md` covers what the README, bolt's contract rows, silo's platform
+`docs/REQUIREMENTS/` covers what the README, bolt's contract rows, silo's platform
 decision and wrench's inbox entries support, plus what building all three packs
 settled.
 
@@ -134,4 +134,4 @@ Content that used to sit here has moved to where it is read rather than found:
 | Packs follow demand | `docs/DECISIONS/packs-follow-demand.md` |
 | A pack's spelling of the two calls | `docs/DECISIONS/each-pack-spells-the-calls-its-own-way.md` |
 | Map keys are emitted in sorted order | `docs/DECISIONS/canonical-form-sorts-map-keys.md` |
-| Six rows no test can cite | Resolved. Four retired to `docs/DECISIONS/`, two covered when the Python pack landed. `REQUIREMENTS.md` records both. |
+| Six rows no test can cite | Resolved. Four retired to `docs/DECISIONS/`, two covered when the Python pack landed. `docs/REQUIREMENTS/` records both. |

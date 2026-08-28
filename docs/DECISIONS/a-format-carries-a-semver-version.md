@@ -71,7 +71,7 @@ claiming `2.0.0` is refused by the v1 schema rather than silently checked agains
 the wrong shape.
 
 **Retiring a version deletes its file, and its `$id` is never reused.** That is
-the same rule `REQUIREMENTS.md` applies to requirement ids, for the same reason:
+the same rule `docs/REQUIREMENTS/` applies to requirement ids, for the same reason:
 reuse silently rewrites what every existing reference meant.
 
 ## Why not one file with the versions as a `oneOf`

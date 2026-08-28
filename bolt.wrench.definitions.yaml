@@ -1,8 +1,12 @@
 # Values the shared jigs substitute when they run at a pack's own base.
 #
-# wrench states one contract that every pack implements, so REQUIREMENTS.md and
+# wrench states one contract that every pack implements, so the requirements and
 # SUPPRESSIONS live at the repository root and not beside each pack. A relative
-# value resolves against the base the child runs in, so one file serves every
+# value resolves against the base the child runs in, so one set serves every
 # pack rather than one copy per base that could drift.
-requirements: ../REQUIREMENTS.md
+#
+# A DIRECTORY since the split: `docs/REQUIREMENTS/<category>/FR-<id>-<slug>.md`,
+# with retirement carried by a `.retired` name. Both checkers take a tree or a
+# single file, so an adopter that has not split is unaffected.
+requirements: ../docs/REQUIREMENTS
 suppressions: ../SUPPRESSIONS

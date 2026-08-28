@@ -1,0 +1,7 @@
+# FR-7.3, retired
+
+Retirement is carried by this file's name. The row is kept so the id stays registered as retired and can never be reused.
+
+| ID | Retired | Superseded by |
+|---|---|---|
+| FR-7.3 | 2026-08-26 | FR-3.5. The schemas are files, and a pack may embed those same files. |

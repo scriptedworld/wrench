@@ -1,0 +1,7 @@
+# FR-6.2a, retired
+
+Retirement is carried by this file's name. The row is kept so the id stays registered as retired and can never be reused.
+
+| ID | Retired | Superseded by |
+|---|---|---|
+| FR-6.2a | 2026-08-27 | Nothing. Its purpose went with FR-7.4. It recorded that `/usr/bin/python3` supplies no `jsonschema`, which mattered only while the bootstrap window was believed to be a consumer of this pack. It is not, so the row stated a fact about an interpreter nothing here uses, and no test could ever have discharged it. `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md` keeps the measurement. |

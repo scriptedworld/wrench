@@ -2,7 +2,7 @@
 
 ## The decision
 
-Each language pack is written from `REQUIREMENTS.md` and the schemas. Reading an
+Each language pack is written from `docs/REQUIREMENTS/` and the schemas. Reading an
 existing pack to find out what to build is the thing this rule exists to prevent.
 
 ## Why
@@ -34,7 +34,7 @@ strengths and only the first has been demonstrated.
 
 **The next pack is where this decision can still be kept**, whichever of Rust,
 TypeScript or Ruby it turns out to be. Write it from
-`REQUIREMENTS.md` and `schemas/`, run it against `testdata/canonical/`, and do
+`docs/REQUIREMENTS/` and `schemas/`, run it against `testdata/canonical/`, and do
 not open `wrench.go` or `codec.py` while doing it. If the contract turns out to
 be insufficient to write a pack from, that is the finding, and it is worth more
 than a third pack that agrees because it was copied.

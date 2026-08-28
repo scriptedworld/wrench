@@ -83,8 +83,11 @@ SCOPE = re.compile(
 #     traceability  second row live, uncovered,                 EXIT 1
 #
 # The dangerous half is that this checker was the one reporting the pass, on a
-# divergence it exists to find. Latent in wrench only because `## Retired` is the
-# last section of REQUIREMENTS.md today.
+# divergence it exists to find. It was latent in wrench only because
+# `## Retired` was the last section of a single REQUIREMENTS.md, which is no
+# longer how this repository stores its contract: `docs/REQUIREMENTS/` is one
+# file per requirement and retirement is carried by a `.retired` name. The
+# heading still has to be read correctly for every adopter that has not split.
 #
 # NOTHING TESTS THIS FILE, which is how that survived. See
 # `clank/tasks/wrench/gate/40-the-checkers-have-no-tests`.

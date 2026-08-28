@@ -1,0 +1,7 @@
+# FR-1.3, retired
+
+Retirement is carried by this file's name. The row is kept so the id stays registered as retired and can never be reused.
+
+| ID | Retired | Superseded by |
+|---|---|---|
+| FR-1.3 | 2026-08-26 | `docs/DECISIONS/wrench-owns-the-contract-and-consumers-do-not.md`. It stated who decides rather than a property of wrench. The Go test citing it was testing FR-2.3 and now cites that alone. |

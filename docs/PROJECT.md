@@ -38,7 +38,8 @@ passing the wrong one is not, and nothing here detects that.
 
 ## Layout
 
-    REQUIREMENTS.md          the contract, one document every pack implements
+    docs/REQUIREMENTS/       the contract, one file per requirement, nested by
+                             category. `.retired` in a name retires that file
     NEXT_STEPS.md            open questions and context that is not work
     schemas/                 the schemas, one copy, read by every pack
     testdata/canonical/      the shared fixture set holding the packs level
@@ -135,8 +136,8 @@ The same checks, run by hand:
     go test -count=1 ./... && gofmt -l . && go vet ./...
     PYTHONPATH=python python3 -m pytest python/tests -q
     cargo test --manifest-path rust/Cargo.toml
-    python3 ~/.projects/toolbox/bin/test-traceability.py --requirements REQUIREMENTS.md .
-    ./bin/test-suite-parity.py --requirements REQUIREMENTS.md \
+    python3 ~/.projects/toolbox/bin/test-traceability.py --requirements docs/REQUIREMENTS .
+    ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
         --suite go='*_test.go' --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' .
 
@@ -163,35 +164,42 @@ by the jig on 2026-08-27. `docs/LESSONS/read-the-artifact-not-the-summary-line.m
 `clank/tasks/wrench/gate/10-a-composite-jig.planning` has the design for the
 shared-jig gate this one stands in for.
 
-## Requirements stay one file, and why
+## The contract is one file per requirement
 
-The standard layout is `docs/REQUIREMENTS/<category>/<requirement>.md`, one file
-per requirement. **wrench does not use it yet**, deliberately.
+`docs/REQUIREMENTS/<category>/FR-<id>-<slug>.md`, nested as deep as the grouping
+wants, which is the standard layout. 35 live rows and 11 retired, split from a
+single `REQUIREMENTS.md` on 2026-08-28.
 
-**The reason changed on 2026-08-27 and the blocker is now wrench's own.**
-toolbox's `cc65aad` taught `test-traceability.py` to read a directory, so that
-half is done. Measured: pointed at a directory holding no rows it prints
-`docs declares no requirements; refusing to pass vacuously` and **exits 1**,
-which is the right answer rather than a vacuous pass.
+**Retirement is carried by the filename**, `FR-7.4-the-bootstrap-consumer.retired`,
+and a retired requirement keeps the category it always sat in, so a reader
+meeting an old id finds it where the series lived.
 
-What blocks the split now is `bin/test-suite-parity.py`, wrench's own, which
-still calls `read_text()` on a single path and raises `IsADirectoryError`. So
-splitting today would trade one working check for one crash.
-`clank/tasks/wrench/requirements/10-split-the-contract-into-files` carries it.
+**That is what the split was for, and the hazard it removed was real.** The
+checkers read a `## Retired` heading as a per-file switch: every row below it is
+retired and the switch dies at end of file. wrench's heading was the **last**
+section, so a row appended to the end of `REQUIREMENTS.md` was silently retired
+rather than added, and appending is what a person does when adding a
+requirement. No checker could catch it, because nothing distinguishes a live row
+that fell under the heading from a genuine retirement. A filename has no
+heading, no switch and no below-this-line. The mechanism is silo `5addaad`.
 
-**There is a live hazard in keeping one file, and it is worth knowing before the
-split lands.** The checkers read a `## Retired` heading as a per-file switch:
-every row below it in that file is retired, and the switch dies at end of file.
-wrench's `## Retired` is the **last** section, so a row appended to the end of
-`REQUIREMENTS.md` is silently retired rather than added. Appending is what a
-person does when adding a requirement.
+The interim `retired-rows-are-deliberate` gate task, which pinned the count of
+retired rows, went with the split.
 
-Nothing is wrong today, checked 2026-08-27: 11 rows sit below the heading and all
-of them are meant to. **Add a live row inside its own numbered section, never at
-the end of the file.** The split removes the hazard by construction, which is a
-second reason to do it. The mechanism is silo `5addaad`, and toolbox's reading of
-it is that a retired section sharing a file with live rows is the one arrangement
-that can retire something silently.
+**Both checkers gave identical verdicts before and after**, which is what says
+the contract survived the move: traceability 35 of 35 exit 0, parity 51 tests
+level across three suites with the same 2 scoped rows and 2 scoped pairs.
+
+**Do not put a `##` heading in a `.retired` file.** `test-traceability.py`
+resets its retired state at every `##` heading regardless of the filename, which
+un-retires every row below it, and its own docstring promises the opposite. Every
+file here uses a single `#`. Filed at
+`clank/inbox/toolbox/a-heading-un-retires-a-retired-document/`.
+
+**The fixtures still carry `../REQUIREMENTS.md` as a string and that is
+correct.** `testdata/canonical/` and the three suites use it as an arbitrary
+value exercising the definitions, jig and manifest schemas. It never pointed at
+wrench's own contract, so the split does not touch it.
 
 Nothing is silenced and nothing is mocked here, so there is no `docs/SUPPRESSIONS/`
 and no `docs/MOCKS/`. Those directories are claimed when something needs them,
@@ -410,7 +418,7 @@ failure is what there is to observe, observe it.
 Regenerate it rather than trusting this paragraph. `bin/test-suite-parity.py` is
 the check, it names every divergence, and **it exits non-zero when it finds one**:
 
-    ./bin/test-suite-parity.py --requirements REQUIREMENTS.md \
+    ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
         --suite go='*_test.go' --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' . ; echo $?
 

@@ -49,7 +49,7 @@ Neither pack is the oracle for the other: if they disagree, the fixture is right
 
 ## Reading further
 
-`REQUIREMENTS.md` is the contract, derived from this README, from bolt's rows
+`docs/REQUIREMENTS/` is the contract, one file per requirement, derived from this README, from bolt's rows
 stating the contract rather than its use of it, and from
 `silo/docs/DECISIONS/yaml-everywhere-validated-against-the-decoded-structure.md`,
 where the platform decision lives.

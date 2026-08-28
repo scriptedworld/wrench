@@ -12,6 +12,12 @@ and every time it was reported as passing.
     33 of 34 requirements covered; 0 open and exempt      <- printed
     exit 1                                                <- never looked at
 
+**`REQUIREMENTS.md` is the path as it was on 2026-08-27 and is left standing.**
+The contract split into `docs/REQUIREMENTS/` on 2026-08-28. This is a record of
+what was run and what it printed, so repointing the path would make the record
+claim something that never happened; a live citation gets repointed, a record of
+a past observation gets dated.
+
 **It had been exiting 1 at every commit that day**, measured afterwards across
 `4677988`, `0ecab66`, `b069377`, `23338c0` and `68d583b`. The printed line reads
 like a score, the score looked good, and the exit status was never checked.

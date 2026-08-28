@@ -7,12 +7,12 @@ enforced by a gate yet, so it is a checklist rather than a guarantee.
 ## The invariant
 
 Every pack ships the same schemas, produces the same bytes for the same
-structure, and refuses the same documents. `REQUIREMENTS.md` is one contract that
+structure, and refuses the same documents. `docs/REQUIREMENTS/` is one contract that
 all of them implement.
 
 ## The check that enforces it
 
-    ./bin/test-suite-parity.py --requirements REQUIREMENTS.md \
+    ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
         --suite go='*_test.go' --suite python='python/tests/*.py' .
 
 **Run this before committing anything that touches a test.** It fails when a
@@ -25,8 +25,8 @@ while three tests existed in Go and not in Python, and one of those turned up a
 real behavioural difference between the packs.
 
 **A row legitimately held by one pack declares itself** with a scope marker in
-`REQUIREMENTS.md`, such as `[python]`. The checker reads the document, so the
-exempt list lives in one place. **Never add a scope marker to silence a failure**:
+its own requirement file under `docs/REQUIREMENTS/`, such as `[python]`. The
+checker reads those files, so the exempt list lives in one place. **Never add a scope marker to silence a failure**:
 it is for a row a pack cannot discharge, and a row merely untested in one pack is
 the finding the check exists to produce.
 
@@ -85,7 +85,7 @@ read rather than listed, and what it cost to find out.
 
 ## Adding a pack
 
-Write it from `REQUIREMENTS.md` and `schemas/` without reading another pack.
+Write it from `docs/REQUIREMENTS/` and `schemas/` without reading another pack.
 `docs/DECISIONS/a-pack-is-written-from-the-contract.md` says why, and is honest
 that the Python pack did not manage it.
 

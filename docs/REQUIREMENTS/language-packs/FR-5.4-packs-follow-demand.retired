@@ -1,0 +1,7 @@
+# FR-5.4, retired
+
+Retirement is carried by this file's name. The row is kept so the id stays registered as retired and can never be reused.
+
+| ID | Retired | Superseded by |
+|---|---|---|
+| FR-5.4 | 2026-08-26 | `docs/DECISIONS/packs-follow-demand.md` |

@@ -1,7 +1,7 @@
 # A library per language, not a C core with bindings
 
 Decided before the first pack was written, and recorded here rather than in
-`REQUIREMENTS.md` because it says why the project is shaped as it is instead of
+`docs/REQUIREMENTS/` because it says why the project is shaped as it is instead of
 stating a property anything can test.
 
 ## The decision
