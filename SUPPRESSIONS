@@ -44,14 +44,25 @@ task over `python/wrench/` carries no suppressions at all.
 
 ## Index
 
-    python/tests/test_wrench.py   ×2   # nosec B404, B603
+    tests/test_wrench.py   # nosec B404
+    tests/test_wrench.py   # nosec B603
 
-**This register is not currently checked, and that is not wrench's doing.**
-`bin/suppression-register.py` reads `*.go` only, and its pragma pattern matches
-gosec's `G\d+` rather than bandit's `B\d+`, so it reports "no suppression
-pragmas anywhere, and none registered" against the two above and exits 0.
-Measured 2026-08-28. Filed by agent-support as
-`clank/inbox/toolbox/suppression-register-scans-go-only`.
+**The paths are relative to the base the checker scans, which is `python/`, and
+not to this file.** `common-quality` runs at each pack's own base, so
+`suppression-register.py` reports what it found as `tests/test_wrench.py` while
+this register sits one level up at the repository root. The two frames are a
+property of a shared register serving a per-base checker; wrench has one scanned
+base so the spelling is unambiguous here. Filed against toolbox as
+`clank/inbox/toolbox/a-shared-register-serves-two-bases`.
 
-So the two entries here are held by hand until that lands. Anyone adding a third
-gets no warning from the gate.
+**One row per pragma, not one per file.** The checker keys on the set of codes a
+single pragma carries, so the two lines above are two entries of one code each
+rather than one entry carrying both. Registering them together reads as a third
+pragma silencing `B404` and `B603` at once, which is not what the source has.
+
+**This register is checked, since toolbox `6ac4304` on 2026-08-28**, which
+taught `bin/suppression-register.py` every language rather than Go alone. It had
+previously matched gosec's `G\d+` and not bandit's `B\d+`, so it passed
+vacuously here. wrench symlinks the checker, so the upgrade took effect with no
+change in this repository and the gate failed on the two rows above being
+spelled for a reader rather than for the checker.
