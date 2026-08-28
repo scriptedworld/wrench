@@ -115,16 +115,26 @@ braces. If those counts ever diverge, the gate has started grading build output.
     git ls-files '*.json' | wc -l
     ls -d .ephemera/<run>/work/json-parses-* | wc -l
 
-**Three of wrench's 12 tasks let a runner select files**, which is checkable here
+**Three of wrench's 14 tasks let a runner select files**, which is checkable here
 and is the half that matters for this repository:
 
+    grep -c '^  - name:' bolt.wrench-quality.yaml     # 14
     grep -c 'matching:' bolt.wrench-quality.yaml      # 3
+
+Both re-measured 2026-08-28. **The denominator read 12 and had been wrong for
+longer than anyone noticed**, while the numerator was right the whole time. It
+went stale the ordinary way, by tasks being added and the sentence about them not
+being re-run, and nothing could have caught it: the figure sat beside a command
+that produces the *other* number. Printing both is what makes the sentence
+checkable rather than half-checkable.
 
 **wrench is the only jig in the estate that does, out of 116 tasks in 26 jigs.
 That half is bolt's measurement and cannot be re-derived from this repository**,
 which holds one jig. bolt `cd1e6ba`, its FR-3.4f, with the script at
-`bolt/bin/count-selection.py`. Do not restate it here as though it were checkable
-from here; if it matters, re-run bolt's script against the estate.
+`bolt/bin/count-selection.py`. Verified 2026-08-28 that both still resolve, and
+that `cd1e6ba` resolves in `bolt` and **not** in `bolt.go`, so the citation names
+one tree after the split. Do not restate the estate figure here as though it were
+checkable from here; if it matters, re-run bolt's script.
 
 So when bolt's empty-selection default lands, these three are the first
 things in the ecosystem it can protect, and **none of them should carry
