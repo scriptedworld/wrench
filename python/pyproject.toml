@@ -7,7 +7,7 @@ name = "wrench"
 version = "0.1.0"
 description = "Reads, writes and validates the form of the ecosystem's structured files"
 requires-python = ">=3.11"
-license = "MIT"
+license = "Apache-2.0"
 
 # All three are imported by name and expected to come from the platform.
 # Declaring them here is for a resolver that has one; FR-6.2 and FR-6.2a say the

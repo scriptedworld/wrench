@@ -60,3 +60,8 @@ schema or adding a pack, read `docs/PATTERNS/holding-two-packs-level.md`.
 
     go test ./...
     PYTHONPATH=python python3 -m pytest python/tests -q
+
+## Licence
+
+Apache-2.0. `LICENSE` carries the terms and `NOTICE` the attribution; both packs
+declare it in their own manifests, so the three cannot drift apart silently.
