@@ -248,3 +248,53 @@ fn a_float_has_one_spelling_in_every_codec() {
         }
     }
 }
+
+
+/// The escape spellings below are asserted identically in all three suites. A
+/// table that differs between packs is packs that differ.
+fn canonical_escapes() -> Vec<(u32, &'static str, &'static str)> {
+    vec![
+        (0x00, "\\0", "\\u0000"),
+        (0x07, "\\a", "\\u0007"),
+        (0x08, "\\b", "\\b"),
+        (0x09, "\\t", "\\t"),
+        (0x0B, "\\v", "\\u000B"),
+        (0x1B, "\\e", "\\u001B"),
+        (0x7F, "\\x7F", "\\u007F"),
+        (0x85, "\\N", "\u{85}"),
+        (0x9F, "\\x9F", "\u{9f}"),
+        (0x2028, "\\L", "\u{2028}"),
+        (0x2029, "\\P", "\u{2029}"),
+    ]
+}
+
+// COVERS: FR-4.9 | property
+#[test]
+fn a_control_character_is_escaped_in_every_codec() {
+    // A raw control character is refused by a strict YAML reader, accepted by a
+    // lenient one, and folded to a space by one implementing the YAML 1.1
+    // line-break set, so a file carrying one has no single meaning.
+    for (point, in_yaml, in_toml) in canonical_escapes() {
+        let ch = char::from_u32(point).expect("valid scalar");
+        let text = format!("a{ch}b");
+        let value = json!({ "n": text });
+
+        let encoded = wrench::YAML.encode(&value).unwrap();
+        assert_eq!(
+            String::from_utf8(encoded.clone()).unwrap(),
+            format!("\"n\": \"a{in_yaml}b\"\n"),
+            "yaml U+{point:04X}"
+        );
+
+        let toml_bytes = TOML.encode(&value).unwrap();
+        assert_eq!(
+            String::from_utf8(toml_bytes).unwrap(),
+            format!("n = \"a{in_toml}b\"\n"),
+            "toml U+{point:04X}"
+        );
+
+        // Reading it back is the half that was broken.
+        let back = wrench::YAML.decode(&encoded).unwrap();
+        assert_eq!(back.get("n").and_then(|v| v.as_str()), Some(text.as_str()));
+    }
+}

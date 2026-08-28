@@ -164,6 +164,46 @@ fn canonical(value: &Value, depth: usize) -> Result<String, Box<dyn std::error::
 }
 
 /// Whether a value renders as a block rather than on the key's own line.
+/// A string, escaped the way YAML spells escapes. FR-4.9.
+///
+/// A raw control character in a quoted scalar is refused by a strict YAML reader
+/// and folded to a space by a lenient one, so a file carrying one is read
+/// differently depending on the reader. Escaping keeps every value writable,
+/// which `docs/DECISIONS/parity-is-reached-by-widening-never-by-refusing.md`
+/// requires.
+///
+/// U+0085, U+2028 and U+2029 are here because YAML 1.1 makes all three line
+/// breaks and 1.2 does not, so which of them fold depends on the reader's
+/// version rather than on the character. The table matches the Go pack byte for
+/// byte, including uppercase hex.
+fn escape(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for ch in value.chars() {
+        match ch {
+            '\u{0}' => out.push_str("\\0"),
+            '\u{7}' => out.push_str("\\a"),
+            '\u{8}' => out.push_str("\\b"),
+            '\t' => out.push_str("\\t"),
+            '\n' => out.push_str("\\n"),
+            '\u{b}' => out.push_str("\\v"),
+            '\u{c}' => out.push_str("\\f"),
+            '\r' => out.push_str("\\r"),
+            '\u{1b}' => out.push_str("\\e"),
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\u{85}' => out.push_str("\\N"),
+            '\u{2028}' => out.push_str("\\L"),
+            '\u{2029}' => out.push_str("\\P"),
+            '\u{feff}' => out.push_str("\\uFEFF"),
+            c if (c < ' ') || c == '\u{7f}' || ('\u{80}'..='\u{9f}').contains(&c) => {
+                out.push_str(&format!("\\x{:02X}", c as u32));
+            }
+            c => out.push(c),
+        }
+    }
+    out
+}
+
 fn nested(value: &Value) -> bool {
     match value {
         Value::Object(map) => !map.is_empty(),
@@ -195,15 +235,7 @@ fn scalar(value: &Value) -> Result<String, Box<dyn std::error::Error + Send + Sy
                 n.to_string()
             }
         }
-        Value::String(s) => {
-            let escaped = s
-                .replace('\\', "\\\\")
-                .replace('"', "\\\"")
-                .replace('\n', "\\n")
-                .replace('\t', "\\t")
-                .replace('\r', "\\r");
-            format!("\"{escaped}\"")
-        }
+        Value::String(s) => format!("\"{}\"", escape(s)),
         other => {
             return Err(Box::new(Message(format!(
                 "cannot write {other} in canonical form"

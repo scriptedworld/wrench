@@ -235,3 +235,63 @@ func TestAFloatHasOneSpellingInEveryCodec(t *testing.T) {
 		}
 	}
 }
+
+// canonicalEscapes is asserted identically in all three suites. A table that
+// differs between packs is packs that differ.
+func canonicalEscapes() []struct {
+	point rune
+	yaml  string
+	toml  string
+} {
+	return []struct {
+		point rune
+		yaml  string
+		toml  string
+	}{
+		{0x00, `\0`, `\u0000`},
+		{0x07, `\a`, `\u0007`},
+		{0x08, `\b`, `\b`},
+		{0x09, `\t`, `\t`},
+		{0x0B, `\v`, `\u000B`},
+		{0x1B, `\e`, `\u001B`},
+		{0x7F, `\x7F`, `\u007F`},
+		{0x85, `\N`, "\u0085"},
+		{0x9F, `\x9F`, "\u009f"},
+		{0x2028, `\L`, "\u2028"},
+		{0x2029, `\P`, "\u2029"},
+	}
+}
+
+// COVERS: FR-4.9 | property
+func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
+	for _, c := range canonicalEscapes() {
+		text := "a" + string(c.point) + "b"
+		value := map[string]any{"n": text}
+
+		yamlBytes, err := wrench.YAML.Encode(value)
+		if err != nil {
+			t.Fatalf("yaml encode U+%04X: %v", c.point, err)
+		}
+		if want := "\"n\": \"a" + c.yaml + "b\"\n"; string(yamlBytes) != want {
+			t.Errorf("yaml U+%04X wrote %q, want %q", c.point, yamlBytes, want)
+		}
+
+		tomlBytes, err := wrench.TOML.Encode(value)
+		if err != nil {
+			t.Fatalf("toml encode U+%04X: %v", c.point, err)
+		}
+		if want := "n = \"a" + c.toml + "b\"\n"; string(tomlBytes) != want {
+			t.Errorf("toml U+%04X wrote %q, want %q", c.point, tomlBytes, want)
+		}
+
+		// Reading it back is the half that was broken: two packs wrote files
+		// their own parser then refused.
+		back, err := wrench.YAML.Decode(yamlBytes)
+		if err != nil {
+			t.Fatalf("yaml decode U+%04X: %v", c.point, err)
+		}
+		if got, _ := back.(map[string]any)["n"].(string); got != text {
+			t.Errorf("yaml U+%04X read back %q", c.point, got)
+		}
+	}
+}

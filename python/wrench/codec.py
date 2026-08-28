@@ -176,6 +176,62 @@ def _inline(value: object) -> str:
     return _scalar(value)
 
 
+# YAML'S OWN ESCAPE TABLE, matching what the Go pack emits byte for byte.
+#
+# FR-4.9. A raw control character in a quoted scalar is refused by a strict YAML
+# reader and folded to a space by a lenient one, so a file carrying one is read
+# differently depending on the reader. Escaping is the only answer that keeps
+# every value writable, which
+# `docs/DECISIONS/parity-is-reached-by-widening-never-by-refusing.md` requires.
+#
+# U+0085, U+2028 and U+2029 are here because YAML 1.1 makes all three line breaks
+# and 1.2 does not, so which of them fold depends on the reader's version rather
+# than on the character.
+_YAML_NAMED = {
+    0x00: r"\0",
+    0x07: r"\a",
+    0x08: r"\b",
+    0x09: r"\t",
+    0x0A: r"\n",
+    0x0B: r"\v",
+    0x0C: r"\f",
+    0x0D: r"\r",
+    0x1B: r"\e",
+    0x22: r"\"",
+    0x5C: "\\\\",
+    0x85: r"\N",
+    0x2028: r"\L",
+    0x2029: r"\P",
+    0xFEFF: "\\uFEFF",
+}
+
+
+FIRST_PRINTABLE = 0x20
+DELETE = 0x7F
+C1_FIRST = 0x80
+C1_LAST = 0x9F
+
+
+def _escape(value: str) -> str:
+    r"""A string, escaped the way YAML spells escapes.
+
+    Anything with a name gets it; the rest of C0, DEL and C1 get `\xNN` with
+    uppercase hex, which is what the Go pack writes. Everything else is written
+    as itself, including U+00A0 and U+200B, which no reader alters.
+    """
+    out = []
+    for char in value:
+        point = ord(char)
+        named = _YAML_NAMED.get(point)
+        if named is not None:
+            out.append(named)
+        elif point < FIRST_PRINTABLE or point == DELETE or C1_FIRST <= point <= C1_LAST:
+            out.append(f"\\x{point:02X}")
+        else:
+            out.append(char)
+    return "".join(out)
+
+
 def _bare_scalar(value: object) -> str | None:
     """The scalars YAML and JSON spell identically, or None for anything else.
 
@@ -206,6 +262,5 @@ def _scalar(value: object) -> str:
     if bare is not None:
         return bare
     if isinstance(value, str):
-        escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
-        return f'"{escaped}"'
+        return f'"{_escape(value)}"'
     raise ValueError(f"cannot write {type(value).__name__} in canonical form")

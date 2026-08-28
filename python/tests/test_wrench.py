@@ -1006,3 +1006,41 @@ def test_a_float_has_one_spelling_in_every_codec(value: float, spelled: str) -> 
     """
     for codec, prefix, suffix in CANONICAL_FLOAT_CODECS:
         assert codec.encode({"n": value}) == (prefix + spelled + suffix).encode()
+
+
+# The escape spellings below are asserted identically in all three suites. A
+# table that differs between packs is packs that differ.
+CANONICAL_ESCAPES = [
+    (0x00, r"\0", r"\u0000"),
+    (0x07, r"\a", r"\u0007"),
+    (0x08, r"\b", r"\b"),
+    (0x09, r"\t", r"\t"),
+    (0x0B, r"\v", r"\u000B"),
+    (0x1B, r"\e", r"\u001B"),
+    (0x7F, r"\x7F", r"\u007F"),
+    (0x85, r"\N", "\u0085"),
+    (0x9F, r"\x9F", "\u009f"),
+    (0x2028, r"\L", "\u2028"),
+    (0x2029, r"\P", "\u2029"),
+]
+
+
+# COVERS: FR-4.9 | property
+@pytest.mark.parametrize(("point", "in_yaml", "in_toml"), CANONICAL_ESCAPES)
+def test_a_control_character_is_escaped_in_every_codec(point, in_yaml, in_toml):
+    """Escaped rather than written raw, in each format's own spelling.
+
+    A raw control character is refused by a strict YAML reader, accepted by a
+    lenient one, and folded to a space by one implementing the YAML 1.1
+    line-break set, so a file carrying one has no single meaning.
+    """
+    text = f"a{chr(point)}b"
+    value = {"n": text}
+
+    encoded = wrench.YAML.encode(value)
+    assert encoded == f'"n": "a{in_yaml}b"\n'.encode()
+    assert wrench.TOML.encode(value) == f'n = "a{in_toml}b"\n'.encode()
+
+    # Reading it back is the half that was broken: two packs wrote files their
+    # own parser then refused.
+    assert wrench.YAML.decode(encoded)["n"] == text

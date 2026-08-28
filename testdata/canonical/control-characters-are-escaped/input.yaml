@@ -1,0 +1,20 @@
+# A control character has no single meaning when written raw: a strict YAML
+# reader refuses the file, a lenient one accepts it, and one implementing the
+# YAML 1.1 line-break set folds some of them to a space with no error. FR-4.9.
+#
+# Every value here is written in the \x or \u form rather than the named one, so
+# the fixture proves canonical form is the NAMED spelling wherever a name exists
+# rather than whatever the input happened to use. Nothing in this file is a raw
+# control character, deliberately: an invisible byte in a fixture is a thing the
+# next reader silently repairs.
+nul: "\x00"
+bell: "\x07"
+escape: "\x1b"
+delete: "\x7f"
+c1: "\x9f"
+next-line: "\x85"
+line-sep: "\u2028"
+para-sep: "\u2029"
+tab: "\x09"
+newline: "\x0a"
+plain: "ab"

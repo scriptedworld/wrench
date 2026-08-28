@@ -25,7 +25,7 @@ from __future__ import annotations
 import datetime
 import tomllib
 
-from wrench.codec import _normalise
+from wrench.codec import DELETE, FIRST_PRINTABLE, _normalise
 from wrench.float_text import canonical_float_text
 
 
@@ -165,10 +165,43 @@ def _number(value: float) -> str:
     return canonical_float_text(value)
 
 
+# TOML'S OWN ESCAPE TABLE, which is not YAML's. FR-4.9.
+#
+# TOML requires escaping the quote, the backslash and every control character
+# except tab, and it offers far fewer names than YAML: there is no `\e`, no `\v`,
+# no `\0` and no `\x`. So anything without a name here becomes `\uXXXX`, which is
+# the format's own spelling rather than a second answer to YAML's question.
+#
+# C1 is deliberately left raw. TOML does not require escaping it and all three
+# parsers round trip it, so escaping would be this pack inventing a rule.
+_TOML_NAMED = {
+    0x08: r"\b",
+    0x09: r"\t",
+    0x0A: r"\n",
+    0x0C: r"\f",
+    0x0D: r"\r",
+    0x22: r"\"",
+    0x5C: "\\\\",
+}
+
+
 def _string(value: str) -> str:
-    """A basic string, escaped the way TOML spells escapes."""
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
-    return f'"{escaped}"'
+    r"""A basic string, escaped the way TOML spells escapes.
+
+    Anything with a name gets it and every other control character becomes
+    `\uXXXX`. C1 is left raw, which TOML permits and every parser round trips.
+    """
+    out = []
+    for char in value:
+        point = ord(char)
+        named = _TOML_NAMED.get(point)
+        if named is not None:
+            out.append(named)
+        elif point < FIRST_PRINTABLE or point == DELETE:
+            out.append(f"\\u{point:04X}")
+        else:
+            out.append(char)
+    return '"' + "".join(out) + '"'
 
 
 TOML = TOMLCodec()

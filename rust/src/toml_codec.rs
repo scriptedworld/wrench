@@ -206,13 +206,31 @@ fn number(n: &serde_json::Number) -> String {
     n.to_string()
 }
 
-/// A basic string, escaped the way TOML spells escapes.
+/// A basic string, escaped the way TOML spells escapes. FR-4.9.
+///
+/// TOML requires escaping the quote, the backslash and every control character
+/// except tab, and offers far fewer names than YAML: no `\e`, no `\v`, no `\0`
+/// and no `\x`. Anything without a name becomes `\uXXXX`, which is the format's
+/// own spelling rather than a second answer to YAML's question.
+///
+/// C1 is deliberately left raw. TOML does not require escaping it and all three
+/// parsers round trip it, so escaping would be this pack inventing a rule.
 fn string(value: &str) -> String {
-    let escaped = value
-        .replace('\\', "\\\\")
-        .replace('"', "\\\"")
-        .replace('\n', "\\n")
-        .replace('\t', "\\t")
-        .replace('\r', "\\r");
-    format!("\"{escaped}\"")
+    let mut out = String::with_capacity(value.len() + 2);
+    out.push('"');
+    for ch in value.chars() {
+        match ch {
+            '\u{8}' => out.push_str("\\b"),
+            '\t' => out.push_str("\\t"),
+            '\n' => out.push_str("\\n"),
+            '\u{c}' => out.push_str("\\f"),
+            '\r' => out.push_str("\\r"),
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            c if c < ' ' || c == '\u{7f}' => out.push_str(&format!("\\u{:04X}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
 }

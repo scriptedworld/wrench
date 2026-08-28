@@ -254,15 +254,44 @@ func tomlFloat(v float64) (string, error) {
 }
 
 // tomlString writes a basic string, escaped the way TOML spells escapes.
+// tomlString writes a basic string, escaped the way TOML spells escapes. FR-4.9.
+//
+// TOML requires escaping the quote, the backslash and every control character
+// except tab, and offers far fewer names than YAML: no `\e`, no `\v`, no `\0`
+// and no `\x`. Anything without a name becomes `\uXXXX`, which is the format's
+// own spelling rather than a second answer to YAML's question.
+//
+// C1 is deliberately left raw. TOML does not require escaping it and all three
+// parsers round trip it, so escaping would be this pack inventing a rule.
 func tomlString(value string) string {
-	replacer := strings.NewReplacer(
-		`\`, `\\`,
-		`"`, `\"`,
-		"\n", `\n`,
-		"\t", `\t`,
-		"\r", `\r`,
-	)
-	return `"` + replacer.Replace(value) + `"`
+	var out strings.Builder
+	out.WriteByte('"')
+	for _, r := range value {
+		switch r {
+		case '\b':
+			out.WriteString(`\b`)
+		case '\t':
+			out.WriteString(`\t`)
+		case '\n':
+			out.WriteString(`\n`)
+		case '\f':
+			out.WriteString(`\f`)
+		case '\r':
+			out.WriteString(`\r`)
+		case '"':
+			out.WriteString(`\"`)
+		case '\\':
+			out.WriteString(`\\`)
+		default:
+			if r < 0x20 || r == 0x7F {
+				fmt.Fprintf(&out, `\u%04X`, r)
+			} else {
+				out.WriteRune(r)
+			}
+		}
+	}
+	out.WriteByte('"')
+	return out.String()
 }
 
 // refuseNull walks the structure and refuses a nil anywhere in it, naming where
