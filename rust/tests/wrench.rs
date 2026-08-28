@@ -689,6 +689,52 @@ fn a_manifest_keeps_the_five_locations() {
     }
 }
 
+// COVERS: FR-3.1, FR-3.4 | edge
+#[test]
+fn a_task_may_allow_an_empty_selection() {
+    // An empty selection is a failure by default, because a pattern matching
+    // nothing is far more often a stale path than a deliberate one. A task says
+    // otherwise for itself, and only where there is a selection to be empty: a
+    // command naming neither path variable has none, and a jig task has none
+    // either because emptiness is its child's business.
+    for (what, document) in [
+        ("one execution per path", "tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: [\"*.json\"]\n    allow-empty: true\n"),
+        ("one over the whole set", "tasks:\n  - name: check\n    command: jq . {all_paths}\n    matching: [\"*.json\"]\n    allow-empty: true\n"),
+        ("declining it explicitly", "tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: false\n"),
+        ("omitting it", "tasks:\n  - name: check\n    command: go test ./...\n"),
+    ] {
+        load_formatted_file(
+            "bolt.q.yaml",
+            &wrench::JIG_SCHEMA,
+            &YAML,
+            &Stub::new(document.as_bytes()),
+        )
+        .unwrap_or_else(|e| panic!("{what} was refused: {e}"));
+    }
+
+    for (what, document) in [
+        (
+            "a command with no selection to be empty",
+            "tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: true\n",
+        ),
+        (
+            "a jig task, whose child owns emptiness",
+            "tasks:\n  - name: child\n    jig: other\n    allow-empty: true\n",
+        ),
+    ] {
+        assert!(
+            load_formatted_file(
+                "bolt.q.yaml",
+                &wrench::JIG_SCHEMA,
+                &YAML,
+                &Stub::new(document.as_bytes())
+            )
+            .is_err(),
+            "{what} was accepted"
+        );
+    }
+}
+
 // COVERS: FR-3.1 | negative
 #[test]
 fn an_unusable_schema_fails_when_it_is_compiled() {

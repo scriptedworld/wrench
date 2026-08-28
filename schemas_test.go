@@ -501,3 +501,33 @@ func TestAManifestKeepsTheFiveLocations(t *testing.T) {
 		}
 	}
 }
+
+// COVERS: FR-3.1, FR-3.4 | edge
+func TestATaskMayAllowAnEmptySelection(t *testing.T) {
+	// An empty selection is a failure by default, because a pattern matching
+	// nothing is far more often a stale path than a deliberate one. A task says
+	// otherwise for itself, and only where there is a selection to be empty:
+	// a command naming neither path variable has none, and a jig task has none
+	// either because emptiness is its child's business.
+	accepted := map[string]string{
+		"one execution per path":  "tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: [\"*.json\"]\n    allow-empty: true\n",
+		"one over the whole set":  "tasks:\n  - name: check\n    command: jq . {all_paths}\n    matching: [\"*.json\"]\n    allow-empty: true\n",
+		"declining it explicitly": "tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: false\n",
+		"omitting it":             "tasks:\n  - name: check\n    command: go test ./...\n",
+	}
+	for what, document := range accepted {
+		if _, err := wrench.LoadFormattedFile("bolt.q.yaml", wrench.JigSchema, wrench.YAML, &stubReader{data: []byte(document)}); err != nil {
+			t.Errorf("%s was refused: %v", what, err)
+		}
+	}
+
+	refused := map[string]string{
+		"a command with no selection to be empty": "tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: true\n",
+		"a jig task, whose child owns emptiness":  "tasks:\n  - name: child\n    jig: other\n    allow-empty: true\n",
+	}
+	for what, document := range refused {
+		if _, err := wrench.LoadFormattedFile("bolt.q.yaml", wrench.JigSchema, wrench.YAML, &stubReader{data: []byte(document)}); err == nil {
+			t.Errorf("%s was accepted", what)
+		}
+	}
+}

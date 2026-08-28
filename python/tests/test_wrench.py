@@ -829,3 +829,38 @@ def test_validation_is_a_real_json_schema_implementation():
         {"items": [{"id": "one"}]},
         "a $ref'd constraint, so the reference did not resolve",
     )
+
+
+# COVERS: FR-3.1, FR-3.4 | edge
+def test_a_task_may_allow_an_empty_selection():
+    """An empty selection is a failure by default, because a pattern matching
+    nothing is far more often a stale path than a deliberate one. A task says
+    otherwise for itself, and only where there is a selection to be empty: a
+    command naming neither path variable has none, and a jig task has none
+    either because emptiness is its child's business."""
+    accepted = {
+        "one execution per path": b'tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: ["*.json"]\n    allow-empty: true\n',
+        "one over the whole set": b'tasks:\n  - name: check\n    command: jq . {all_paths}\n    matching: ["*.json"]\n    allow-empty: true\n',
+        "declining it explicitly": b"tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: false\n",
+        "omitting it": b"tasks:\n  - name: check\n    command: go test ./...\n",
+    }
+    for what, document in accepted.items():
+        try:
+            wrench.load_formatted_file(
+                "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document)
+            )
+        except wrench.ValidationError as problem:  # pragma: no cover - failure path
+            pytest.fail(f"{what} was refused: {problem}")
+
+    refused = {
+        "a command with no selection to be empty": b"tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: true\n",
+        "a jig task, whose child owns emptiness": b"tasks:\n  - name: child\n    jig: other\n    allow-empty: true\n",
+    }
+    for what, document in refused.items():
+        try:
+            wrench.load_formatted_file(
+                "bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document)
+            )
+        except wrench.ValidationError:
+            continue
+        pytest.fail(f"{what} was accepted")
