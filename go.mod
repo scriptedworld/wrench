@@ -1,6 +1,6 @@
 module github.com/scriptedworld/wrench
 
-go 1.26.6
+go 1.26
 
 require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3

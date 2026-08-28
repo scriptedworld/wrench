@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "wrench"
 version = "0.1.0"
 description = "Reads, writes and validates the form of the ecosystem's structured files"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 
 # All three are imported by name and expected to come from the platform.
