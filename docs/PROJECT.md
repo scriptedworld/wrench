@@ -196,9 +196,15 @@ The same checks, run by hand:
         --suite go='*_test.go' --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' .
 
-2026-08-27: Go ok, `gofmt` and `vet` clean, 58 Python tests passed, 35 Rust tests
-plus 1 compile-fail case and 2 doc tests, traceability 35 of 35 with **exit 0**,
-parity 51 tests held level across all three suites.
+2026-08-28 at `6b2d139`: Go ok, `gofmt` and `vet` clean, 79 Python tests passed,
+36 Rust tests plus 9 codec tests, 1 compile-fail case and 2 doc tests,
+traceability 39 of 39 with **exit 0**, parity 60 tests held level across all
+three suites.
+
+**The requirement count drifts upward without anyone re-measuring it**, and this
+document carried 35 while the contract held 38. Take it from the checker rather
+than from a sentence: the number it prints is the number of rows held to
+coverage, and it is the only one that cannot go stale.
 
 **The traceability figure moved without wrench moving.** It read 33 of 34 earlier
 the same day. toolbox's `8daa584` taught the checker that a `## Retired` section
@@ -229,7 +235,7 @@ disagree out loud.
 ## The contract is one file per requirement
 
 `docs/REQUIREMENTS/<category>/FR-<id>-<slug>.md`, nested as deep as the grouping
-wants, which is the standard layout. 35 live rows and 11 retired, split from a
+wants, which is the standard layout. 39 live rows and 11 retired, split from a
 single `REQUIREMENTS.md` on 2026-08-28.
 
 **Retirement is carried by the filename**, `FR-7.4-the-bootstrap-consumer.retired`,
@@ -248,9 +254,11 @@ heading, no switch and no below-this-line. The mechanism is silo `5addaad`.
 The interim `retired-rows-are-deliberate` gate task, which pinned the count of
 retired rows, went with the split.
 
-**Both checkers gave identical verdicts before and after**, which is what says
-the contract survived the move: traceability 35 of 35 exit 0, parity 51 tests
-level across three suites with the same 2 scoped rows and 2 scoped pairs.
+**Both checkers gave identical verdicts before and after the split**, which is
+what says the contract survived the move: on 2026-08-28, traceability 35 of 35
+exit 0 and parity 51 tests level across three suites, with the same 2 scoped rows
+and 2 scoped pairs. Those two numbers are the split's, and both have grown since;
+the current pair is below and is the one to quote.
 
 **A `##` heading in a `.retired` file used to un-retire every row below it, and
 no longer does.** `test-traceability.py` reset its retired state at every `##`
@@ -535,7 +543,7 @@ the check, it names every divergence, and **it exits non-zero when it finds one*
         --suite go='*_test.go' --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' . ; echo $?
 
-2026-08-27: 51 tests held level across go, python and rust, with 2 rows and 2
+2026-08-28: 60 tests held level across go, python and rust, with 2 rows and 2
 requirement/kind pairs scoped to a subset, exit 0.
 
 **This was not bookkeeping.** It started at seven rows the Go pack held alone,
