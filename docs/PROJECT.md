@@ -36,6 +36,26 @@ filesystem at all.
 The signature compels a schema, not the right one. Passing none is impossible;
 passing the wrong one is not, and nothing here detects that.
 
+**Three codecs ship, and each has a pair of wrappers**, 2026-08-28:
+
+    load_yaml_file / save_yaml_file    load_json_file / save_json_file
+    load_toml_file / save_toml_file
+
+The wrappers supply the codec and add nothing else, so validation stays in the
+core call. The codec is named rather than inferred from the suffix, because
+choosing a parser by filename would make behaviour depend on what a file is
+called. FR-2.7, FR-2.10, FR-4.6 and FR-4.7.
+
+**Canonical form makes wrench the wrong writer for a file a person edits.**
+Comments do not survive a load and key order is sorted away, which is correct
+for an envelope and destructive for a hand-written config. The README says so
+where an adopter will hit it; the read half is still worth having there.
+
+**The TOML and YAML emitters are hand-written in all three packs; JSON uses each
+standard library.** That split was measured rather than assumed, and
+`docs/DECISIONS/a-codec-emits-by-hand-when-libraries-disagree.md` carries the
+rule and the check that decides it for the next format.
+
 ## Layout
 
     docs/REQUIREMENTS/       the contract, one file per requirement, nested by

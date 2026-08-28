@@ -61,6 +61,28 @@ schema or adding a pack, read `docs/PATTERNS/holding-two-packs-level.md`.
     go test ./...
     PYTHONPATH=python python3 -m pytest python/tests -q
 
+## Three formats, and what canonical form means for a file a person owns
+
+    load_yaml_file  save_yaml_file
+    load_json_file  save_json_file
+    load_toml_file  save_toml_file
+
+**Every save writes canonical form.** Keys are sorted, layout is fixed, and
+comments do not survive a load. That is the point rather than a limitation: two
+producers of the same structure emit the same bytes, which is what stops
+components drifting while all of them believe they conform.
+
+**So wrench is the wrong writer for a file a person edits.** A config with
+comments and a deliberate entry order goes in canonicalised and comes out
+reordered and stripped. Reach for a round-trip-preserving editor there, such as
+`tomlkit` in Python, and use wrench for the read half: decoding and validating
+against a schema is the larger win, and it is where a config file is usually
+unchecked.
+
+**Machine-written files are what canonical form is for.** Envelopes, jigs,
+manifests, queue entries. Nobody has typed a note into one, the ordering carries
+no meaning, and byte-identical output between producers is worth having.
+
 ## Licence
 
 Apache-2.0. `LICENSE` carries the terms and `NOTICE` the attribution; both packs
