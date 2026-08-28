@@ -208,14 +208,37 @@ rebuilt, recorded at `bolt/NEXT_STEPS.md`, commit `535f86f`. Nothing about the
 rebuild takes it off PATH; that happens when the Rust bolt reaches parity and the
 link is moved on purpose.
 
-**So this gate's result is real and not reproducible from source.** That binary's
-module version carries `+dirty`, meaning it was built from an uncommitted tree, so
-no commit rebuilds it. bolt has measured that a build from `bolt.go` at `7604557`
-gives an identical `--help` and has proposed the swap, which is outward-facing and
-the user's to decide.
+**The binary was swapped on 2026-08-27 at 22:08** and this gate's result is now
+reproducible from source. It reports `v0.0.0-20260827201109-7604557974a5`, built
+from `bolt.go` at `7604557`, where the previous one carried `+dirty` and no commit
+rebuilt it. bolt `6e3112f`.
 
-Reshaping a schema breaks whichever bolt consumes it at its HEAD, and extending
-one does not.
+**Reproducibility was not what decided it.** The two builds disagreed about
+whether a jig is valid, because the old one bundled an older copy of these
+schemas: a jig whose only fault is `version: 1` passed under the old binary and
+is refused under the new one, at `/version`, got number want string. So the old
+build was issuing false greens, not merely unreproducible ones. **Any gate result
+in this estate from before 22:00 came from the older schema.** This gate was
+re-run afterwards and is unchanged at 21 executions, `success: true`.
+
+### A consumer enforces the schema it was built with, not the one shipped here
+
+That is the lesson in the swap and it is structural rather than a bug. bolt
+**embeds** these schemas at build time, which FR-3.5 permits and bolt wants for a
+static binary. So a change here is enforced by a consumer only after that consumer
+rebuilds, and nothing announces the gap.
+
+Measured 2026-08-27: `allow-empty` landed here at 21:45, bolt was rebuilt at
+22:08, and the deployed bolt accepts a jig using it. It reached the consumer
+because the rebuild came after, not because committing it here was enough.
+
+    cd .ephemera/ae-probe && bolt --output-dir out ae .    # passed: 1 execution
+
+**So do not read a schema change as immediately enforced.** Between committing a
+new constraint and a consumer rebuilding, a document this repository would refuse
+still passes there, and the window is invisible from both ends. Reshaping a schema
+breaks whichever bolt consumes it at its HEAD; extending one does not; and neither
+takes effect anywhere until that consumer is rebuilt.
 
 **toolbox** is the Python pack's intended consumer, through its adapters and
 checkers. FACT 2026-08-26: nothing in toolbox imports `wrench` yet. Those
