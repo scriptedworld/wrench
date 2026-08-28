@@ -108,9 +108,18 @@ braces. If those counts ever diverge, the gate has started grading build output.
     git ls-files '*.json' | wc -l
     ls -d .ephemera/<run>/work/json-parses-* | wc -l
 
-**wrench is the only jig in the estate that lets a runner select files**, 3 of its
-12 tasks, measured across 116 tasks in 26 jigs. Everything else hands its tool a
-directory. So when bolt's empty-selection default lands, these three are the first
+**Three of wrench's 12 tasks let a runner select files**, which is checkable here
+and is the half that matters for this repository:
+
+    grep -c 'matching:' bolt.wrench-quality.yaml      # 3
+
+**wrench is the only jig in the estate that does, out of 116 tasks in 26 jigs.
+That half is bolt's measurement and cannot be re-derived from this repository**,
+which holds one jig. bolt `cd1e6ba`, its FR-3.4f, with the script at
+`bolt/bin/count-selection.py`. Do not restate it here as though it were checkable
+from here; if it matters, re-run bolt's script against the estate.
+
+So when bolt's empty-selection default lands, these three are the first
 things in the ecosystem it can protect, and **none of them should carry
 `allow-empty`**: each matching nothing means the schemas moved or went, which is
 the stale-path defect the rule exists to catch rather than a legitimate empty.
