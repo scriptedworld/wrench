@@ -51,10 +51,20 @@ Comments do not survive a load and key order is sorted away, which is correct
 for an envelope and destructive for a hand-written config. The README says so
 where an adopter will hit it; the read half is still worth having there.
 
-**The TOML and YAML emitters are hand-written in all three packs; JSON uses each
-standard library.** That split was measured rather than assumed, and
+**The TOML and YAML emitters are hand-written in all three packs, and JSON now
+owns its numbers everywhere.** That split was measured rather than assumed, and
 `docs/DECISIONS/a-codec-emits-by-hand-when-libraries-disagree.md` carries the
 rule and the check that decides it for the next format.
+
+JSON kept its standard library until 2026-08-28, when the same check was run
+over floats and the three libraries disagreed with each other and with this
+pack's own other two codecs. What each pack does about it is what its language
+allows, and the bytes are what the fixture holds level: Go hands encoding/json a
+marshaler for floats, Rust wraps serde_json's `PrettyFormatter` and replaces
+`write_f64`, and Python emits the structure by hand because `json.dumps` formats
+every float with `float.__repr__` taken as a default argument, which no
+parameter reaches and no subclass overrides. Python still calls `json.dumps` for
+string escaping, which is the part of the library that was right.
 
 ## Layout
 
@@ -92,14 +102,29 @@ moved to `go/` so the three are symmetric bases.
 
     bolt wrench-quality .
 
-**2026-08-28: red, deliberately, and clearing it is
-`clank/tasks/wrench/gate/30`.** `result.yaml` carries `"success": false` with
-three reasons, `analyse`, `types` and `security-tests`. Those are what the shared
-Python standard found when the Python pack was wired to it in `4ca9005`, having
-never been measured by ruff, mypy, pylint, complexipy, vulture, bandit or
-coverage. **A red gate here is the adoption working rather than a regression, so
-do not open a session by trying to make it green.** `lint`, `docstrings` and
-`cognitive` are already cleared, at `9e72e6f`, `650aa30` and `69c8553`.
+**2026-08-28: green.** `result.yaml` carries `"success": true` with no reasons,
+and every one of the 23 task artifacts reads true, including both nested Python
+jigs and all ten of `python-std`'s own tasks. Read them rather than the top-level
+key; the loop that does is in this document's own instructions below.
+
+Everything the shared Python standard found when the pack was wired to it in
+`4ca9005` is cleared, and none of it was silenced: `lint` at `9e72e6f`,
+`docstrings` at `650aa30`, `cognitive` at `69c8553`, and the rest with
+`488e723`. `clank/tasks/wrench/gate/30` carries what each one was.
+
+**Two lines are silenced, and the register is now checked.** `SUPPRESSIONS`
+carries both bandit pragmas on the one test that runs a subprocess. Since
+toolbox `6ac4304` the register is read by `suppressions` in `common-quality`,
+which reports `2 pragma(s) across 9 source file(s)`. Before that it matched
+gosec's `G\d+` and passed vacuously.
+
+**That upgrade is the sharpest example this repository has of a symlinked
+checker changing a verdict with nothing here moving.** `bin/suppression-register.py`
+is a symlink into toolbox. The upgrade landed at 07:16:47 on 2026-08-28, seven
+minutes after wrench's last commit, and turned the gate red on two rows that had
+never been read by anything. It is the run-time-binding hazard this document
+describes for schemas, arriving through a checker instead, and in the useful
+direction: the gate started grading something it had been ignoring.
 
 `bolt.wrench-quality.yaml` is wrench's own jig over the schemas, the packs and the
 contract, and it now delegates the Python base to toolbox's `common-quality` and
@@ -250,11 +275,23 @@ that runs a subprocess to prove the pack imports in a clean interpreter, which
 is the only way to observe FR-6.1. The pragmas are line-scoped, so a second
 subprocess anywhere in the suite is still reported.
 
-**That register is not currently checked.** `bin/suppression-register.py` reads
-`*.go` only and matches gosec's `G\d+` rather than bandit's `B\d+`, so it passes
-vacuously here. Filed by agent-support as
-`clank/inbox/toolbox/suppression-register-scans-go-only`. Until it lands, the
-register is held by hand.
+**That register is checked, since toolbox `6ac4304`.** It had read `*.go` only
+and matched gosec's `G\d+` rather than bandit's `B\d+`, so it passed vacuously
+here; agent-support filed it and toolbox landed it. `suppressions` in
+`common-quality` now reports `2 pragma(s) across 9 source file(s)`.
+
+**A row is written in the frame the scan speaks, not this file's.**
+`common-quality` runs at each pack's own base, so the checker reports
+`tests/test_wrench.py` while `SUPPRESSIONS` sits one level up at the repository
+root. A row is also one pragma's set of codes rather than one file's, so two
+line pragmas of one code each are two rows. Both spellings caught wrench out
+when the upgrade landed, at `87b49ac`.
+
+**A shared register cannot serve two bases at once**, which wrench becomes when
+`gate/05` moves the Go pack under `go/` and `gate/10` adds `go-common`. The same
+document would need one path for the scan at `python/` and another for the scan
+at `go/`, and either choice fails the other. Filed with a repro as
+`clank/inbox/toolbox/a-shared-register-serves-two-bases`.
 
 There is no `docs/MOCKS/`. That directory is claimed when something needs it,
 never created empty.
@@ -452,12 +489,25 @@ imported. Read the other way, it has already misled one project.
 
 ## What holds the packs level
 
-The shared fixture set in `testdata/canonical/`, nine cases, plus the same tables
+The shared fixture set in `testdata/canonical/`, ten cases, plus the same tables
 asserted in every suite. **No pack is the oracle for another**: if they disagree,
 the fixture is right.
 
-2026-08-27: all three packs produce byte-identical canonical output for all nine
+2026-08-28: all three packs produce byte-identical canonical output for all ten
 cases, each checked by its own suite. That is the acceptance test for a pack.
+
+**A fixture set proves agreement only over the values it holds, and for floats it
+held none that could tell.** Until 2026-08-28 the nine cases carried no float
+outside the range where three different standard libraries happen to agree, so
+the set reported agreement while Go wrote `1e+06` for a million, Rust wrote
+`1000000.0`, and Go's JSON wrote `1000000`. Nothing was broken in any pack: each
+round-tripped its own output, and the property the fixtures assert was the one
+property that could not see it. `floats-never-use-an-exponent` is the tenth case
+and FR-4.8 is the rule; `clank/tasks/wrench/parity/30` carries the measurement.
+
+**Read that as the general caution rather than as a closed defect.** The set
+covers what somebody thought to put in it, and a gap in it looks exactly like
+agreement.
 
 **All three suites cover the same rows**, since `clank/tasks/wrench/parity/20`
 closed. What divergence remains is declared rather than accidental:
@@ -501,9 +551,10 @@ pattern is unchanged by it.
 ## What is not done
 
 `clank/tasks/wrench/` is the register. In summary: the gate is wrench's own jig
-rather than the shared standard, so the Python pack still has no ruff, mypy or
-coverage; the Go pack is at the root rather than under `go/`; and three questions
-in `NEXT_STEPS.md` are open and not blocking.
+delegating the Python base to the shared standard, so the Python pack has ruff,
+mypy, pylint and coverage while the Go and Rust packs have no base of their own;
+the Go pack is at the root rather than under `go/`; and the open questions in
+`NEXT_STEPS.md` are not blocking.
 
 There is no git remote. FACT 2026-08-26: `git remote -v` prints nothing. That is
 the expected state across this ecosystem while the history rewrite settles, and

@@ -43,16 +43,22 @@ layout for when a second major exists: one file per major with the major in the
 
 ---
 
-## The codec question is settled, and JSON can start
+## Three codecs ship, and what the JSON one cost
 
-**Both JSON and TOML are wanted**, ruled 2026-08-27, so `codecs/10` is no longer
-a question of scope. Three of its four open points are answered and the reasoning
-is in the task.
+**Both JSON and TOML were wanted**, ruled 2026-08-27, and both shipped at
+`5b2c397`. What is kept here is the reasoning a fourth format would need.
 
-**JSON is unblocked and near-free.** The decoded value type already *is* JSON in
-every pack: `map[string]any`, `dict`, `serde_json::Value`. No coercion, and
-FR-2.9's reconciliation problem does not arise. It wants its own ordinal ahead of
-TOML.
+**JSON was called near-free and was not.** The decoded value type already *is*
+JSON in every pack (`map[string]any`, `dict`, `serde_json::Value`), so no
+coercion was needed and FR-2.9's reconciliation problem did not arise. That much
+held. What it hid is that binding a standard library for the emitter buys its
+opinion about how a number is spelled, and the three libraries disagreed with
+each other and with the two codecs each pack had already hand-written. FR-4.8
+and `7076801` settle it.
+
+**So the cheapness of a codec is about its value type, not its emitter.** A
+fourth format should expect to hand-emit whatever the contract has an opinion
+about, however complete the library looks.
 
 **A codec refuses a value it cannot write, using the error every pack already
 raises.** Not a schema check. FR-4.1 already says a value with no canonical form
@@ -80,10 +86,9 @@ canonical form in every pack already. Its dependency footprint is the stated
 reason infobot declined to import wrench, so a writer only one codec needs would
 add to exactly that cost.
 
-**What is left there:** what a native TOML date decodes to. FR-2.9 likely answers
-it already, since an ISO 8601 string is a lossless spelling and that is the same
-rule that turns a YAML timestamp into a string. Confirm against the row rather
-than assuming.
+**A native TOML date decodes to its ISO 8601 string**, which is FR-2.9 answering
+it: a lossless spelling, and the same rule that turns a YAML timestamp into a
+string. Asserted in all three suites.
 
 ## Two questions are open, and neither is wrench's alone
 
@@ -100,16 +105,17 @@ They live as tasks rather than here, because each needs somebody else:
 
 ---
 
-## The gate is red on purpose, and the documents are behind the standard
+## The gate is green, and the documents are behind the standard
 
-Two pieces of known, recorded, unfinished work. Neither is a defect to hunt.
+**`bolt wrench-quality .` reports `"success": true`.** Everything the shared
+Python standard found when the pack was wired to it is cleared and none of it was
+silenced; `clank/tasks/wrench/gate/30` carries what each category was. Two lines
+carry a bandit pragma, registered in `SUPPRESSIONS` with the question and the
+answer, and the register is checked since toolbox `6ac4304`.
 
-**`bolt wrench-quality .` reports `"success": false`.** The Python pack was wired
-to toolbox's shared jigs at base `python/` and had never been measured by ruff,
-mypy, pylint, complexipy, vulture, bandit or coverage. Six categories fail.
-`clank/tasks/wrench/gate/30` carries every one with who owns it. **Clear them; do
-not silence them**, and in particular bandit's 44 `assert_used` findings are the
-shared jig's shape rather than wrench's debt and are routed to silo.
+bandit's 44 `assert_used` findings in a pytest suite are the shared jig's shape
+rather than wrench's debt and are routed to silo. They are skipped by the jig
+itself, on its own reasoning, and no pragma here touches them.
 
 **These documents do not meet `silo/docs/PATTERNS/writing-standard.md`.**
 Measured 2026-08-27: 17 date-stamped statements in `docs/PROJECT.md`, strikethrough
