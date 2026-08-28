@@ -43,13 +43,51 @@ layout for when a second major exists: one file per major with the major in the
 
 ---
 
-## Three questions are open, and none is wrench's alone
+## The codec question is settled, and JSON can start
+
+**Both JSON and TOML are wanted**, ruled 2026-08-27, so `codecs/10` is no longer
+a question of scope. Three of its four open points are answered and the reasoning
+is in the task.
+
+**JSON is unblocked and near-free.** The decoded value type already *is* JSON in
+every pack: `map[string]any`, `dict`, `serde_json::Value`. No coercion, and
+FR-2.9's reconciliation problem does not arise. It wants its own ordinal ahead of
+TOML.
+
+**A codec refuses a value it cannot write, using the error every pack already
+raises.** Not a schema check. FR-4.1 already says a value with no canonical form
+is refused, and all three packs already raise a per-key encode error:
+
+    EncodeError: wrench: encoding f.yaml: at key "c":
+                 cannot write object in canonical form
+
+A null in TOML is that rule with a different noun, so it needs no new mechanism.
+Walking the schema for features a codec cannot express was considered and
+refused: a permissive schema permits a null without requiring one, so TOML would
+only work against a schema written to exclude what TOML cannot hold, which makes
+a caller annotate a schema to satisfy a serialisation format.
+
+**TOML has two limits and both are the format's, not a library's.** Measured with
+`tomlkit` 0.15.1: a null anywhere is refused, and any root that is not a table is
+refused, so a top-level array, string, number or bool is out. TOML has no null
+type in its specification and a document is a table by definition. Everything else
+is expressible, including mixed arrays, arrays of tables, whole floats and
+integers past 2^63. The probes are beside the task.
+
+**The Python pack takes no TOML writer.** `tomllib` is stdlib, parses, and has no
+`dumps`, which is sufficient because wrench binds a parser and hand-emits
+canonical form in every pack already. Its dependency footprint is the stated
+reason infobot declined to import wrench, so a writer only one codec needs would
+add to exactly that cost.
+
+**What is left there:** what a native TOML date decodes to. FR-2.9 likely answers
+it already, since an ISO 8601 string is a lossless spelling and that is the same
+rule that turns a YAML timestamp into a string. Confirm against the row rather
+than assuming.
+
+## Two questions are open, and neither is wrench's alone
 
 They live as tasks rather than here, because each needs somebody else:
-
-    codecs/10   JSON and TOML beside YAML, with per-format wrappers over the
-                two calls. TOML cannot represent null and has native dates
-                that are not JSON types, and Python's tomllib is read-only.
 
     schemas/40  Should a document name its own schema, cross-checked rather
                 than trusted. It closes the hole FR-2.3 states as permanent.
@@ -61,6 +99,29 @@ They live as tasks rather than here, because each needs somebody else:
                 pack is written.
 
 ---
+
+## The gate is red on purpose, and the documents are behind the standard
+
+Two pieces of known, recorded, unfinished work. Neither is a defect to hunt.
+
+**`bolt wrench-quality .` reports `"success": false`.** The Python pack was wired
+to toolbox's shared jigs at base `python/` and had never been measured by ruff,
+mypy, pylint, complexipy, vulture, bandit or coverage. Six categories fail.
+`clank/tasks/wrench/gate/30` carries every one with who owns it. **Clear them; do
+not silence them**, and in particular bandit's 44 `assert_used` findings are the
+shared jig's shape rather than wrench's debt and are routed to silo.
+
+**These documents do not meet `silo/docs/PATTERNS/writing-standard.md`.**
+Measured 2026-08-27: 17 date-stamped statements in `docs/PROJECT.md`, strikethrough
+corrections in two files under `docs/DECISIONS/`, and the machine tells item 5
+lists, including bold on a phrase in most paragraphs. Item 3 says git holds the
+history and item 4 says a mistake worth keeping goes in `docs/LESSONS/` once,
+without the blow-by-blow.
+
+Four kinds of date are exempt and stay: a statement of where work came from, a
+version boundary, content a requirement mandates, and a date inside quoted output.
+Read the standard before sweeping, because a rewrite pass has already eaten a
+load-bearing provenance line in another repository under this rule.
 
 ## Where the rest went
 
