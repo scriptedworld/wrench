@@ -236,8 +236,21 @@ because the rebuild came after, not because committing it here was enough.
 
 **So do not read a schema change as immediately enforced.** Between committing a
 new constraint and a consumer rebuilding, a document this repository would refuse
-still passes there, and the window is invisible from both ends. Reshaping a schema
-breaks whichever bolt consumes it at its HEAD; extending one does not; and neither
+still passes there, and the window is invisible from both ends.
+
+**Additive is not automatically safe here, and that was wrong in this document
+until 2026-08-27.** The two regimes hurt in opposite directions. A *restrictive*
+change lets an unrebuilt consumer keep accepting what this repository now refuses,
+which is what produced the false greens. An *additive* change hands an unrebuilt
+consumer a key its schema does not know, and **what happens then is not settled by
+this contract at all**: it is the consumer's unknown-key policy, open as bolt's
+question 10. Answered "fail", every additive change breaks every consumer that has
+not rebuilt, turning the window into an outage. Answered "warn", the field is
+silently inert and the author sees it accepted while getting none of its
+behaviour, which is quieter and arguably worse.
+
+So reshaping a schema breaks whichever bolt consumes it at its HEAD, extending one
+**may or may not** depending on a policy this repository does not own, and neither
 takes effect anywhere until that consumer is rebuilt.
 
 ### The three packs do not bind the schema at the same time
@@ -266,8 +279,22 @@ at once; bolt takes the Go pack and sees it at its next build.
 canonical form and says nothing about when they read the schema.
 `bin/test-suite-parity.py` compares `COVERS:` marks and says nothing about it
 either. So the one divergence between the packs that neither guard covers is
-temporal, and both packs conform while it exists, which is the exact failure the
-opening section of this document says wrench exists to prevent.
+temporal, and both packs conform while it exists.
+
+**It is not, however, the failure this document opens by naming, and saying so
+was an overstatement corrected on 2026-08-27.** That failure is two
+implementations disagreeing about the same input at the same moment. These packs
+do not: **given the same schema bytes all three agree**, which is exactly what
+`testdata/canonical/` proves. What can differ is which bytes each is holding at a
+given instant, and that is a property of the estate's build topology rather than
+of the packs.
+
+The distinction decides where a fix could live. **No fourth guard inside wrench
+can catch it**, because every guard here compares packs on the same input by
+construction. A version stamp consumers assert against could, by moving the
+disagreement into the open where a run reports it. Treating it as a hole in
+wrench would be accepting blame for how the estate builds, and would send the
+next reader looking for a fix where none can exist.
 
 Bounded today by there being **one** shared bolt binary in the estate, so there is
 one stale schema rather than several. That holds only while `~/bin/bolt` is a
