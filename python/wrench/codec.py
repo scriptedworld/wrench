@@ -95,41 +95,73 @@ def _canonical(value: object, depth: int = 0) -> str:
     pad = " " * (INDENT * depth)
 
     if isinstance(value, dict):
-        if not value:
-            return pad + "{}\n"
-        out = []
-        for key in sorted(value):
-            item = value[key]
-            try:
-                if isinstance(item, (dict, list)) and item:
-                    out.append(f"{pad}{_scalar(key)}:\n{_canonical(item, depth + 1)}")
-                else:
-                    out.append(f"{pad}{_scalar(key)}: {_inline(item)}\n")
-            except ValueError as err:
-                raise _at(f"at key {_scalar(key)}", err) from err
-        return "".join(out)
-
+        return _mapping(value, depth, pad)
     if isinstance(value, list):
-        if not value:
-            return pad + "[]\n"
-        out = []
-        for index, item in enumerate(value):
-            try:
-                if isinstance(item, (dict, list)) and item:
-                    nested = _canonical(item, depth + 1)
-                    # The dash takes the place of the first line's indent; the
-                    # rest of the block keeps the indent it was rendered with.
-                    first, _, rest = nested.partition("\n")
-                    out.append(f"{pad}- {first.strip()}\n")
-                    if rest:
-                        out.append(rest if rest.endswith("\n") else rest + "\n")
-                else:
-                    out.append(f"{pad}- {_inline(item)}\n")
-            except ValueError as err:
-                raise _at(f"at index {index}", err) from err
-        return "".join(out)
-
+        return _sequence(value, depth, pad)
     return pad + _inline(value) + "\n"
+
+
+def _spans_lines(value: object) -> bool:
+    """Whether a value is written as an indented block rather than inline.
+
+    A populated collection is; an empty one is not, because `{}` and `[]` are
+    the canonical spelling for those and a block would be empty.
+    """
+    return isinstance(value, (dict, list)) and bool(value)
+
+
+def _mapping(value: dict, depth: int, pad: str) -> str:
+    """A mapping, one key to a line and keys sorted.
+
+    Sorted because two producers emitting the same structure must emit the same
+    bytes, and insertion order is not a property of the structure.
+    """
+    if not value:
+        return pad + "{}\n"
+
+    out = []
+    for key in sorted(value):
+        item = value[key]
+        try:
+            if _spans_lines(item):
+                out.append(f"{pad}{_scalar(key)}:\n{_canonical(item, depth + 1)}")
+            else:
+                out.append(f"{pad}{_scalar(key)}: {_inline(item)}\n")
+        except ValueError as err:
+            raise _at(f"at key {_scalar(key)}", err) from err
+    return "".join(out)
+
+
+def _sequence(value: list, depth: int, pad: str) -> str:
+    """A sequence, one entry to a dash, in the order it was given."""
+    if not value:
+        return pad + "[]\n"
+
+    out = []
+    for index, item in enumerate(value):
+        try:
+            out.append(_entry(item, depth, pad))
+        except ValueError as err:
+            raise _at(f"at index {index}", err) from err
+    return "".join(out)
+
+
+def _entry(item: object, depth: int, pad: str) -> str:
+    """One sequence entry.
+
+    The dash takes the place of the first line's indent, and the rest of the
+    block keeps the indent it was rendered with, so a nested mapping under a
+    dash lines up with the key beside it rather than with the dash.
+    """
+    if not _spans_lines(item):
+        return f"{pad}- {_inline(item)}\n"
+
+    nested = _canonical(item, depth + 1)
+    first, _, rest = nested.partition("\n")
+    out = f"{pad}- {first.strip()}\n"
+    if rest:
+        out += rest if rest.endswith("\n") else rest + "\n"
+    return out
 
 
 def _inline(value: object) -> str:
