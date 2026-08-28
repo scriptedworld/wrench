@@ -98,6 +98,23 @@ destination, and it is now one blocker away rather than three.
 `gofmt -l` was the only tool that would have, and `test -z "$(gofmt -l .)"` gives
 it an exit status instead.
 
+**The walk honours gitignore, and this ratio is where a regression would show
+first.** 2026-08-27: 4 tracked `.json` files against 387 on disk, and the run
+produced **4** executions of each matching task. So `rust/target/` and
+`node_modules/` are skipped by the walk rather than by the jig, and the
+`excluding: [".ephemera/**", "**/node_modules/**"]` on two tasks is belt and
+braces. If those counts ever diverge, the gate has started grading build output.
+
+    git ls-files '*.json' | wc -l
+    ls -d .ephemera/<run>/work/json-parses-* | wc -l
+
+**wrench is the only jig in the estate that lets a runner select files**, 3 of its
+12 tasks, measured across 116 tasks in 26 jigs. Everything else hands its tool a
+directory. So when bolt's empty-selection default lands, these three are the first
+things in the ecosystem it can protect, and **none of them should carry
+`allow-empty`**: each matching nothing means the schemas moved or went, which is
+the stale-path defect the rule exists to catch rather than a legitimate empty.
+
 The same checks, run by hand:
 
     go test -count=1 ./... && gofmt -l . && go vet ./...

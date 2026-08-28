@@ -89,3 +89,36 @@ gate**, because a gate cannot decide the number looked fine.
 `a-silent-build-failure-prints-the-number-you-wanted.md` records the third
 instance: a `repro.sh` whose build silently produced no binary, so it timed a
 program that did not exist and printed 0ms, which reads as a better result.
+
+## The fourth instance is this file being ignored by the person who wrote it
+
+2026-08-27, hours after the paragraph above about controls landed at `97d1f83`.
+
+Asked whether a filename could mark a requirement retired, I probed it with a
+file named `FR-9.1-a-thing.retired.md` that also carried a `## Retired` heading
+inside. It was reported retired and I recorded that the **name** had done it.
+
+**The name had done nothing.** The heading had done all of it, which toolbox
+measured and sent back. My probe had two candidate causes and no control, so it
+could only return whichever one I had brought to it.
+
+The general form, and it is worth more than the incident:
+
+**An experiment that cannot discriminate between two explanations returns the one
+you expected.** Not the true one. Not a random one. Yours.
+
+Re-run with the control, three files and no heading in any of them, the answer
+was visible rather than inferred: `.retired` excluded, `.retired.md` excluded,
+`.md` live.
+
+**What makes this the useful instance is that the principle was already here.**
+The paragraph above praises bolt for running controls and says plainly that
+running only the failing case would have proved nothing. I wrote it in the
+morning and failed to apply it in the afternoon, in the same repository, on a
+question I cared about.
+
+So the thing that fails is not knowing the rule. **What fails is that a
+confirming result ends the investigation**, and a control is the only thing that
+makes a confirming result mean anything. Ask of any probe, before believing it:
+*what else would have produced this exact output?* If the answer is "something I
+would be embarrassed to have missed", the probe is not finished.
