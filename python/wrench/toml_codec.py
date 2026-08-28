@@ -23,10 +23,10 @@ format, so encoding one is refused rather than wrapped in an invented key.
 from __future__ import annotations
 
 import datetime
-import math
 import tomllib
 
 from wrench.codec import _normalise
+from wrench.float_text import canonical_float_text
 
 
 class TOMLCodec:
@@ -154,17 +154,15 @@ def _inline(value: object) -> str:
 
 
 def _number(value: float) -> str:
-    """A number, with a whole float keeping its decimal point.
+    """A number, with a float in the spelling every codec shares.
 
-    Kept in step with the YAML codec deliberately: a float that reads back as an
-    integer is the same defect in either format.
+    Kept in step with the YAML and JSON codecs deliberately: a float spelled
+    differently per format is the same defect as one that reads back as an
+    integer. FR-4.8.
     """
     if isinstance(value, int):
         return str(value)
-    if math.isnan(value) or math.isinf(value):
-        raise ValueError(f"cannot write {value} in canonical form")
-    text = repr(value)
-    return text if ("." in text or "e" in text or "E" in text) else text + ".0"
+    return canonical_float_text(value)
 
 
 def _string(value: str) -> str:

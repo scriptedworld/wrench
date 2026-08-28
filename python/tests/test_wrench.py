@@ -970,3 +970,39 @@ def test_a_wrapper_still_validates():
     with pytest.raises(wrench.ValidationError):
         wrench.save_json_file({"success": "yes"}, "out.json", wrench.ENVELOPE_SCHEMA, writer)
     assert writer.written is None
+
+
+# The float spellings below are asserted identically in all three suites. A table
+# that differs between packs is packs that differ.
+CANONICAL_FLOATS = [
+    (1000000.0, "1000000.0"),
+    (48.0, "48.0"),
+    (123456789.0, "123456789.0"),
+    (0.1, "0.1"),
+    (1e16, "10000000000000000.0"),
+    (1e21, "1000000000000000000000.0"),
+    (1e-5, "0.00001"),
+    (1e-7, "0.0000001"),
+    (3.14159265358979, "3.14159265358979"),
+    (-0.0, "-0.0"),
+]
+
+CANONICAL_FLOAT_CODECS: list[tuple[wrench.YAMLCodec | wrench.JSONCodec | wrench.TOMLCodec, str, str]] = [
+    (wrench.YAML, '"n": ', "\n"),
+    (wrench.JSON, '{\n  "n": ', "\n}\n"),
+    (wrench.TOML, "n = ", "\n"),
+]
+
+
+# COVERS: FR-4.8 | property
+@pytest.mark.parametrize(("value", "spelled"), CANONICAL_FLOATS)
+def test_a_float_has_one_spelling_in_every_codec(value: float, spelled: str) -> None:
+    """Positional decimal, never an exponent, in all three codecs.
+
+    Each language's default float formatting picks its own threshold for
+    switching to an exponent, and the three disagreed. A consumer matching a
+    number with a naive pattern reads `1e+06` as 1, so the spelling is the
+    contract's rather than the standard library's.
+    """
+    for codec, prefix, suffix in CANONICAL_FLOAT_CODECS:
+        assert codec.encode({"n": value}) == (prefix + spelled + suffix).encode()

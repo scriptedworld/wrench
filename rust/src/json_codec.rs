@@ -15,9 +15,14 @@
 //! formatters in one repository. Measured 2026-08-28 against Go and Python:
 //! byte-identical.
 
+use std::io;
+
+use serde::Serialize;
+use serde_json::ser::{Formatter, PrettyFormatter};
 use serde_json::Value;
 
 use crate::codec::Codec;
+use crate::float_text::canonical_float_text;
 
 /// The JSON codec.
 pub struct JsonCodec;
@@ -31,13 +36,106 @@ impl Codec for JsonCodec {
     }
 
     fn encode(&self, value: &Value) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
-        // `to_string_pretty` indents with two spaces, which is what the other
-        // two packs emit and what `deno fmt` produces. Used rather than a
-        // hand-built serializer so the pack keeps `serde` as a dev-dependency
-        // only, which is what lets a caller deserialise without wrench having
-        // an opinion about it.
-        let mut out = serde_json::to_string_pretty(value)?.into_bytes();
+        // `PrettyFormatter` indents with two spaces, which is what the other two
+        // packs emit and what `deno fmt` produces. Everything about serde_json's
+        // output is right except how it spells a float, so the formatter is
+        // wrapped rather than the whole serializer being hand-written: `ryu`
+        // switches to an exponent at 1e16, which disagrees with this pack's own
+        // YAML and TOML codecs and with the other two packs. FR-4.8.
+        let mut out = Vec::new();
+        let formatter = CanonicalFormatter {
+            pretty: PrettyFormatter::new(),
+        };
+        let mut serializer = serde_json::Serializer::with_formatter(&mut out, formatter);
+        value.serialize(&mut serializer)?;
         out.push(b'\n');
         Ok(out)
+    }
+}
+
+/// `PrettyFormatter`, with the number spelling replaced.
+///
+/// Every method here but the two float ones delegates: `PrettyFormatter` owns
+/// the layout and this owns FR-4.8, so the two cannot drift apart.
+struct CanonicalFormatter<'a> {
+    pretty: PrettyFormatter<'a>,
+}
+
+impl Formatter for CanonicalFormatter<'_> {
+    fn write_f64<W>(&mut self, writer: &mut W, value: f64) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        writer.write_all(canonical_float_text(value).as_bytes())
+    }
+
+    fn write_f32<W>(&mut self, writer: &mut W, value: f32) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.write_f64(writer, f64::from(value))
+    }
+
+    fn begin_array<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.pretty.begin_array(writer)
+    }
+
+    fn end_array<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.pretty.end_array(writer)
+    }
+
+    fn begin_array_value<W>(&mut self, writer: &mut W, first: bool) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.pretty.begin_array_value(writer, first)
+    }
+
+    fn end_array_value<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.pretty.end_array_value(writer)
+    }
+
+    fn begin_object<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.pretty.begin_object(writer)
+    }
+
+    fn end_object<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.pretty.end_object(writer)
+    }
+
+    fn begin_object_key<W>(&mut self, writer: &mut W, first: bool) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.pretty.begin_object_key(writer, first)
+    }
+
+    fn begin_object_value<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.pretty.begin_object_value(writer)
+    }
+
+    fn end_object_value<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        self.pretty.end_object_value(writer)
     }
 }

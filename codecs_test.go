@@ -1,6 +1,7 @@
 package wrench_test
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -182,5 +183,55 @@ func TestAWrapperStillValidates(t *testing.T) {
 	}
 	if writer.data != nil {
 		t.Error("the writer ran despite validation failing")
+	}
+}
+
+// canonicalFloats is asserted identically in all three suites. A table that
+// differs between packs is packs that differ.
+func canonicalFloats() []struct {
+	value float64
+	want  string
+} {
+	return []struct {
+		value float64
+		want  string
+	}{
+		{1000000.0, "1000000.0"},
+		{48.0, "48.0"},
+		{123456789.0, "123456789.0"},
+		{0.1, "0.1"},
+		{1e16, "10000000000000000.0"},
+		{1e21, "1000000000000000000000.0"},
+		{1e-5, "0.00001"},
+		{1e-7, "0.0000001"},
+		{3.14159265358979, "3.14159265358979"},
+		{math.Copysign(0, -1), "-0.0"},
+	}
+}
+
+// COVERS: FR-4.8 | property
+func TestAFloatHasOneSpellingInEveryCodec(t *testing.T) {
+	codecs := []struct {
+		name   string
+		codec  wrench.Codec
+		prefix string
+		suffix string
+	}{
+		{"yaml", wrench.YAML, "\"n\": ", "\n"},
+		{"json", wrench.JSON, "{\n  \"n\": ", "\n}\n"},
+		{"toml", wrench.TOML, "n = ", "\n"},
+	}
+
+	for _, c := range codecs {
+		for _, f := range canonicalFloats() {
+			encoded, err := c.codec.Encode(map[string]any{"n": f.value})
+			if err != nil {
+				t.Fatalf("%s encode %v: %v", c.name, f.value, err)
+			}
+			want := c.prefix + f.want + c.suffix
+			if string(encoded) != want {
+				t.Errorf("%s wrote %q, want %q", c.name, encoded, want)
+			}
+		}
 	}
 }

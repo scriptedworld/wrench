@@ -1,0 +1,12 @@
+# Floats on both sides of every threshold a standard library picks for itself.
+# Go's 'g' switched to an exponent above 1e5, Python's repr above 1e16, and Rust
+# never did, so before FR-4.8 the three packs spelled these four ways between
+# them and no other fixture held a value that could tell.
+million: 1.0e+6
+large: 1.0e+21
+small: 1.0e-7
+tiny: 1.0e-5
+whole: 48.0
+tenth: 0.1
+precise: 3.14159265358979
+counted: 1000000

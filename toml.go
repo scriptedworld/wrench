@@ -2,7 +2,6 @@ package wrench
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -247,17 +246,11 @@ func tomlInline(value any) (string, error) {
 	}
 }
 
-// tomlFloat keeps a whole float's decimal point, in step with the YAML codec: a
-// float that reads back as an integer is the same defect in either format.
+// tomlFloat writes the spelling canonicalFloatText defines, in step with the
+// YAML and JSON codecs: a float spelled differently per format is the same
+// defect as a float that reads back as an integer.
 func tomlFloat(v float64) (string, error) {
-	if math.IsNaN(v) || math.IsInf(v, 0) {
-		return "", fmt.Errorf("cannot write %v in canonical form", v)
-	}
-	text := strconv.FormatFloat(v, 'g', -1, 64)
-	if !strings.ContainsAny(text, ".eE") {
-		text += ".0"
-	}
-	return text, nil
+	return canonicalFloatText(v)
 }
 
 // tomlString writes a basic string, escaped the way TOML spells escapes.

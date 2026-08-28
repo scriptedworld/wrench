@@ -16,9 +16,10 @@ ambiguous rather than by what the value is.
 from __future__ import annotations
 
 import datetime
-import math
 
 import yaml
+
+from wrench.float_text import canonical_float_text
 
 INDENT = 2
 
@@ -175,12 +176,13 @@ def _inline(value: object) -> str:
     return _scalar(value)
 
 
-def _scalar(value: object) -> str:
-    """One scalar, spelled so its type survives being read back.
+def _bare_scalar(value: object) -> str | None:
+    """The scalars YAML and JSON spell identically, or None for anything else.
 
-    A string is always quoted and everything else never is, which is what stops
-    `no`, `1.20` and `null` returning as a boolean, a float and a nothing. A
-    whole float keeps its decimal point for the same reason.
+    Shared rather than written twice: null, the booleans, an integer and a float
+    have one spelling across both formats, and a float's is FR-4.8's. What is
+    left is the string, which each format quotes its own way, so the caller
+    handles it and this returns None to say so.
     """
     if value is None:
         return "null"
@@ -189,14 +191,20 @@ def _scalar(value: object) -> str:
     if isinstance(value, int):
         return str(value)
     if isinstance(value, float):
-        # NaN and the infinities are refused: YAML can spell them and JSON
-        # Schema cannot represent them, so writing one produces a file no
-        # consumer in this ecosystem can validate.
-        if math.isnan(value) or math.isinf(value):
-            raise ValueError(f"cannot write {value} in canonical form")
-        text = repr(value)
-        # A whole float formats as "1", which reads back as an integer.
-        return text if ("." in text or "e" in text or "E" in text) else text + ".0"
+        return canonical_float_text(value)
+    return None
+
+
+def _scalar(value: object) -> str:
+    """One scalar, spelled so its type survives being read back.
+
+    A string is always quoted and everything else never is, which is what stops
+    `no`, `1.20` and `null` returning as a boolean, a float and a nothing. A
+    whole float keeps its decimal point for the same reason.
+    """
+    bare = _bare_scalar(value)
+    if bare is not None:
+        return bare
     if isinstance(value, str):
         escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
         return f'"{escaped}"'

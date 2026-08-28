@@ -189,13 +189,8 @@ fn scalar(value: &Value) -> Result<String, Box<dyn std::error::Error + Send + Sy
             if let Some(i) = n.as_i64() {
                 i.to_string()
             } else if let Some(f) = n.as_f64() {
-                let text = format!("{f}");
-                // A whole float formats as "1", which reads back as an integer.
-                if text.contains('.') || text.contains('e') || text.contains('E') {
-                    text
-                } else {
-                    format!("{text}.0")
-                }
+                // One spelling for every codec in every pack. FR-4.8.
+                crate::float_text::canonical_float_text(f)
             } else {
                 n.to_string()
             }

@@ -205,3 +205,46 @@ fn a_wrapper_still_validates() {
         "the writer ran despite validation failing"
     );
 }
+
+
+/// The float spellings below are asserted identically in all three suites. A
+/// table that differs between packs is packs that differ.
+fn canonical_floats() -> Vec<(f64, &'static str)> {
+    vec![
+        (1000000.0, "1000000.0"),
+        (48.0, "48.0"),
+        (123456789.0, "123456789.0"),
+        (0.1, "0.1"),
+        (1e16, "10000000000000000.0"),
+        (1e21, "1000000000000000000000.0"),
+        (1e-5, "0.00001"),
+        (1e-7, "0.0000001"),
+        (3.14159265358979, "3.14159265358979"),
+        (-(0.0f64), "-0.0"),
+    ]
+}
+
+// COVERS: FR-4.8 | property
+#[test]
+fn a_float_has_one_spelling_in_every_codec() {
+    // Positional decimal, never an exponent. Each language's default float
+    // formatting picks its own threshold for switching to an exponent, and the
+    // three disagreed; a consumer matching a number with a naive pattern reads
+    // `1e+06` as 1, so the spelling is the contract's rather than a library's.
+    let codecs: Vec<(&dyn Codec, &str, &str)> = vec![
+        (&wrench::YAML, "\"n\": ", "\n"),
+        (&JSON, "{\n  \"n\": ", "\n}\n"),
+        (&TOML, "n = ", "\n"),
+    ];
+
+    for (codec, prefix, suffix) in codecs {
+        for (value, spelled) in canonical_floats() {
+            let encoded = codec.encode(&json!({ "n": value })).unwrap();
+            assert_eq!(
+                String::from_utf8(encoded).unwrap(),
+                format!("{prefix}{spelled}{suffix}"),
+                "spelling {value}"
+            );
+        }
+    }
+}

@@ -53,6 +53,7 @@
 //! after deserialising instead.
 
 pub mod codec;
+mod float_text;
 pub mod json_codec;
 pub mod toml_codec;
 pub mod errors;

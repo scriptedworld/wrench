@@ -3,10 +3,8 @@ package wrench
 import (
 	"bytes"
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	yaml "go.yaml.in/yaml/v3"
@@ -158,23 +156,13 @@ func quoted(value string) *yaml.Node {
 	}
 }
 
-// floatNode writes a float so that reading it back yields a float. A whole
-// number formats as "1", which reads back as an integer, so it gains a ".0".
-//
-// NaN and the infinities are refused. YAML can spell them and JSON Schema
-// cannot represent them, so writing one produces a file no consumer in this
-// ecosystem can validate.
+// floatNode writes a float in the spelling canonicalFloatText defines, which is
+// the same one the JSON and TOML codecs write and the same one the other two
+// packs write. FR-4.8.
 func floatNode(v float64) (*yaml.Node, error) {
-	if math.IsNaN(v) {
-		return nil, fmt.Errorf("cannot write NaN in canonical form")
-	}
-	if math.IsInf(v, 0) {
-		return nil, fmt.Errorf("cannot write %v in canonical form", v)
-	}
-
-	text := strconv.FormatFloat(v, 'g', -1, 64)
-	if !strings.ContainsAny(text, ".eE") {
-		text += ".0"
+	text, err := canonicalFloatText(v)
+	if err != nil {
+		return nil, err
 	}
 	return scalar("!!float", text), nil
 }

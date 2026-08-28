@@ -193,18 +193,15 @@ fn inline(value: &Value) -> Result<String, Fail> {
     })
 }
 
-/// A number, with a whole float keeping its decimal point, in step with the YAML
-/// codec: a float that reads back as an integer is the same defect either way.
+/// A number, with a float in the spelling every codec shares. Kept in step with
+/// the YAML and JSON codecs deliberately: a float spelled differently per format
+/// is the same defect as one that reads back as an integer. FR-4.8.
 fn number(n: &serde_json::Number) -> String {
     if let Some(i) = n.as_i64() {
         return i.to_string();
     }
     if let Some(f) = n.as_f64() {
-        let text = format!("{f}");
-        if text.contains('.') || text.contains('e') || text.contains('E') {
-            return text;
-        }
-        return format!("{text}.0");
+        return crate::float_text::canonical_float_text(f);
     }
     n.to_string()
 }

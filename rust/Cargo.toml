@@ -15,6 +15,15 @@ description = "Reads, writes and validates the form of the ecosystem's structure
 # rather than walking maps by hand.
 serde_json = "1"
 
+# THE TRAIT ONLY, AND NOT THE DERIVE. FR-4.8 needs the JSON codec to spell a
+# float the way the other two codecs do, and serde_json's hook for that is a
+# custom Formatter driven through `Serialize`. Naming that trait needs serde as
+# a direct dependency; serde_json already pulls it in, so nothing new is built.
+#
+# `derive` stays a dev-dependency. The pack still hands back serde_json::Value
+# and has no opinion about a caller's structs.
+serde = "1"
+
 # DEFAULT FEATURES OFF IS LOAD-BEARING, NOT TIDINESS.
 #
 # FACT 2026-08-27, from the crate's metadata:
