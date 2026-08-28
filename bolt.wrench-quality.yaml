@@ -111,6 +111,26 @@ tasks:
     description: the Rust pack, which bolt builds against
     command: cargo test --manifest-path rust/Cargo.toml
 
+  # ---- the shared standard, per pack at its own base -----------------------
+  #
+  # The Python pack is the only one with a base of its own today. The Go pack
+  # sits at the repository root, which is also python/ and rust/'s parent, so a
+  # run there would measure three packs as one. gate/05 moves it to go/ and is
+  # blocked on go:embed. Rust has no shared standard yet.
+
+  - name: python-common
+    description: the shared common standard, at the Python pack's own base
+    jig: common-quality
+    in: python
+    config-dir: .
+    definitions: wrench
+
+  - name: python-std
+    description: ruff, mypy, pylint, complexipy, vulture, docstrings and coverage
+    jig: python-std-quality
+    in: python
+    config-dir: .
+
   # ---- the contract ---------------------------------------------------------
 
   - name: traceability
