@@ -240,6 +240,39 @@ still passes there, and the window is invisible from both ends. Reshaping a sche
 breaks whichever bolt consumes it at its HEAD; extending one does not; and neither
 takes effect anywhere until that consumer is rebuilt.
 
+### The three packs do not bind the schema at the same time
+
+Measured 2026-08-27, and the divergence is **permitted rather than accidental**:
+
+    Go        schema.go:19   //go:embed schemas/*.schema.json      build time
+    Rust      build.rs       generates include_str! per schema     build time
+    Python    schema.py:33   Path(__file__).parents[2] / "schemas"  run time
+
+Checked rather than read off the source: a constraint added to
+`schemas/jig.schema.json` on disk was refused by the Python pack immediately, with
+no reinstall and no rebuild. The Go and Rust packs cannot see such a change until
+they are rebuilt, which is what produced bolt's false greens on `version: 1`.
+
+**FR-3.5 allows this.** A pack *may* embed, because a static binary wants it, and
+what it embeds is these files rather than a copy of its own. So this is the
+contract working.
+
+**What follows is not recorded anywhere else, so it is recorded here.** At any
+moment, a Python consumer and a Go consumer of the same contract may be enforcing
+different versions of it. toolbox's adapters take the Python pack and see a change
+at once; bolt takes the Go pack and sees it at its next build.
+
+**Nothing detects that.** `testdata/canonical/` holds the packs to the same
+canonical form and says nothing about when they read the schema.
+`bin/test-suite-parity.py` compares `COVERS:` marks and says nothing about it
+either. So the one divergence between the packs that neither guard covers is
+temporal, and both packs conform while it exists, which is the exact failure the
+opening section of this document says wrench exists to prevent.
+
+Bounded today by there being **one** shared bolt binary in the estate, so there is
+one stale schema rather than several. That holds only while `~/bin/bolt` is a
+single file, and nothing states it as a requirement.
+
 **toolbox** is the Python pack's intended consumer, through its adapters and
 checkers. FACT 2026-08-26: nothing in toolbox imports `wrench` yet. Those
 adapters need upgrading to the interface defined for them, and that work depends
