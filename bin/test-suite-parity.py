@@ -64,8 +64,32 @@ SCOPE = re.compile(
     r"([a-z][a-z0-9_-]*(?:,[a-z][a-z0-9_-]*)*)(?::([a-z][a-z0-9_-]*(?:,[a-z][a-z0-9_-]*)*))?"
 )
 
-# A row under this heading has been retired and is not expected to be covered.
-RETIRED = re.compile(r"^##\s+Retired\s*$", re.MULTILINE)
+# A row under a `## Retired` heading has been retired and is not expected to be
+# covered. Every `##` heading resets that state, so a section following a retired
+# one is live again.
+#
+# THESE TWO SPELLINGS MATCH toolbox's test-traceability.py EXACTLY, and that is
+# the point rather than a coincidence. Both checkers read the same document and
+# an id live for one and retired for the other is the same class of defect this
+# repository exists to catch, one tier up.
+#
+# It was measured, not anticipated. This checker used to split the text at the
+# first `## Retired` and treat everything after it as retired, which disagreed
+# with the traceability checker for any row under a LATER heading. Reproduce with
+# a file holding `## Retired`, a row, then `## Live again` and a second row cited
+# by one suite and not another:
+#
+#     parity        second row retired, skipped, "held level",  EXIT 0
+#     traceability  second row live, uncovered,                 EXIT 1
+#
+# The dangerous half is that this checker was the one reporting the pass, on a
+# divergence it exists to find. Latent in wrench only because `## Retired` is the
+# last section of REQUIREMENTS.md today.
+#
+# NOTHING TESTS THIS FILE, which is how that survived. See
+# `clank/tasks/wrench/gate/40-the-checkers-have-no-tests`.
+HEADING = re.compile(r"^##\s+(?P<title>.+?)\s*$")
+RETIRED_HEADING = re.compile(r"^retired\b", re.IGNORECASE)
 
 
 def covered_by(paths: list[Path]) -> set[tuple[str, str]]:
@@ -80,6 +104,42 @@ def covered_by(paths: list[Path]) -> set[tuple[str, str]]:
     return found
 
 
+def is_retired_by_name(path: Path) -> bool:
+    """A document whose name retires everything in it.
+
+    Retirement carried by the filename has no heading, no switch and no
+    below-this-line, so the row that retires something and the row appended
+    after it cannot be confused. It is also visible in `ls` without opening
+    anything, and it leaves a retired requirement in the group it always sat in.
+
+    Both spellings count, matching toolbox's checker: `.retired` is the shape a
+    split repository uses and `.retired.md` stays readable to anything expecting
+    markdown.
+    """
+    return path.name.endswith((".retired", ".retired.md"))
+
+
+def requirement_documents(path: Path) -> list[Path]:
+    """The documents a `--requirements` path names: one file, or a tree of them.
+
+    A directory holds one file per requirement,
+    `<level>/<group>/FR-<id>-<slug>.md`, nested as deep as the grouping wants.
+    Every `.md` beneath is read, README included, so a requirement written
+    somewhere unexpected fails loudly for having no test rather than being
+    skipped for sitting in the wrong file.
+
+    `.retired` is read as well as `.md`. A retired document this checker cannot
+    see is the quiet way to lose the never-reuse guarantee.
+
+    Sorted, so a repeated id names the same two files whatever order the
+    filesystem hands them back in.
+    """
+    if path.is_dir():
+        found = (p for pattern in ("*.md", "*.retired") for p in path.rglob(pattern))
+        return sorted({p for p in found if p.is_file()})
+    return [path]
+
+
 def declared(
     requirements: Path,
 ) -> tuple[set[str], dict[str, set[str]], dict[tuple[str, str], set[str]]]:
@@ -89,37 +149,45 @@ def declared(
     A row naming no scope is expected in every suite, and a pair with its own
     scope overrides whatever the row says.
 
-    Everything below the `## Retired` heading is excluded, because a retired id
-    is not expected to be covered anywhere and citing one is the traceability
-    checker's business rather than this one's.
+    A retired id is excluded, because it is not expected to be covered anywhere
+    and citing one is the traceability checker's business rather than this one's.
+    Retirement comes from the document's name or from a `## Retired` heading
+    above the row, read exactly as `test-traceability.py` reads them.
     """
-    text = requirements.read_text(encoding="utf-8")
-    split = RETIRED.search(text)
-    live = text[: split.start()] if split else text
-
     ids: set[str] = set()
     scopes: dict[str, set[str]] = {}
     kind_scopes: dict[tuple[str, str], set[str]] = {}
-    for line in live.splitlines():
-        matched = ROW.match(line)
-        if not matched:
-            continue
-        identifier, _, markers = matched.groups()
-        if "[?]" in markers:  # open, carries no test by design
-            continue
-        ids.add(identifier)
-        # SCOPE only matches lowercase words, so the provenance markers [A], [D],
-        # [A/D] and [?] cannot be mistaken for a suite name.
-        for named, kinds in SCOPE.findall(markers):
-            suites = {part for part in named.split(",") if part}
-            if not suites:
+
+    for document in requirement_documents(requirements):
+        in_retired = is_retired_by_name(document)
+        for line in document.read_text(encoding="utf-8").splitlines():
+            heading = HEADING.match(line)
+            if heading:
+                # A named document stays retired whatever its headings say, so a
+                # `## Retired` inside one cannot un-retire the rest of it.
+                if not is_retired_by_name(document):
+                    in_retired = bool(RETIRED_HEADING.match(heading.group("title")))
                 continue
-            if kinds:
-                for kind in kinds.split(","):
-                    if kind:
-                        kind_scopes[(identifier, kind)] = suites
-            else:
-                scopes[identifier] = suites
+
+            matched = ROW.match(line)
+            if not matched or in_retired:
+                continue
+            identifier, _, markers = matched.groups()
+            if "[?]" in markers:  # open, carries no test by design
+                continue
+            ids.add(identifier)
+            # SCOPE only matches lowercase words, so the provenance markers [A],
+            # [D], [A/D] and [?] cannot be mistaken for a suite name.
+            for named, kinds in SCOPE.findall(markers):
+                suites = {part for part in named.split(",") if part}
+                if not suites:
+                    continue
+                if kinds:
+                    for kind in kinds.split(","):
+                        if kind:
+                            kind_scopes[(identifier, kind)] = suites
+                else:
+                    scopes[identifier] = suites
     return ids, scopes, kind_scopes
 
 
@@ -153,6 +221,20 @@ def main() -> int:
         return 2
 
     ids, scopes, kind_scopes = declared(args.requirements)
+
+    # REFUSING TO PASS ON NOTHING. Every cited pair whose id is not live is
+    # skipped as the traceability checker's business, so an empty set of ids
+    # skips everything and reports the suites level. That is a green produced by
+    # finding no contract at all, which is what a mistyped path or a directory
+    # this checker cannot read looks like.
+    if not ids:
+        print(
+            f"parity: {args.requirements} declares no live requirements; "
+            "refusing to pass vacuously",
+            file=sys.stderr,
+        )
+        return 2
+
     failures: list[str] = []
 
     def declared_scope(identifier: str, kind: str) -> set[str] | None:
