@@ -49,12 +49,15 @@ heading, no switch and no below-this-line, so the hazard is gone by construction
 
 The interim guard that pinned the count of retired rows went with the split.
 
-**Do not put a `##` heading in a `.retired` file.** `test-traceability.py`
-resets its retired state at every `##` heading, filename notwithstanding, which
-un-retires every row below it. Its own docstring says otherwise and the
-discrepancy is filed at
-`clank/inbox/toolbox/a-heading-un-retires-a-retired-document/`. Single `#` only,
-which is what every file here uses.
+**The filename wins over any heading inside the file**, so a `## Superseded by`
+in a `.retired` document is safe. That was not always true:
+`test-traceability.py` reset its retired state at every `##` heading regardless
+of the filename, un-retiring every row below it, which contradicted its own
+docstring. Fixed at toolbox `31a7b6b`, matching what `bin/test-suite-parity.py`
+already did.
+
+Every file here uses a single `#` anyway. It was a workaround while that was
+open and is now just the house shape.
 
 ## Every settled row carries a test
 

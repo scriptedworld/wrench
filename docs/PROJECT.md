@@ -200,11 +200,17 @@ retired rows, went with the split.
 the contract survived the move: traceability 35 of 35 exit 0, parity 51 tests
 level across three suites with the same 2 scoped rows and 2 scoped pairs.
 
-**Do not put a `##` heading in a `.retired` file.** `test-traceability.py`
-resets its retired state at every `##` heading regardless of the filename, which
-un-retires every row below it, and its own docstring promises the opposite. Every
-file here uses a single `#`. Filed at
-`clank/inbox/toolbox/a-heading-un-retires-a-retired-document/`.
+**A `##` heading in a `.retired` file used to un-retire every row below it, and
+no longer does.** `test-traceability.py` reset its retired state at every `##`
+heading regardless of the filename, contradicting its own docstring. Fixed at
+toolbox `31a7b6b`: a name-retired document ignores its headings entirely, which
+is the reading `bin/test-suite-parity.py` already had, so the two checkers agree
+and wrench's guard stays.
+
+    git -C ~/.projects/toolbox cat-file -e 31a7b6b
+
+Every file here still uses a single `#`, which is now a preference rather than a
+workaround.
 
 **The fixtures still carry `../REQUIREMENTS.md` as a string and that is
 correct.** `testdata/canonical/` and the three suites use it as an arbitrary
