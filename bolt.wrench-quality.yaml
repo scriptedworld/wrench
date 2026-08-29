@@ -15,10 +15,15 @@
 #
 # ORDERED CHEAPEST FIRST, so a failure surfaces before the slow checks run.
 #
-# EVERY TASK EXITS NON-ZERO ON ITS OWN FAILURE. Nothing here needs an adapter to
-# turn output into a verdict, which is deliberate: an adapter is a second thing
-# to keep working, and `gofmt -l` is the only tool that would have needed one.
-# `test -z` gives it an exit status instead.
+# EVERY TASK BUT THE TWO COMPOSED ONES EXITS NON-ZERO ON ITS OWN FAILURE, which
+# is deliberate: an adapter is a second thing to keep working, and `gofmt -l` is
+# the only tool that would have needed one. `test -z` gives it an exit status
+# instead.
+#
+# The exception is `python-common` and `python-std`, which run bolt over the
+# Python pack's own base. bolt exits 0 whenever it carried a run out, so those
+# two read the child's verdict through `adapters/common/bolt-result.py` and
+# would otherwise pass however badly the child failed.
 
 version: 1.0.0
 
@@ -149,19 +154,37 @@ tasks:
   # sits at the repository root, which is also python/ and rust/'s parent, so a
   # run there would measure three packs as one. gate/05 moves it to go/ and is
   # blocked on go:embed. Rust has no shared standard yet.
+  #
+  # COMPOSITION IS A COMMAND TASK PLUS AN ADAPTER. Nested `jig:` tasks are
+  # retired at bolt `f3304d8`, so a jig wanting another jig run over a
+  # subdirectory writes an ordinary command whose program is bolt.
+  #
+  # `adapters/common/bolt-result.py` is what makes that a verdict rather than a
+  # transcript. bolt exits 0 whenever it carried a run out, so the generic
+  # exit-code adapter reads a failing child as a pass: measured by toolbox on
+  # one failing child, `success=True` without the adapter and `success=False`
+  # with it.
+  #
+  # THREE THINGS EACH COST A RUN TO LEARN. Flags come before positionals, or
+  # bolt prints usage to stderr and the task fails as a bolt error rather than
+  # as anything about the jig. The child gets `{work_dir}/child` of its own,
+  # because bolt refuses a directory already holding a run and the Go build
+  # rewrites the earlier verdict while refusing. And the adapter reads the LAST
+  # line of the child's stdout, which is the result path under both builds.
 
   - name: python-common
     description: the shared common standard, at the Python pack's own base
-    jig: common-quality
-    in: python
-    config-dir: .
-    definitions: wrench
+    command: >-
+      bolt --config-dir {config_dir} --definitions wrench
+      --output-dir {work_dir}/child common-quality python
+    adapter: adapters/common/bolt-result.py
 
   - name: python-std
     description: ruff, mypy, pylint, complexipy, vulture, docstrings and coverage
-    jig: python-std-quality
-    in: python
-    config-dir: .
+    command: >-
+      bolt --config-dir {config_dir}
+      --output-dir {work_dir}/child python-std-quality python
+    adapter: adapters/common/bolt-result.py
 
   # ---- the contract ---------------------------------------------------------
 

@@ -10,7 +10,10 @@ Open questions and the context behind them. Sized work is in
                  committed to writing the key.
     schemas/50   the unanimity check, now that the shape is decided.
     parity/40    numbers agree on range and type, mechanism first.
-    prose-cleanup/10   70 markdown files, plus source comments and task files.
+    prose-cleanup/20   a cold read of the sweep, which cannot be the writer.
+    gate/05      the Go pack under go/.
+    gate/10      a composite jig, whose premise the conversion restores.
+    schemas/60   drop the retired jig task fields.
 
 
 **`schemas/40` is the largest and it changes the error contract in three
@@ -29,25 +32,22 @@ while specifying; do not let it default.
 
 ## Blocked
 
-    gate/05      the Go pack under go/. The embed problem is solved; the move
-                 waits on something being able to use the symmetry.
-    gate/10      a composite jig. Its premise went with nested jigs.
-    schemas/60   drop the retired jig task fields. Dropping them makes bolt
-                 refuse the jig that runs wrench's own gate.
+Nothing.
 
-**The cutover has two blockers left and neither is wrench's.** The
-`bolt-result` adapter does not exist and its entry is one of eighteen in
-toolbox's inbox. And the Rust build has no install path, producing only
-`target/debug/bolt`; that is our user's decision. The Go binary turns out to be
-gitignored too, so the two are the same kind of thing and the question is where
-a built binary is installed rather than which one is committed.
+**The cutover has one blocker left and it is not wrench's.** The Rust build has
+no install path, producing only `target/debug/bolt`; that is our user's
+decision. The Go binary turns out to be gitignored too, so the two are the same
+kind of thing and the question is where a built binary is installed rather than
+which one is committed.
 
-wrench's own half is its two `jig:` tasks, still the only ones in the estate
-across all 35 jigs, and they wait on the adapter.
+The naming collision is gone. The Go build is `bolt.go` as well as `bolt`, so
+the cutover is one symlink repoint and the old implementation stays reachable by
+name.
 
-The naming collision is gone. The Go build is now `bolt.go` as well as `bolt`,
-so the cutover is one symlink repoint and the old implementation stays
-reachable by name.
+wrench's own half is done. It held the estate's only two `jig:` tasks across all
+35 jigs; they are command tasks composing through
+`adapters/common/bolt-result.py`, and both builds run the gate green at 28
+executions.
 
 ## Not yet started, and each is somebody else's to settle first
 
@@ -105,9 +105,10 @@ tidy-up, and is why it was not done on the way past.
 
 ## Standing hazards
 
-**The gate breaks the day `bolt` moves to the Rust build**, and nothing
-announces the switch. Run `bolt.go` to name the current build explicitly.
-`docs/PROJECT.md` carries what to do.
+**Nothing announces which build `bolt` resolves to**, and the two differ in what
+a refusal costs: the Go build rewrites the earlier `result.yaml` while refusing
+a used output directory, and the Rust build preserves it. Run `bolt.go` to name
+the Go build explicitly. `docs/PROJECT.md` carries what to do.
 
 **A consumer enforces the schema it was built with.** No guard here can catch
 the window, and `docs/LESSONS/a-consumer-enforces-the-schema-it-was-built-with.md`

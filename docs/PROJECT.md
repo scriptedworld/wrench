@@ -47,6 +47,8 @@ The work itself is not in this repository. `clank/tasks/wrench/` holds it and
     bin/                     wrench's own checkers, and two symlinks into
                              toolbox that change behaviour here with nothing
                              in this repository moving
+    adapters/                one symlink into toolbox, the composition adapter,
+                             resolved from the config directory like any other
 
     wrench.go codec.go       the Go pack, at the repository root
     file.go schema.go        shipped_gen.go is generated from schemas/
@@ -121,9 +123,8 @@ is no `docs/MOCKS/`; that directory is claimed when something needs it.
 
 ### Check which bolt you ran before quoting what bolt does
 
-Two implementations exist and they disagree about whether this gate is even
-runnable. **Each now has a name**, so a claim about bolt can say which one it
-is about:
+Two implementations exist and they differ in what a refusal costs. **Each has a
+name**, so a claim about bolt can say which one it is about:
 
     bolt        whichever build bin/bolt points at
     bolt.go     the Go build, always
@@ -133,15 +134,21 @@ install path, `bolt` moves and `bolt.go` keeps naming the old implementation.
 
     ls -la ~/bin/bolt ~/bin/bolt.go
 
-Nested jigs are retired, and wrench holds the estate's only two tasks written
-against them, `python-common` and `python-std`. Under the Rust build this gate
-is refused outright with `kind: bolt-refused`. It is green today only because
-`bolt` still resolves to the Go build, and nothing announces a switch.
+**Both builds run this gate, 28 executions each**, measured 2026-08-29. Nested
+jigs are retired at bolt `f3304d8` and this jig holds none: `python-common` and
+`python-std` are command tasks whose program is bolt, each giving its child a
+`{work_dir}/child` of its own.
 
-**Do not convert those two tasks yet.** The adapter that reads a child run's
-`result.yaml` does not exist, so a converted task falls to the exit-code adapter
-and bolt exits 0 whenever it carried a run out. The converted gate would report
-pass however badly the child failed, which is worse than a refusal that stops.
+**`adapters/common/bolt-result.py` is what lets a composed task fail.** bolt
+exits 0 whenever it carried a run out, so under the generic exit-code adapter
+the parent passes however badly the child failed. toolbox measured one failing
+child both ways, `success=True` without it and `success=False` with it. A ruff
+error planted inside `python/` surfaces here as the parent's own reason, keeping
+the child's `kind` and `message` and naming the child result it came from.
+
+Write the flags before the positionals. The Go build prints usage to stderr and
+exits 1 otherwise, which reads as the adapter being wrong; the Rust build takes
+either order.
 
 ## The packs
 
