@@ -9,14 +9,30 @@ from __future__ import annotations
 
 
 class WrenchError(Exception):
-    """Anything wrench refuses. Carries the path it was working on."""
+    """Anything wrench refuses. Carries the path it was working on.
 
-    def __init__(self, path: str, cause: BaseException | str) -> None:
+    `path` is optional because the boundaries below the two calls do not know
+    one: `YAML.decode` is handed bytes and `Schema.validate` a structure. Those
+    raise with no path, and `at` fills it in when the failure passes back out
+    through `load_formatted_file` or `save_formatted_file`.
+    """
+
+    def __init__(self, path: str | None, cause: BaseException | str) -> None:
         """Keep the path and the cause as attributes as well as in the message,
         so a consumer can report on them without parsing the string."""
         self.path = path
         self.cause = cause
-        super().__init__(f"wrench: {self._doing} {path}: {cause}")
+        where = f" {path}" if path else ""
+        super().__init__(f"wrench: {self._doing}{where}: {cause}")
+
+    def at(self, path: str) -> WrenchError:
+        """The same failure, said with the path the caller named.
+
+        Used instead of wrapping a second time: a `ParseError` from a codec and
+        a `ParseError` from `load_formatted_file` are one failure, and nesting
+        them would make a consumer unwrap twice to reach the cause.
+        """
+        return type(self)(path, self.cause)
 
     _doing = "handling"
 
@@ -52,3 +68,18 @@ class WriteError(WrenchError):
     """The bytes could not be put in place."""
 
     _doing = "writing"
+
+
+class SchemaError(WrenchError):
+    """The schema itself will not compile.
+
+    Distinct from `ValidationError`, which is a document failing a schema that
+    is fine. This is the schema being unreadable or not a valid JSON Schema, so
+    nothing can be validated against it at all and the fix is to the schema
+    rather than to any document.
+
+    It is the type `clank gate/30` recorded as missing when `compile_schema` was
+    found leaking `json.JSONDecodeError` and `jsonschema.SchemaError`.
+    """
+
+    _doing = "compiling"

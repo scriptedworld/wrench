@@ -19,6 +19,7 @@ import datetime
 
 import yaml
 
+from wrench.errors import EncodeError, ParseError, WrenchError
 from wrench.float_text import canonical_float_text
 
 INDENT = 2
@@ -28,12 +29,27 @@ class YAMLCodec:
     """The format, knowing nothing about where the bytes came from."""
 
     def decode(self, data: bytes) -> object:
-        """Bytes into maps, lists and scalars."""
-        return _normalise(yaml.safe_load(data))
+        """Bytes into maps, lists and scalars.
+
+        PyYAML's own exception types do not cross this boundary: a consumer
+        should not have to know which YAML library wrench binds in order to
+        catch a parse failure. The cause is kept and reachable.
+        """
+        try:
+            return _normalise(yaml.safe_load(data))
+        except WrenchError:
+            raise
+        except Exception as err:
+            raise ParseError(None, err) from err
 
     def encode(self, value: object) -> bytes:
         """A structure into canonical bytes."""
-        return _canonical(value).encode("utf-8")
+        try:
+            return _canonical(value).encode("utf-8")
+        except WrenchError:
+            raise
+        except Exception as err:
+            raise EncodeError(None, err) from err
 
 
 YAML = YAMLCodec()

@@ -14,7 +14,6 @@ import subprocess  # nosec B404 - registered in SUPPRESSIONS
 import sys
 from pathlib import Path
 
-import jsonschema.exceptions
 import pytest
 
 import wrench
@@ -181,7 +180,7 @@ def test_a_timestamp_decodes_to_a_string_so_it_can_be_written_back():
 # COVERS: FR-4.1 | edge
 def test_nan_and_the_infinities_are_refused():
     for value in (float("nan"), float("inf"), float("-inf")):
-        with pytest.raises(ValueError):
+        with pytest.raises(wrench.EncodeError):
             wrench.YAML.encode([value])
 
 
@@ -287,7 +286,11 @@ def _refuses(schema, value, what):
     not. `pytest.raises` alone loses which case of a table got through."""
     try:
         schema.validate(value)
-    except ValueError:
+    except (wrench.ValidationError, wrench.SchemaError):
+        # Two distinct failures, both meaning the value did not get through: the
+        # schema refused it, or the schema could not be used because a reference
+        # would not resolve. Naming both keeps the helper from passing on a
+        # ReadError, which a bare WrenchError would.
         return
     pytest.fail(f"{what} was accepted")
 
@@ -529,7 +532,7 @@ def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
         # reference it cannot resolve. Catching Exception here would pass on a
         # typo in this test as readily as on the refusal it is checking for.
         # `what` and `target` are in the failure's locals when one does resolve.
-        with pytest.raises(ValueError):
+        with pytest.raises(wrench.SchemaError):
             schema.validate({"d": "anything"})
 
 
@@ -575,7 +578,7 @@ def test_a_caller_cannot_redefine_a_shipped_schema():
                 identifier,
                 '{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}',
             )
-        except ValueError:
+        except wrench.SchemaError:
             continue
         pytest.fail(f"{identifier} was redefined by a caller")
 
@@ -719,14 +722,16 @@ def test_an_unusable_schema_fails_when_it_is_compiled():
         "not json": "{ not json at all",
         "not a schema": '{"type": 42}',
     }.values():
-        # The two cases raise DIFFERENT third-party types, json's JSONDecodeError
-        # and jsonschema's SchemaError, neither of them wrench's own. That is a
-        # leak rather than a design: this pack wraps everywhere else, and the Go
-        # and Rust packs return their own error here. Asserting the types that
-        # are actually raised documents the leak instead of hiding it behind a
-        # blind except that would also pass on a typo.
-        with pytest.raises((json.JSONDecodeError, jsonschema.exceptions.SchemaError)):
+        # Both cases USED to raise a third-party type, json's JSONDecodeError
+        # and jsonschema's SchemaError, and this test asserted them to document
+        # the leak rather than hide it. FR-2.11 closed it: a caller does not
+        # need to know which JSON parser or which validator wrench binds.
+        #
+        # The cause stays reachable, which is what makes the wrap honest rather
+        # than a way of losing what happened.
+        with pytest.raises(wrench.SchemaError) as caught:
             wrench.compile_schema("broken.schema.json", document)
+        assert caught.value.__cause__ is not None, "the wrap discarded the cause"
 
 
 # COVERS: FR-3.1 | negative
@@ -920,7 +925,7 @@ def test_toml_writes_an_array_of_tables_as_repeated_sections():
 def test_toml_refuses_a_null():
     """TOML cannot spell null, and substituting one would invent a document
     nobody wrote. The message names where it sits."""
-    with pytest.raises(ValueError) as caught:
+    with pytest.raises(wrench.EncodeError) as caught:
         wrench.TOML.encode({"a": {"b": None}})
     assert "a.b" in str(caught.value)
 
@@ -929,7 +934,7 @@ def test_toml_refuses_a_null():
 def test_toml_refuses_a_document_that_is_not_a_table():
     """There is no top-level scalar or array in TOML, so wrapping one in an
     invented key is the alternative and is worse."""
-    with pytest.raises(ValueError):
+    with pytest.raises(wrench.EncodeError):
         wrench.TOML.encode([1, 2])
 
 

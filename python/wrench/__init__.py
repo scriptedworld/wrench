@@ -27,6 +27,7 @@ from wrench.errors import (
     EncodeError,
     ParseError,
     ReadError,
+    SchemaError,
     ValidationError,
     WrenchError,
     WriteError,
@@ -58,6 +59,7 @@ __all__ = [
     "ParseError",
     "ReadError",
     "Schema",
+    "SchemaError",
     "TOMLCodec",
     "ValidationError",
     "WrenchError",
@@ -86,16 +88,28 @@ def load_formatted_file(path, schema, codec, reader):
 
     try:
         data = reader.read(path)
+    except WrenchError as err:
+        # Already wrench's, from a codec or a schema that has no
+        # path. Fill it in rather than wrap a second time.
+        raise err.at(path) from err.__cause__ or err
     except Exception as err:
         raise ReadError(path, err) from err
 
     try:
         value = codec.decode(data)
+    except WrenchError as err:
+        # Already wrench's, from a codec or a schema that has no
+        # path. Fill it in rather than wrap a second time.
+        raise err.at(path) from err.__cause__ or err
     except Exception as err:
         raise ParseError(path, err) from err
 
     try:
         schema.validate(value)
+    except WrenchError as err:
+        # Already wrench's, from a codec or a schema that has no
+        # path. Fill it in rather than wrap a second time.
+        raise err.at(path) from err.__cause__ or err
     except Exception as err:
         raise ValidationError(path, err) from err
 
@@ -113,16 +127,28 @@ def save_formatted_file(data, path, schema, codec, writer):
 
     try:
         schema.validate(data)
+    except WrenchError as err:
+        # Already wrench's, from a codec or a schema that has no
+        # path. Fill it in rather than wrap a second time.
+        raise err.at(path) from err.__cause__ or err
     except Exception as err:
         raise ValidationError(path, err) from err
 
     try:
         encoded = codec.encode(data)
+    except WrenchError as err:
+        # Already wrench's, from a codec or a schema that has no
+        # path. Fill it in rather than wrap a second time.
+        raise err.at(path) from err.__cause__ or err
     except Exception as err:
         raise EncodeError(path, err) from err
 
     try:
         writer.write(path, encoded)
+    except WrenchError as err:
+        # Already wrench's, from a codec or a schema that has no
+        # path. Fill it in rather than wrap a second time.
+        raise err.at(path) from err.__cause__ or err
     except Exception as err:
         raise WriteError(path, err) from err
 

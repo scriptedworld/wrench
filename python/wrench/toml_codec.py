@@ -26,6 +26,7 @@ import datetime
 import tomllib
 
 from wrench.codec import DELETE, FIRST_PRINTABLE, _normalise
+from wrench.errors import EncodeError, ParseError, WrenchError
 from wrench.float_text import canonical_float_text
 
 
@@ -38,8 +39,16 @@ class TOMLCodec:
         `_normalise` is shared with the YAML codec rather than reimplemented,
         because the coercion rule is the contract's and not one format's: both
         formats have native temporal types and JSON has none.
+
+        `tomllib.TOMLDecodeError` does not cross this boundary; the cause is
+        kept and reachable.
         """
-        return _normalise(tomllib.loads(data.decode("utf-8")))
+        try:
+            return _normalise(tomllib.loads(data.decode("utf-8")))
+        except WrenchError:
+            raise
+        except Exception as err:
+            raise ParseError(None, err) from err
 
     def encode(self, value: object) -> bytes:
         """A structure into canonical bytes, keys sorted.
@@ -55,9 +64,14 @@ class TOMLCodec:
         table.
         """
         if not isinstance(value, dict):
-            raise ValueError(f"cannot write {type(value).__name__} in canonical form: a TOML document is a table")
-        _refuse_null(value, "")
-        return "".join(_table(value, [])).encode("utf-8")
+            raise EncodeError(None, f"cannot write {type(value).__name__} in canonical form: a TOML document is a table")
+        try:
+            _refuse_null(value, "")
+            return "".join(_table(value, [])).encode("utf-8")
+        except WrenchError:
+            raise
+        except Exception as err:
+            raise EncodeError(None, err) from err
 
 
 def _refuse_null(value: object, where: str) -> None:

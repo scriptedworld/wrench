@@ -30,6 +30,8 @@ import jsonschema.exceptions
 import jsonschema.validators
 import referencing
 
+from wrench.errors import SchemaError, ValidationError
+
 # python/wrench/schema.py -> python/wrench -> python -> the repository root.
 SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schemas"
 
@@ -144,16 +146,20 @@ class Schema:
         try:
             error = jsonschema.exceptions.best_match(validator.iter_errors(value))
         except Exception as unresolved:
-            raise ValueError(
-                f"{self.name}: cannot resolve a reference: {unresolved}. "
+            raise SchemaError(
+                self.name,
+                f"cannot resolve a reference: {unresolved}. "
                 f"A schema may reference the shipped schemas and its own fragments, "
-                f"and nothing else unless {ALLOW_EXTERNAL_REFS}=1"
+                f"and nothing else unless {ALLOW_EXTERNAL_REFS}=1",
             ) from unresolved
 
         if error is not None:
             where = "/".join(str(part) for part in error.absolute_path)
             at = f" at '/{where}'" if where else ""
-            raise ValueError(f"{self.name}{at}: {error.message}")
+            # ValidationError with no path: `validate` is handed a structure and
+            # does not know which file it came from. `load_formatted_file` fills
+            # the path in with `at()` rather than wrapping a second time.
+            raise ValidationError(None, f"{self.name}{at}: {error.message}")
 
 
 class _Shipped(Schema):
@@ -200,12 +206,24 @@ def compile_schema(name: str, document: str | dict) -> Schema:
 
     It may reference NOTHING ELSE. See ALLOW_EXTERNAL_REFS.
     """
-    parsed = json.loads(document) if isinstance(document, str) else document
-    if name in _shipped_documents():
-        raise ValueError(f"wrench: {name} is a shipped schema and cannot be redefined")
+    # Neither `json.JSONDecodeError` nor `jsonschema.SchemaError` crosses this
+    # boundary. A caller should not have to know which JSON parser or which
+    # validator wrench binds in order to catch a schema that will not compile,
+    # and both types were reaching consumers until this wrap. The cause is kept.
+    try:
+        parsed = json.loads(document) if isinstance(document, str) else document
+    except Exception as err:
+        raise SchemaError(name, err) from err
 
-    cls = jsonschema.validators.validator_for(parsed)
-    cls.check_schema(parsed)
+    if name in _shipped_documents():
+        raise SchemaError(name, "a shipped schema cannot be redefined")
+
+    try:
+        cls = jsonschema.validators.validator_for(parsed)
+        cls.check_schema(parsed)
+    except Exception as err:
+        raise SchemaError(name, err) from err
+
     registry = None if _external_refs_allowed() else _shipped_registry()
     return Schema(name, parsed, registry)
 
