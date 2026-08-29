@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Forward to the global commit-msg, which is the no-AI-attribution gate.
+#
+# This file exists only because `core.hooksPath` is local here so that a
+# pre-commit hook can run at all, and git consults exactly one hooks directory.
+# Without this the global gate would stop running in this repository and nothing
+# would say so.
+#
+# An absolute path rather than a copy. The gate is dotfiles' to write, and a
+# second copy is a second thing to keep in step.
+set -uo pipefail
+
+global="$HOME/.git-hooks/commit-msg"
+
+if [ ! -x "$global" ]; then
+    echo "commit-msg: $global is missing, so the no-AI-attribution gate did not run."
+    exit 1
+fi
+
+exec "$global" "$@"

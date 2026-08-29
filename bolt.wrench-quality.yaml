@@ -154,6 +154,18 @@ tasks:
     description: every live requirement file reaches the traceability checker
     command: python3 {config_dir}/bin/test-requirement-count.py
 
+  # `python-common` ABOVE ALREADY RUNS THE SUPPRESSION REGISTER, and at base
+  # `python/`, so `bin/`, the Go pack and the Rust pack are outside its scan by
+  # construction. Measured 2026-08-29: that run reads 9 files, and a `//nolint`
+  # written into a Go file at the root passes it at exit 0.
+  #
+  # This runs the same checker over the whole tree, 41 files. It is the gate's
+  # half of hard rule 4; `bin/githooks/pre-commit` is the other half and refuses
+  # the commit rather than waiting for somebody to run the gate.
+  - name: suppressions-everywhere
+    description: no suppression pragma in any language that SUPPRESSIONS misses
+    command: python3 {config_dir}/bin/no-unregistered-suppression.py
+
   # `retired-rows-are-deliberate` STOOD HERE AND IS GONE, at the split. It
   # pinned the count of rows below `## Retired` in a single REQUIREMENTS.md,
   # because that heading was the file's last section and a row appended to the

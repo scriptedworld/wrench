@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Refuse a commit carrying a suppression pragma SUPPRESSIONS does not name.
+#
+# Hard rule 4: a pragma needs a person to have answered why before it is written.
+# A gate checks it when somebody runs the gate; this runs at the moment the
+# pragma would land, which is the only point at which it cannot be forgotten.
+#
+# INSTALL, once per checkout, from the repository root:
+#
+#     git config core.hooksPath bin/githooks
+#
+# `.git/hooks/` is the wrong home twice over: it is not versioned, and
+# `core.hooksPath` in ~/.gitconfig points every repository at
+# ~/.git-hooks, so git never reads `.git/hooks/` here at all. Measured
+# 2026-08-29: a probe commit carrying an unregistered `//nolint` landed at exit
+# 0 through a `.git/hooks/pre-commit` symlink.
+#
+# THE OVERRIDE SHADOWS THE GLOBAL HOOKS DIRECTORY, because git consults exactly
+# one. commit-msg is forwarded beside this file, and the drift check below
+# refuses rather than let a hook added there go unnoticed.
+set -uo pipefail
+
+global_hooks="$HOME/.git-hooks"
+
+# What that directory held when this override was taken, 2026-08-29. Anything
+# else in it now is a gate this repository has stopped running, so refuse and
+# say what to do rather than passing a commit the rest of the estate would fail.
+accounted="commit-msg
+no-ai-attribution"
+
+if [ -d "$global_hooks" ]; then
+    unaccounted="$(comm -23 <(ls -1 "$global_hooks" | sort) <(printf '%s\n' "$accounted" | sort))"
+    if [ -n "$unaccounted" ]; then
+        echo "pre-commit: the global hooks directory has grown a hook this"
+        echo "repository's core.hooksPath override is hiding:"
+        echo "$unaccounted" | sed 's/^/    /'
+        echo
+        echo "If it is a pre-commit dispatch, this override is no longer needed:"
+        echo "    git config --unset core.hooksPath"
+        echo "    ln -sf ../../bin/githooks/pre-commit .git/hooks/pre-commit.local"
+        echo "Otherwise forward it from bin/githooks/ and add it to \`accounted\`."
+        exit 1
+    fi
+fi
+
+root="$(git rev-parse --show-toplevel)"
+
+if ! python3 "$root/bin/no-unregistered-suppression.py"; then
+    echo
+    echo "pre-commit: refused. Register it in SUPPRESSIONS with the question and"
+    echo "the answer, or remove it. --no-verify is not the way through: it is the"
+    echo "one option whose whole purpose is to suppress the check that stopped you."
+    exit 1
+fi
+
+exit 0
