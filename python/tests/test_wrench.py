@@ -202,19 +202,19 @@ def test_the_reader_is_handed_the_path():
 
 # COVERS: FR-2.3 | negative
 def test_a_call_with_no_schema_is_refused():
-    with pytest.raises(ValueError, match="no schema"):
+    with pytest.raises(wrench.UsageError, match="no schema"):
         wrench.load_formatted_file("f.yaml", None, wrench.YAML, Stub())
-    with pytest.raises(ValueError, match="no schema"):
+    with pytest.raises(wrench.UsageError, match="no schema"):
         wrench.save_formatted_file({}, "f.yaml", None, wrench.YAML, Stub())
 
 
 # COVERS: FR-2.2 | negative
 def test_a_call_with_no_codec_or_no_io_is_refused():
-    with pytest.raises(ValueError, match="no codec"):
+    with pytest.raises(wrench.UsageError, match="no codec"):
         wrench.load_formatted_file("f.yaml", ANYTHING, None, Stub())
-    with pytest.raises(ValueError, match="no reader"):
+    with pytest.raises(wrench.UsageError, match="no reader"):
         wrench.load_formatted_file("f.yaml", ANYTHING, wrench.YAML, None)
-    with pytest.raises(ValueError, match="no writer"):
+    with pytest.raises(wrench.UsageError, match="no writer"):
         wrench.save_formatted_file({}, "f.yaml", ANYTHING, wrench.YAML, None)
 
 
@@ -290,7 +290,7 @@ def _refuses(schema, value, what):
         # Two distinct failures, both meaning the value did not get through: the
         # schema refused it, or the schema could not be used because a reference
         # would not resolve. Naming both keeps the helper from passing on a
-        # ReadError, which a bare WrenchError would.
+        # ReadError, which a bare Error would.
         return
     pytest.fail(f"{what} was accepted")
 
@@ -1065,7 +1065,7 @@ def test_every_failure_is_wrenchs_own_type_with_its_step():
     )
 
     def failing(call):
-        with pytest.raises(wrench.WrenchError) as caught:
+        with pytest.raises(wrench.Error) as caught:
             call()
         return caught.value
 

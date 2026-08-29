@@ -27,6 +27,11 @@ const (
 	StepValidate = "validate"
 	StepEncode   = "encode"
 	StepWrite    = "write"
+
+	// StepUsage is the seventh kind: the call itself was made wrongly, before
+	// any file was touched. Rust cannot produce it, because the same call does
+	// not compile there.
+	StepUsage = "usage"
 )
 
 // describe words a failure, omitting the path where there is none.

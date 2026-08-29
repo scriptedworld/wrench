@@ -12,21 +12,33 @@
 // behaviour, not spelling.
 package wrench
 
-import "errors"
+// A usageError is a call made wrongly, before any file was touched. It is a
+// seventh kind beside the six steps because it is not one of them: nothing was
+// read, parsed or validated.
+//
+// These stay sentinel values so errors.Is keeps working, and gain Step so
+// errors.As reaches them through the Error interface. Before this they were
+// plain errors.New values, so a consumer catching "any wrench failure" missed
+// exactly the failures that mean it called wrench wrong.
+type usageError struct{ message string }
+
+func (e *usageError) Error() string { return e.message }
+
+func (e *usageError) Step() string { return StepUsage }
 
 // ErrNoSchema is returned when a call is handed no schema. The signature
 // compels one; nil is the one way round that, and it is refused here so
 // FR-2.3's guarantee holds in a language where any interface can be nil.
-var ErrNoSchema = errors.New("wrench: no schema given")
+var ErrNoSchema error = &usageError{"wrench: no schema given"}
 
 // ErrNoCodec is returned when a call is handed no codec.
-var ErrNoCodec = errors.New("wrench: no codec given")
+var ErrNoCodec error = &usageError{"wrench: no codec given"}
 
 // ErrNoReader is returned when a load is handed no reader.
-var ErrNoReader = errors.New("wrench: no reader given")
+var ErrNoReader error = &usageError{"wrench: no reader given"}
 
 // ErrNoWriter is returned when a save is handed no writer.
-var ErrNoWriter = errors.New("wrench: no writer given")
+var ErrNoWriter error = &usageError{"wrench: no writer given"}
 
 // A Codec turns bytes into a structure and a structure into canonical bytes.
 // It is the format, and knows nothing about where the bytes came from.

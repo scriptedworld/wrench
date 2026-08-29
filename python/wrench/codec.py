@@ -130,13 +130,27 @@ def _mapping(value: dict, depth: int, pad: str) -> str:
     for key in sorted(value):
         item = value[key]
         try:
+            # A non-string key is refused rather than written. Python's dict
+            # takes any hashable, and `_scalar` would render 1 as a bare `1:`,
+            # which this codec's own decoder then refuses under FR-1.2: the
+            # encoder would be writing a document it cannot read back. Go and
+            # Rust cannot reach this, because their map keys are strings by type.
+            written = _key(key)
             if _spans_lines(item):
-                out.append(f"{pad}{_scalar(key)}:\n{_canonical(item, depth + 1)}")
+                out.append(f"{pad}{written}:\n{_canonical(item, depth + 1)}")
             else:
-                out.append(f"{pad}{_scalar(key)}: {_inline(item)}\n")
+                out.append(f"{pad}{written}: {_inline(item)}\n")
         except ValueError as err:
             raise _at(f"at key {_scalar(key)}", err) from err
     return "".join(out)
+
+
+def _key(name: object) -> str:
+    """A mapping key, which JSON Schema and every pack can only spell as a
+    string, quoted so its type survives the round trip."""
+    if not isinstance(name, str):
+        raise ValueError(f"cannot write a {type(name).__name__} key in canonical form")
+    return _scalar(name)
 
 
 def _sequence(value: list, depth: int, pad: str) -> str:

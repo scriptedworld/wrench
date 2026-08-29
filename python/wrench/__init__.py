@@ -25,11 +25,12 @@ from __future__ import annotations
 from wrench.codec import YAML, YAMLCodec
 from wrench.errors import (
     EncodeError,
+    Error,
     ParseError,
     ReadError,
     SchemaError,
+    UsageError,
     ValidationError,
-    WrenchError,
     WriteError,
 )
 from wrench.json_codec import JSON, JSONCodec
@@ -54,6 +55,7 @@ __all__ = [
     "TOML",
     "YAML",
     "EncodeError",
+    "Error",
     "JSONCodec",
     "LocalFileIO",
     "ParseError",
@@ -61,8 +63,8 @@ __all__ = [
     "Schema",
     "SchemaError",
     "TOMLCodec",
+    "UsageError",
     "ValidationError",
-    "WrenchError",
     "WriteError",
     "YAMLCodec",
     "compile_schema",
@@ -88,7 +90,7 @@ def load_formatted_file(path, schema, codec, reader):
 
     try:
         data = reader.read(path)
-    except WrenchError as err:
+    except Error as err:
         # Already wrench's, from a codec or a schema that has no
         # path. Fill it in rather than wrap a second time.
         raise err.at(path) from err.__cause__ or err
@@ -97,7 +99,7 @@ def load_formatted_file(path, schema, codec, reader):
 
     try:
         value = codec.decode(data)
-    except WrenchError as err:
+    except Error as err:
         # Already wrench's, from a codec or a schema that has no
         # path. Fill it in rather than wrap a second time.
         raise err.at(path) from err.__cause__ or err
@@ -106,7 +108,7 @@ def load_formatted_file(path, schema, codec, reader):
 
     try:
         schema.validate(value)
-    except WrenchError as err:
+    except Error as err:
         # Already wrench's, from a codec or a schema that has no
         # path. Fill it in rather than wrap a second time.
         raise err.at(path) from err.__cause__ or err
@@ -127,7 +129,7 @@ def save_formatted_file(data, path, schema, codec, writer):
 
     try:
         schema.validate(data)
-    except WrenchError as err:
+    except Error as err:
         # Already wrench's, from a codec or a schema that has no
         # path. Fill it in rather than wrap a second time.
         raise err.at(path) from err.__cause__ or err
@@ -136,7 +138,7 @@ def save_formatted_file(data, path, schema, codec, writer):
 
     try:
         encoded = codec.encode(data)
-    except WrenchError as err:
+    except Error as err:
         # Already wrench's, from a codec or a schema that has no
         # path. Fill it in rather than wrap a second time.
         raise err.at(path) from err.__cause__ or err
@@ -145,7 +147,7 @@ def save_formatted_file(data, path, schema, codec, writer):
 
     try:
         writer.write(path, encoded)
-    except WrenchError as err:
+    except Error as err:
         # Already wrench's, from a codec or a schema that has no
         # path. Fill it in rather than wrap a second time.
         raise err.at(path) from err.__cause__ or err
@@ -206,8 +208,8 @@ def _require(schema, codec, io, io_name: str) -> None:
     language with no compile-time check, and it is refused here so the
     guarantee holds rather than being a convention."""
     if schema is None:
-        raise ValueError("wrench: no schema given")
+        raise UsageError(None, "no schema given")
     if codec is None:
-        raise ValueError("wrench: no codec given")
+        raise UsageError(None, "no codec given")
     if io is None:
-        raise ValueError(f"wrench: no {io_name} given")
+        raise UsageError(None, f"no {io_name} given")

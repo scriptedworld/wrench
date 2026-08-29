@@ -15,25 +15,25 @@ if TYPE_CHECKING:
 
 
 @contextlib.contextmanager
-def wrapping(error: type[WrenchError]) -> Iterator[None]:
+def wrapping(error: type[Error]) -> Iterator[None]:
     """Turn whatever a bound library raises into `error`, keeping the cause.
 
     Every codec boundary needs the same three lines, and written out per codec
     they were duplicated closely enough for pylint to say so. One place also
     means the rule is stated once rather than re-derived.
 
-    A `WrenchError` passes through untouched: it is already this contract, and
+    An `Error` passes through untouched: it is already this contract, and
     wrapping it again would make a consumer unwrap twice to reach the cause.
     """
     try:
         yield
-    except WrenchError:
+    except Error:
         raise
     except Exception as err:
         raise error(None, err) from err
 
 
-class WrenchError(Exception):
+class Error(Exception):
     """Anything wrench refuses. Carries the path it was working on.
 
     `path` is optional because the boundaries below the two calls do not know
@@ -62,7 +62,7 @@ class WrenchError(Exception):
         """
         return self._step
 
-    def at(self, path: str) -> WrenchError:
+    def at(self, path: str) -> Error:
         """The same failure, said with the path the caller named.
 
         Used instead of wrapping a second time: a `ParseError` from a codec and
@@ -108,7 +108,7 @@ class WrenchError(Exception):
 # buffer or a test stub rather than an operating system.
 
 
-class ReadError(WrenchError):
+class ReadError(Error):
     """The file could not be read at all. The reader failed before any question
     of format or conformance arose."""
 
@@ -116,7 +116,7 @@ class ReadError(WrenchError):
     _step = "read"
 
 
-class ParseError(WrenchError):
+class ParseError(Error):
     """The codec could not turn the bytes into a structure. The file is not the
     format it was read as."""
 
@@ -124,7 +124,7 @@ class ParseError(WrenchError):
     _step = "parse"
 
 
-class ValidationError(WrenchError):
+class ValidationError(Error):
     """The structure parsed and does not match its schema. The right format and
     the wrong shape, which is a different condition with a different fix."""
 
@@ -132,21 +132,21 @@ class ValidationError(WrenchError):
     _step = "validate"
 
 
-class EncodeError(WrenchError):
+class EncodeError(Error):
     """A valid structure could not be rendered in the codec's canonical form."""
 
     _doing = "encoding"
     _step = "encode"
 
 
-class WriteError(WrenchError):
+class WriteError(Error):
     """The bytes could not be put in place."""
 
     _doing = "writing"
     _step = "write"
 
 
-class SchemaError(WrenchError):
+class SchemaError(Error):
     """The schema itself will not compile.
 
     Distinct from `ValidationError`, which is a document failing a schema that
@@ -160,3 +160,20 @@ class SchemaError(WrenchError):
 
     _doing = "compiling"
     _step = "schema"
+
+
+class UsageError(Error):
+    """The call itself was made wrongly, before any file was touched.
+
+    Passing no schema, codec, reader or writer. The signature compels each one
+    and `None` is the one way round that in a language with no compile-time
+    check, so it is refused here rather than left as a convention.
+
+    It is a seventh kind beside the six steps because it is not one of them: no
+    read was attempted, nothing was parsed, and no schema was consulted. The
+    Rust pack cannot raise it at all, since `&dyn Schema` makes the same call
+    fail to compile.
+    """
+
+    _doing = "called"
+    _step = "usage"
