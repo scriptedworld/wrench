@@ -74,7 +74,11 @@ impl Reader for Stub {
 }
 
 impl Writer for Stub {
-    fn write(&self, path: &str, data: &[u8]) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    fn write(
+        &self,
+        path: &str,
+        data: &[u8],
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         *self.saw_path.borrow_mut() = Some(path.to_string());
         if self.fail {
             return Err("cannot write".into());
@@ -100,8 +104,12 @@ fn canonical_form_matches_the_shared_fixtures() {
         let input = fs::read(dir.join("input.yaml")).expect("an input");
         let want = fs::read_to_string(dir.join("canonical.yaml")).expect("a golden");
 
-        let value = YAML.decode(&input).unwrap_or_else(|e| panic!("{case}: decoding: {e}"));
-        let got = YAML.encode(&value).unwrap_or_else(|e| panic!("{case}: encoding: {e}"));
+        let value = YAML
+            .decode(&input)
+            .unwrap_or_else(|e| panic!("{case}: decoding: {e}"));
+        let got = YAML
+            .encode(&value)
+            .unwrap_or_else(|e| panic!("{case}: encoding: {e}"));
 
         assert_eq!(
             String::from_utf8_lossy(&got),
@@ -190,7 +198,12 @@ fn load_returns_the_validated_structure() {
 #[test]
 fn the_reader_is_handed_the_path() {
     let reader = Stub::new(b"success: true\n");
-    let _ = load_formatted_file("nowhere/output.yaml", &wrench::ENVELOPE_SCHEMA, &YAML, &reader);
+    let _ = load_formatted_file(
+        "nowhere/output.yaml",
+        &wrench::ENVELOPE_SCHEMA,
+        &YAML,
+        &reader,
+    );
     assert_eq!(
         reader.saw_path.borrow().as_deref(),
         Some("nowhere/output.yaml")
@@ -200,8 +213,13 @@ fn the_reader_is_handed_the_path() {
 // COVERS: FR-2.6 | negative
 #[test]
 fn a_failure_says_which_step_failed() {
-    let read = load_formatted_file("gone.yaml", &wrench::ENVELOPE_SCHEMA, &YAML, &Stub::failing())
-        .expect_err("a failing reader fails the call");
+    let read = load_formatted_file(
+        "gone.yaml",
+        &wrench::ENVELOPE_SCHEMA,
+        &YAML,
+        &Stub::failing(),
+    )
+    .expect_err("a failing reader fails the call");
     assert_eq!(read.step(), "read");
 
     let parse = load_formatted_file(
@@ -274,8 +292,13 @@ fn a_jigs_definitions_block_is_held_to_the_shared_shape() {
         .expect("a flat definitions block is accepted");
 
     let nested = b"definitions:\n  python:\n    line_length: 100\ntasks:\n  - name: check\n    command: \"true\"\n";
-    load_formatted_file("bolt.q.yaml", &wrench::JIG_SCHEMA, &YAML, &Stub::new(nested))
-        .expect_err("a nested value is refused, so the reference resolved");
+    load_formatted_file(
+        "bolt.q.yaml",
+        &wrench::JIG_SCHEMA,
+        &YAML,
+        &Stub::new(nested),
+    )
+    .expect_err("a nested value is refused, so the reference resolved");
 }
 
 // COVERS: FR-3.10 | positive
@@ -347,7 +370,9 @@ fn a_timestamp_decodes_to_a_string_so_it_can_be_written_back() {
         );
     }
     let encoded = YAML.encode(&value).expect("what was read can be written");
-    let again = YAML.encode(&YAML.decode(&encoded).expect("decodes")).expect("encodes");
+    let again = YAML
+        .encode(&YAML.decode(&encoded).expect("decodes"))
+        .expect("encodes");
     assert_eq!(encoded, again, "not a fixed point");
 }
 
@@ -613,7 +638,13 @@ fn a_jig_may_declare_it_stands_at_the_repository_root() {
 
     let on_task = b"tasks:\n  - name: child\n    jig: other\n    needs-repository-root: true\n";
     assert!(
-        load_formatted_file("bolt.q.yaml", &wrench::JIG_SCHEMA, &YAML, &Stub::new(on_task)).is_err(),
+        load_formatted_file(
+            "bolt.q.yaml",
+            &wrench::JIG_SCHEMA,
+            &YAML,
+            &Stub::new(on_task)
+        )
+        .is_err(),
         "a jig task carrying needs-repository-root was accepted"
     );
 }
@@ -698,9 +729,9 @@ fn a_task_may_allow_an_empty_selection() {
     // command naming neither path variable has none, and a jig task has none
     // either because emptiness is its child's business.
     for (what, document) in [
-        ("one execution per path", "tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: [\"*.json\"]\n    allow-empty: true\n"),
-        ("one over the whole set", "tasks:\n  - name: check\n    command: jq . {all_paths}\n    matching: [\"*.json\"]\n    allow-empty: true\n"),
-        ("declining it explicitly", "tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: false\n"),
+        ("one execution per path", "tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: [\"*.json\"]\n    optional: true\n"),
+        ("one over the whole set", "tasks:\n  - name: check\n    command: jq . {all_paths}\n    matching: [\"*.json\"]\n    optional: true\n"),
+        ("declining it explicitly", "tasks:\n  - name: check\n    command: go test ./...\n    optional: false\n"),
         ("omitting it", "tasks:\n  - name: check\n    command: go test ./...\n"),
     ] {
         load_formatted_file(
@@ -715,17 +746,129 @@ fn a_task_may_allow_an_empty_selection() {
     for (what, document) in [
         (
             "a command with no selection to be empty",
-            "tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: true\n",
+            "tasks:\n  - name: check\n    command: go test ./...\n    optional: true\n",
         ),
         (
             "a jig task, whose child owns emptiness",
-            "tasks:\n  - name: child\n    jig: other\n    allow-empty: true\n",
+            "tasks:\n  - name: child\n    jig: other\n    optional: true\n",
         ),
     ] {
         assert!(
             load_formatted_file(
                 "bolt.q.yaml",
                 &wrench::JIG_SCHEMA,
+                &YAML,
+                &Stub::new(document.as_bytes())
+            )
+            .is_err(),
+            "{what} was accepted"
+        );
+    }
+}
+
+// COVERS: FR-3.1, FR-3.4 | edge
+#[test]
+fn a_time_limit_is_a_decimal_with_a_unit() {
+    // The grammar is deliberately narrower than a float parse, so the runner
+    // and this schema stay expressible as the same regex. A jig author gets the
+    // error against the document being edited rather than one layer later.
+    for limit in ["30s", "1.5m", "2h", "0.5s", ".5s", "90m"] {
+        let document = format!(
+            "time-limit: {limit}\ntasks:\n  - name: check\n    command: go test ./...\n    time-limit: {limit}\n"
+        );
+        load_formatted_file(
+            "bolt.q.yaml",
+            &wrench::JIG_SCHEMA,
+            &YAML,
+            &Stub::new(document.as_bytes()),
+        )
+        .unwrap_or_else(|e| panic!("{limit} was refused: {e}"));
+    }
+
+    // `30` is the one a jig author actually writes, and it was accepted here
+    // and refused by the runner before the schema said anything.
+    for (what, document) in [
+        (
+            "a bare number",
+            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: 30\n",
+        ),
+        (
+            "a list",
+            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: [30]\n",
+        ),
+        (
+            "no unit",
+            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"30\"\n",
+        ),
+        (
+            "an unknown unit",
+            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"30d\"\n",
+        ),
+        (
+            "exponent notation",
+            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"1e3s\"\n",
+        ),
+        (
+            "a sign",
+            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"+5s\"\n",
+        ),
+        (
+            "an infinity",
+            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"infs\"\n",
+        ),
+        (
+            "on the jig itself",
+            "time-limit: 30\ntasks:\n  - name: c\n    command: go test ./...\n",
+        ),
+    ] {
+        assert!(
+            load_formatted_file(
+                "bolt.q.yaml",
+                &wrench::JIG_SCHEMA,
+                &YAML,
+                &Stub::new(document.as_bytes())
+            )
+            .is_err(),
+            "{what} was accepted"
+        );
+    }
+}
+
+// COVERS: FR-3.1, FR-3.4 | edge
+#[test]
+fn envelope_evidence_and_statistics_are_objects() {
+    // Both carried a description and no type, so a producer could write either
+    // as a string, a list or a number and validation passed every time. The
+    // member shape stays open: constraining it would bind every producer to one
+    // runner's naming.
+    let accepted =
+        "success: true\nmetadata:\n  evidence:\n    alpha-1:\n      result: /tmp/a\n  statistics:\n    checked: 12\n";
+    load_formatted_file(
+        "out.yaml",
+        &wrench::ENVELOPE_SCHEMA,
+        &YAML,
+        &Stub::new(accepted.as_bytes()),
+    )
+    .unwrap_or_else(|e| panic!("a mapping of evidence was refused: {e}"));
+
+    for (what, document) in [
+        (
+            "evidence as a bare string",
+            "success: true\nmetadata:\n  evidence: /tmp/a\n",
+        ),
+        (
+            "evidence as a number",
+            "success: true\nmetadata:\n  evidence: 12\n",
+        ),
+        (
+            "statistics as a number",
+            "success: true\nmetadata:\n  statistics: 12\n",
+        ),
+    ] {
+        assert!(
+            load_formatted_file(
+                "out.yaml",
+                &wrench::ENVELOPE_SCHEMA,
                 &YAML,
                 &Stub::new(document.as_bytes())
             )
@@ -786,7 +929,8 @@ fn a_validation_error_names_the_schema_by_id_not_by_local_path() {
 // COVERS: FR-3.2, FR-3.3 | negative
 #[test]
 fn a_definitions_file_takes_one_level_of_scalars() {
-    let scalars = b"requirements: ../REQUIREMENTS.md\nline_length: 100\nstrict: true\nempty: \"\"\n";
+    let scalars =
+        b"requirements: ../REQUIREMENTS.md\nline_length: 100\nstrict: true\nempty: \"\"\n";
     load_formatted_file(
         "d.yaml",
         &wrench::DEFINITIONS_SCHEMA,
@@ -873,7 +1017,9 @@ fn a_format_may_declare_the_version_it_conforms_to() {
         "1.0.0+build.5",
         "1.0.0-rc.1+build.5",
     ];
-    let refused = ["1", "1.0", "v1.0.0", "1.0.0.0", "01.0.0", "", "latest", "1.0.0-"];
+    let refused = [
+        "1", "1.0", "v1.0.0", "1.0.0.0", "01.0.0", "", "latest", "1.0.0-",
+    ];
 
     for (name, schema, rest) in versioned() {
         // Absent is valid, which is what makes the field additive.
@@ -1048,7 +1194,8 @@ fn round_trip_through_the_real_filesystem() {
     let value = json!({"success": true, "metadata": {"statistics": {"checked": 12}}});
 
     save_formatted_file(&value, path, &wrench::ENVELOPE_SCHEMA, &YAML, &LOCAL_FILE).expect("save");
-    let back = load_formatted_file(path, &wrench::ENVELOPE_SCHEMA, &YAML, &LOCAL_FILE).expect("load");
+    let back =
+        load_formatted_file(path, &wrench::ENVELOPE_SCHEMA, &YAML, &LOCAL_FILE).expect("load");
 
     assert_eq!(back, value, "what was written did not come back");
     assert_eq!(

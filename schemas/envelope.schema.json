@@ -30,10 +30,13 @@
       "description": "Optional. Carries statistics and evidence where a producer has them.",
       "properties": {
         "statistics": {
-          "description": "Whatever the producer counted."
+          "type": "object",
+          "description": "Whatever the producer counted, keyed by what it counted."
         },
         "evidence": {
-          "description": "What the result rests on, by path."
+          "type": ["object", "array"],
+          "description": "What the result rests on: a list of paths, or a mapping keyed by what each is evidence for.",
+          "$comment": "Carrying a description and no type, this accepted a bare string and a number, and a producer writing bare strings validated for as long as nobody read the requirement row. Both collection shapes are permitted because both are in use and neither is wrong: a list says where to look, a mapping says what each path belongs to. Requiring the mapping alone was proposed and refused, because it invalidates the shape this repository's own canonical fixture declares. Constraining the keys or the member shape would bind every producer to one runner's naming, which is a larger claim than this schema is entitled to make."
         }
       }
     }

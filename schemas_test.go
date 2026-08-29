@@ -510,9 +510,9 @@ func TestATaskMayAllowAnEmptySelection(t *testing.T) {
 	// a command naming neither path variable has none, and a jig task has none
 	// either because emptiness is its child's business.
 	accepted := map[string]string{
-		"one execution per path":  "tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: [\"*.json\"]\n    allow-empty: true\n",
-		"one over the whole set":  "tasks:\n  - name: check\n    command: jq . {all_paths}\n    matching: [\"*.json\"]\n    allow-empty: true\n",
-		"declining it explicitly": "tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: false\n",
+		"one execution per path":  "tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: [\"*.json\"]\n    optional: true\n",
+		"one over the whole set":  "tasks:\n  - name: check\n    command: jq . {all_paths}\n    matching: [\"*.json\"]\n    optional: true\n",
+		"declining it explicitly": "tasks:\n  - name: check\n    command: go test ./...\n    optional: false\n",
 		"omitting it":             "tasks:\n  - name: check\n    command: go test ./...\n",
 	}
 	for what, document := range accepted {
@@ -522,11 +522,66 @@ func TestATaskMayAllowAnEmptySelection(t *testing.T) {
 	}
 
 	refused := map[string]string{
-		"a command with no selection to be empty": "tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: true\n",
-		"a jig task, whose child owns emptiness":  "tasks:\n  - name: child\n    jig: other\n    allow-empty: true\n",
+		"a command with no selection to be empty": "tasks:\n  - name: check\n    command: go test ./...\n    optional: true\n",
+		"a jig task, whose child owns emptiness":  "tasks:\n  - name: child\n    jig: other\n    optional: true\n",
 	}
 	for what, document := range refused {
 		if _, err := wrench.LoadFormattedFile("bolt.q.yaml", wrench.JigSchema, wrench.YAML, &stubReader{data: []byte(document)}); err == nil {
+			t.Errorf("%s was accepted", what)
+		}
+	}
+}
+
+// COVERS: FR-3.1, FR-3.4 | edge
+func TestATimeLimitIsADecimalWithAUnit(t *testing.T) {
+	// The grammar is deliberately narrower than a float parse, so the runner
+	// and this schema stay expressible as the same regex. A jig author gets the
+	// error against the document being edited rather than one layer later.
+	accepted := []string{"30s", "1.5m", "2h", "0.5s", ".5s", "90m"}
+	for _, limit := range accepted {
+		document := "time-limit: " + limit + "\ntasks:\n  - name: check\n    command: go test ./...\n    time-limit: " + limit + "\n"
+		if _, err := wrench.LoadFormattedFile("bolt.q.yaml", wrench.JigSchema, wrench.YAML, &stubReader{data: []byte(document)}); err != nil {
+			t.Errorf("%s was refused: %v", limit, err)
+		}
+	}
+
+	// `30` is the one a jig author actually writes, and it was accepted here
+	// and refused by the runner before the schema said anything.
+	refused := map[string]string{
+		"a bare number":     "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: 30\n",
+		"a list":            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: [30]\n",
+		"no unit":           "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"30\"\n",
+		"an unknown unit":   "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"30d\"\n",
+		"exponent notation": "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"1e3s\"\n",
+		"a sign":            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"+5s\"\n",
+		"an infinity":       "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: \"infs\"\n",
+		"on the jig itself": "time-limit: 30\ntasks:\n  - name: c\n    command: go test ./...\n",
+	}
+	for what, document := range refused {
+		if _, err := wrench.LoadFormattedFile("bolt.q.yaml", wrench.JigSchema, wrench.YAML, &stubReader{data: []byte(document)}); err == nil {
+			t.Errorf("%s was accepted", what)
+		}
+	}
+}
+
+// COVERS: FR-3.1, FR-3.4 | edge
+func TestEnvelopeEvidenceAndStatisticsAreObjects(t *testing.T) {
+	// Both carried a description and no type, so a producer could write either
+	// as a string, a list or a number and validation passed every time. The
+	// member shape stays open: constraining it would bind every producer to one
+	// runner's naming.
+	accepted := "success: true\nmetadata:\n  evidence:\n    alpha-1:\n      result: /tmp/a\n  statistics:\n    checked: 12\n"
+	if _, err := wrench.LoadFormattedFile("out.yaml", wrench.EnvelopeSchema, wrench.YAML, &stubReader{data: []byte(accepted)}); err != nil {
+		t.Errorf("a mapping of evidence was refused: %v", err)
+	}
+
+	refused := map[string]string{
+		"evidence as a bare string": "success: true\nmetadata:\n  evidence: /tmp/a\n",
+		"evidence as a number":      "success: true\nmetadata:\n  evidence: 12\n",
+		"statistics as a number":    "success: true\nmetadata:\n  statistics: 12\n",
+	}
+	for what, document := range refused {
+		if _, err := wrench.LoadFormattedFile("out.yaml", wrench.EnvelopeSchema, wrench.YAML, &stubReader{data: []byte(document)}); err == nil {
 			t.Errorf("%s was accepted", what)
 		}
 	}

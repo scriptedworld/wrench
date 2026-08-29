@@ -23,7 +23,6 @@ fn located(path: &str) -> String {
     }
 }
 
-
 /// What a call could not do. Each variant is one step of
 /// `reader -> decoder -> value -> validated` or its mirror on the way out.
 #[derive(Debug, thiserror::Error)]
@@ -78,17 +77,26 @@ pub enum Error {
 impl Error {
     /// A parse failure with no path, from a codec that was handed bytes.
     pub(crate) fn parse(source: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
-        Error::Parse { path: String::new(), source: source.into() }
+        Error::Parse {
+            path: String::new(),
+            source: source.into(),
+        }
     }
 
     /// An encode failure with no path, from a codec that was handed a value.
     pub(crate) fn encode(source: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
-        Error::Encode { path: String::new(), source: source.into() }
+        Error::Encode {
+            path: String::new(),
+            source: source.into(),
+        }
     }
 
     /// A validation failure with no path, from a schema handed a structure.
     pub(crate) fn validate(source: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
-        Error::Validate { path: String::new(), source: source.into() }
+        Error::Validate {
+            path: String::new(),
+            source: source.into(),
+        }
     }
 
     /// The same failure said with the path the caller named.
@@ -99,11 +107,26 @@ impl Error {
     #[must_use]
     pub fn at(self, path: &str) -> Self {
         match self {
-            Error::Read { source, .. } => Error::Read { path: path.into(), source },
-            Error::Parse { source, .. } => Error::Parse { path: path.into(), source },
-            Error::Validate { source, .. } => Error::Validate { path: path.into(), source },
-            Error::Encode { source, .. } => Error::Encode { path: path.into(), source },
-            Error::Write { source, .. } => Error::Write { path: path.into(), source },
+            Error::Read { source, .. } => Error::Read {
+                path: path.into(),
+                source,
+            },
+            Error::Parse { source, .. } => Error::Parse {
+                path: path.into(),
+                source,
+            },
+            Error::Validate { source, .. } => Error::Validate {
+                path: path.into(),
+                source,
+            },
+            Error::Encode { source, .. } => Error::Encode {
+                path: path.into(),
+                source,
+            },
+            Error::Write { source, .. } => Error::Write {
+                path: path.into(),
+                source,
+            },
             other => other,
         }
     }

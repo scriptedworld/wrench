@@ -893,9 +893,9 @@ def test_a_task_may_allow_an_empty_selection():
     command naming neither path variable has none, and a jig task has none
     either because emptiness is its child's business."""
     accepted = {
-        "one execution per path": b'tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: ["*.json"]\n    allow-empty: true\n',
-        "one over the whole set": b'tasks:\n  - name: check\n    command: jq . {all_paths}\n    matching: ["*.json"]\n    allow-empty: true\n',
-        "declining it explicitly": b"tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: false\n",
+        "one execution per path": b'tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: ["*.json"]\n    optional: true\n',
+        "one over the whole set": b'tasks:\n  - name: check\n    command: jq . {all_paths}\n    matching: ["*.json"]\n    optional: true\n',
+        "declining it explicitly": b"tasks:\n  - name: check\n    command: go test ./...\n    optional: false\n",
         "omitting it": b"tasks:\n  - name: check\n    command: go test ./...\n",
     }
     for what, document in accepted.items():
@@ -905,12 +905,69 @@ def test_a_task_may_allow_an_empty_selection():
             pytest.fail(f"{what} was refused: {problem}")
 
     refused = {
-        "a command with no selection to be empty": b"tasks:\n  - name: check\n    command: go test ./...\n    allow-empty: true\n",
-        "a jig task, whose child owns emptiness": b"tasks:\n  - name: child\n    jig: other\n    allow-empty: true\n",
+        "a command with no selection to be empty": b"tasks:\n  - name: check\n    command: go test ./...\n    optional: true\n",
+        "a jig task, whose child owns emptiness": b"tasks:\n  - name: child\n    jig: other\n    optional: true\n",
     }
     for what, document in refused.items():
         try:
             wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document))
+        except wrench.ValidationError:
+            continue
+        pytest.fail(f"{what} was accepted")
+
+
+# COVERS: FR-3.1, FR-3.4 | edge
+def test_a_time_limit_is_a_decimal_with_a_unit():
+    """The grammar is deliberately narrower than a float parse, so the runner
+    and this schema stay expressible as the same regex. A jig author gets the
+    error against the document being edited rather than one layer later."""
+    for limit in ("30s", "1.5m", "2h", "0.5s", ".5s", "90m"):
+        document = f"time-limit: {limit}\ntasks:\n  - name: check\n    command: go test ./...\n    time-limit: {limit}\n".encode()
+        try:
+            wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document))
+        except wrench.ValidationError as problem:  # pragma: no cover - failure path
+            pytest.fail(f"{limit} was refused: {problem}")
+
+    # `30` is the one a jig author actually writes, and it was accepted here and
+    # refused by the runner before the schema said anything.
+    refused = {
+        "a bare number": b"tasks:\n  - name: c\n    command: go test ./...\n    time-limit: 30\n",
+        "a list": b"tasks:\n  - name: c\n    command: go test ./...\n    time-limit: [30]\n",
+        "no unit": b'tasks:\n  - name: c\n    command: go test ./...\n    time-limit: "30"\n',
+        "an unknown unit": b'tasks:\n  - name: c\n    command: go test ./...\n    time-limit: "30d"\n',
+        "exponent notation": b'tasks:\n  - name: c\n    command: go test ./...\n    time-limit: "1e3s"\n',
+        "a sign": b'tasks:\n  - name: c\n    command: go test ./...\n    time-limit: "+5s"\n',
+        "an infinity": b'tasks:\n  - name: c\n    command: go test ./...\n    time-limit: "infs"\n',
+        "on the jig itself": b"time-limit: 30\ntasks:\n  - name: c\n    command: go test ./...\n",
+    }
+    for what, document in refused.items():
+        try:
+            wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document))
+        except wrench.ValidationError:
+            continue
+        pytest.fail(f"{what} was accepted")
+
+
+# COVERS: FR-3.1, FR-3.4 | edge
+def test_envelope_evidence_and_statistics_are_objects():
+    """Both carried a description and no type, so a producer could write either
+    as a string, a list or a number and validation passed every time. The member
+    shape stays open: constraining it would bind every producer to one runner's
+    naming."""
+    accepted = b"success: true\nmetadata:\n  evidence:\n    alpha-1:\n      result: /tmp/a\n  statistics:\n    checked: 12\n"
+    try:
+        wrench.load_formatted_file("out.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(accepted))
+    except wrench.ValidationError as problem:  # pragma: no cover - failure path
+        pytest.fail(f"a mapping of evidence was refused: {problem}")
+
+    refused = {
+        "evidence as a bare string": b"success: true\nmetadata:\n  evidence: /tmp/a\n",
+        "evidence as a number": b"success: true\nmetadata:\n  evidence: 12\n",
+        "statistics as a number": b"success: true\nmetadata:\n  statistics: 12\n",
+    }
+    for what, document in refused.items():
+        try:
+            wrench.load_formatted_file("out.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(document))
         except wrench.ValidationError:
             continue
         pytest.fail(f"{what} was accepted")

@@ -72,10 +72,19 @@ SHIPPED: dict[str, str] = {
         '      "description": "Optional. Carries statistics and evidence where a producer has them.",\n'
         '      "properties": {\n'
         '        "statistics": {\n'
-        '          "description": "Whatever the producer counted."\n'
+        '          "type": "object",\n'
+        '          "description": "Whatever the producer counted, keyed by what it counted."\n'
         "        },\n"
         '        "evidence": {\n'
-        '          "description": "What the result rests on, by path."\n'
+        '          "type": ["object", "array"],\n'
+        '          "description": "What the result rests on: a list of paths, or a mapping keyed by what each is e'
+        'vidence for.",\n'
+        '          "$comment": "Carrying a description and no type, this accepted a bare string and a number, and '
+        "a producer writing bare strings validated for as long as nobody read the requirement row. Both collection sh"
+        "apes are permitted because both are in use and neither is wrong: a list says where to look, a mapping says w"
+        "hat each path belongs to. Requiring the mapping alone was proposed and refused, because it invalidates the s"
+        "hape this repository's own canonical fixture declares. Constraining the keys or the member shape would bind "
+        "every producer to one runner's naming, which is a larger claim than this schema is entitled to make.\"\n"
         "        }\n"
         "      }\n"
         "    }\n"
@@ -144,6 +153,16 @@ SHIPPED: dict[str, str] = {
         '      "items": { "type": "string", "minLength": 1 }\n'
         "    },\n"
         "\n"
+        '    "time-limit": {\n'
+        '      "type": "string",\n'
+        '      "pattern": "^[0-9]*\\\\.?[0-9]+[smh]$",\n'
+        '      "description": "How long the whole run may take, as a decimal followed by s, m or h. Absent means n'
+        'o limit.",\n'
+        '      "$comment": "Deliberately narrower than a float parse, so 1e3s, +5s and infs are refused. The gramm'
+        "ar and the runner's parser are meant to stay expressible as the same regex, so changing this shape is a deci"
+        'sion to make deliberately and to tell the runner about."\n'
+        "    },\n"
+        "\n"
         '    "definitions": {\n'
         '      "$ref": "https://scriptedworld.github.io/wrench/definitions.schema.json",\n'
         '      "description": "Default values for the placeholders this jig\'s commands name. Optional, and so is a'
@@ -188,6 +207,12 @@ SHIPPED: dict[str, str] = {
         '          "description": "Stop the run when this task fails. Stopping is what a jig asks for rather than '
         'what it gets."\n'
         "        },\n"
+        '        "time-limit": {\n'
+        '          "type": "string",\n'
+        '          "pattern": "^[0-9]*\\\\.?[0-9]+[smh]$",\n'
+        '          "description": "How long this task may take, as a decimal followed by s, m or h. Absent means n'
+        'o limit."\n'
+        "        },\n"
         "\n"
         '        "command": {\n'
         '          "type": "string",\n'
@@ -197,7 +222,7 @@ SHIPPED: dict[str, str] = {
         "        },\n"
         '        "matching": { "$ref": "#/$defs/pathList" },\n'
         '        "excluding": { "$ref": "#/$defs/pathList" },\n'
-        '        "allow-empty": {\n'
+        '        "optional": {\n'
         '          "type": "boolean",\n'
         '          "default": false,\n'
         '          "description": "An empty selection is an acceptable result for this task. Left out, a filtered '
@@ -271,16 +296,16 @@ SHIPPED: dict[str, str] = {
         '            "needs-repository-root": false\n'
         "          },\n"
         '          "if": {\n'
-        '            "required": ["allow-empty"],\n'
-        '            "properties": { "allow-empty": { "const": true } }\n'
+        '            "required": ["optional"],\n'
+        '            "properties": { "optional": { "const": true } }\n'
         "          },\n"
         '          "then": {\n'
         '            "properties": {\n'
         '              "command": {\n'
         '                "pattern": "\\\\{each_path\\\\}|\\\\{all_paths\\\\}",\n'
-        '                "$comment": "allow-empty says an empty SELECTION is acceptable, so a command with no sele'
-        "ction to be empty cannot declare it. Refused here rather than left to the runner, because it is a property o"
-        'f the jig as written."\n'
+        '                "$comment": "optional says an empty SELECTION is acceptable, so a command with no selecti'
+        "on to be empty cannot declare it. Refused here rather than left to the runner, because it is a property of t"
+        'he jig as written."\n'
         "              }\n"
         "            }\n"
         "          }\n"
@@ -295,7 +320,7 @@ SHIPPED: dict[str, str] = {
         '            "evidence": false,\n'
         '            "matching": false,\n'
         '            "excluding": false,\n'
-        '            "allow-empty": false,\n'
+        '            "optional": false,\n'
         '            "needs-repository-root": false\n'
         "          }\n"
         "        }\n"

@@ -39,11 +39,9 @@ impl Codec for TomlCodec {
     }
 
     fn encode(&self, value: &Value) -> Result<Vec<u8>, Fail> {
-        let table = value
-            .as_object()
-            .ok_or_else(|| {
-                crate::Error::encode("cannot write in canonical form: a TOML document is a table")
-            })?;
+        let table = value.as_object().ok_or_else(|| {
+            crate::Error::encode("cannot write in canonical form: a TOML document is a table")
+        })?;
         refuse_null(value, "")?;
 
         let mut out = String::new();
@@ -147,7 +145,11 @@ fn write_table(out: &mut String, value: &Map<String, Value>, path: &[&str]) -> R
         let header = parts.join(".");
         for entry in value[name].as_array().expect("a table array is an array") {
             out.push_str(&format!("\n[[{header}]]\n"));
-            write_table(out, entry.as_object().expect("a table array holds tables"), &[])?;
+            write_table(
+                out,
+                entry.as_object().expect("a table array holds tables"),
+                &[],
+            )?;
         }
     }
     Ok(())

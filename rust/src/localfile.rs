@@ -15,7 +15,11 @@ pub trait Reader {
 
 /// Where bytes go.
 pub trait Writer {
-    fn write(&self, path: &str, data: &[u8]) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    fn write(
+        &self,
+        path: &str,
+        data: &[u8],
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 }
 
 /// The local filesystem, and nothing else ships. Everything wrench serves reads
@@ -39,7 +43,11 @@ impl Writer for LocalFileIo {
     /// The temporary is created with the owner's permissions only, so it is
     /// chmodded to 0644 before the rename. Evidence has to survive being handed
     /// around, and a file only its writer can read does not.
-    fn write(&self, path: &str, data: &[u8]) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    fn write(
+        &self,
+        path: &str,
+        data: &[u8],
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let target = Path::new(path);
         let directory = target.parent().filter(|p| !p.as_os_str().is_empty());
 
@@ -48,7 +56,10 @@ impl Writer for LocalFileIo {
         let temporary = match directory {
             Some(dir) => dir.join(format!(
                 ".{}.wrench-tmp",
-                target.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()
+                target
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default()
             )),
             None => Path::new(&format!(".{}.wrench-tmp", path)).to_path_buf(),
         };

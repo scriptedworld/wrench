@@ -136,6 +136,13 @@ tasks:
     description: the Rust pack, which bolt builds against
     command: cargo test --manifest-path rust/Cargo.toml
 
+  - name: rust-format
+    description: every Rust file is rustfmt-clean
+    # Go and Python were format-gated and Rust was not, so the pack drifted to
+    # 33 diffs across 8 files without anything saying so. cargo fmt --check
+    # exits non-zero on a diff, unlike gofmt -l, so its status is the answer.
+    command: cargo fmt --manifest-path rust/Cargo.toml --check
+
   # ---- the shared standard, per pack at its own base -----------------------
   #
   # The Python pack is the only one with a base of its own today. The Go pack

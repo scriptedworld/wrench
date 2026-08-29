@@ -113,7 +113,10 @@ impl Schema for Compiled {
             } else {
                 format!(" at '{path}'")
             };
-            return Err(crate::Error::validate(Message(format!("{}{at}: {error}", self.name))));
+            return Err(crate::Error::validate(Message(format!(
+                "{}{at}: {error}",
+                self.name
+            ))));
         }
         Ok(())
     }
@@ -183,7 +186,10 @@ impl Schema for Shipped {
                     } else {
                         format!(" at '{path}'")
                     };
-                    return Err(crate::Error::validate(Message(format!("{}{at}: {error}", self.id))));
+                    return Err(crate::Error::validate(Message(format!(
+                        "{}{at}: {error}",
+                        self.id
+                    ))));
                 }
                 Ok(())
             }

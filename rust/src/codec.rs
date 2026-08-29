@@ -95,7 +95,9 @@ fn real(text: &str) -> Result<Value, crate::Error> {
     serde_json::Number::from_f64(parsed)
         .map(Value::Number)
         .ok_or_else(|| {
-            crate::Error::parse(Message(format!("cannot represent {text} in canonical form")))
+            crate::Error::parse(Message(format!(
+                "cannot represent {text} in canonical form"
+            )))
         })
 }
 

@@ -53,22 +53,22 @@
 //! after deserialising instead.
 
 pub mod codec;
+pub mod errors;
 mod float_text;
 pub mod json_codec;
-pub mod toml_codec;
-pub mod errors;
 pub mod localfile;
 pub mod schema;
+pub mod toml_codec;
 
 pub use codec::{Codec, YamlCodec, YAML};
-pub use json_codec::{JsonCodec, JSON};
-pub use toml_codec::{TomlCodec, TOML};
 pub use errors::{Error, Result};
+pub use json_codec::{JsonCodec, JSON};
 pub use localfile::{LocalFileIo, Reader, Writer, LOCAL_FILE};
 pub use schema::{
     compile_schema, shipped_ids, Schema, DEFINITIONS_SCHEMA, ENVELOPE_SCHEMA, JIG_SCHEMA,
     MANIFEST_SCHEMA,
 };
+pub use toml_codec::{TomlCodec, TOML};
 
 use serde_json::Value;
 
