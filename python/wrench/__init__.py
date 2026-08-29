@@ -22,6 +22,7 @@ spells things.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from wrench.codec import YAML, Codec, YAMLCodec
@@ -46,6 +47,11 @@ from wrench.schema import (
     compile_schema,
 )
 from wrench.toml_codec import TOML, TOMLCodec
+
+# What a Python caller may hand the two calls. The seams stay `str`, and a path
+# is normalised once on the way in. See
+# docs/DECISIONS/each-pack-spells-the-calls-its-own-way.md.
+StrPath = str | os.PathLike[str]
 
 __all__ = [
     "DEFINITIONS_SCHEMA",
@@ -84,7 +90,7 @@ __all__ = [
 ]
 
 
-def load_formatted_file(path: str, schema: Schema, codec: Codec, reader: Reader) -> Any:
+def load_formatted_file(path: StrPath, schema: Schema, codec: Codec, reader: Reader) -> Any:
     """Read `path` through `reader`, decode it with `codec`, and validate the
     result against `schema`.
 
@@ -92,38 +98,35 @@ def load_formatted_file(path: str, schema: Schema, codec: Codec, reader: Reader)
     are distinct because they have distinct causes and distinct fixes.
     """
     _require(schema, codec, reader, "reader")
+    named = _path(path)
 
     try:
-        data = reader.read(path)
+        data = reader.read(named)
     except Error as err:
         # Already wrench's, from a codec or a schema that has no
         # path. Fill it in rather than wrap a second time.
-        raise err.at(path) from err.__cause__ or err
+        raise err.at(named) from err.__cause__ or err
     except Exception as err:
-        raise ReadError(path, err) from err
+        raise ReadError(named, err) from err
 
     try:
         value = codec.decode(data)
     except Error as err:
-        # Already wrench's, from a codec or a schema that has no
-        # path. Fill it in rather than wrap a second time.
-        raise err.at(path) from err.__cause__ or err
+        raise err.at(named) from err.__cause__ or err
     except Exception as err:
-        raise ParseError(path, err) from err
+        raise ParseError(named, err) from err
 
     try:
         schema.validate(value)
     except Error as err:
-        # Already wrench's, from a codec or a schema that has no
-        # path. Fill it in rather than wrap a second time.
-        raise err.at(path) from err.__cause__ or err
+        raise err.at(named) from err.__cause__ or err
     except Exception as err:
-        raise ValidationError(path, err) from err
+        raise ValidationError(named, err) from err
 
     return value
 
 
-def save_formatted_file(data: Any, path: str, schema: Schema, codec: Codec, writer: Writer) -> None:
+def save_formatted_file(data: Any, path: StrPath, schema: Schema, codec: Codec, writer: Writer) -> None:
     """Validate `data` against `schema`, encode it with `codec` in canonical
     form, and write it to `path` through `writer`.
 
@@ -131,33 +134,30 @@ def save_formatted_file(data: Any, path: str, schema: Schema, codec: Codec, writ
     wrench would refuse to read back.
     """
     _require(schema, codec, writer, "writer")
+    named = _path(path)
 
     try:
         schema.validate(data)
     except Error as err:
         # Already wrench's, from a codec or a schema that has no
         # path. Fill it in rather than wrap a second time.
-        raise err.at(path) from err.__cause__ or err
+        raise err.at(named) from err.__cause__ or err
     except Exception as err:
-        raise ValidationError(path, err) from err
+        raise ValidationError(named, err) from err
 
     try:
         encoded = codec.encode(data)
     except Error as err:
-        # Already wrench's, from a codec or a schema that has no
-        # path. Fill it in rather than wrap a second time.
-        raise err.at(path) from err.__cause__ or err
+        raise err.at(named) from err.__cause__ or err
     except Exception as err:
-        raise EncodeError(path, err) from err
+        raise EncodeError(named, err) from err
 
     try:
-        writer.write(path, encoded)
+        writer.write(named, encoded)
     except Error as err:
-        # Already wrench's, from a codec or a schema that has no
-        # path. Fill it in rather than wrap a second time.
-        raise err.at(path) from err.__cause__ or err
+        raise err.at(named) from err.__cause__ or err
     except Exception as err:
-        raise WriteError(path, err) from err
+        raise WriteError(named, err) from err
 
 
 # ---- per-format wrappers ----------------------------------------------------
@@ -170,27 +170,27 @@ def save_formatted_file(data: Any, path: str, schema: Schema, codec: Codec, writ
 # change how it is read. FR-2.2 exists to remove exactly that implicitness.
 
 
-def load_yaml_file(path: str, schema: Schema, reader: Reader) -> Any:
+def load_yaml_file(path: StrPath, schema: Schema, reader: Reader) -> Any:
     """Load a YAML file, validated against `schema`."""
     return load_formatted_file(path, schema, YAML, reader)
 
 
-def save_yaml_file(data: Any, path: str, schema: Schema, writer: Writer) -> None:
+def save_yaml_file(data: Any, path: StrPath, schema: Schema, writer: Writer) -> None:
     """Save a structure as canonical YAML, validated against `schema`."""
     save_formatted_file(data, path, schema, YAML, writer)
 
 
-def load_json_file(path: str, schema: Schema, reader: Reader) -> Any:
+def load_json_file(path: StrPath, schema: Schema, reader: Reader) -> Any:
     """Load a JSON file, validated against `schema`."""
     return load_formatted_file(path, schema, JSON, reader)
 
 
-def save_json_file(data: Any, path: str, schema: Schema, writer: Writer) -> None:
+def save_json_file(data: Any, path: StrPath, schema: Schema, writer: Writer) -> None:
     """Save a structure as canonical JSON, validated against `schema`."""
     save_formatted_file(data, path, schema, JSON, writer)
 
 
-def load_toml_file(path: str, schema: Schema, reader: Reader) -> Any:
+def load_toml_file(path: StrPath, schema: Schema, reader: Reader) -> Any:
     """Load a TOML file, validated against `schema`.
 
     A native date, time or datetime decodes to its ISO 8601 string, which is what
@@ -199,13 +199,25 @@ def load_toml_file(path: str, schema: Schema, reader: Reader) -> Any:
     return load_formatted_file(path, schema, TOML, reader)
 
 
-def save_toml_file(data: Any, path: str, schema: Schema, writer: Writer) -> None:
+def save_toml_file(data: Any, path: StrPath, schema: Schema, writer: Writer) -> None:
     """Save a structure as canonical TOML, validated against `schema`.
 
     Refuses a structure containing null, which TOML cannot spell, and refuses one
     that is not a table, which TOML has no way to be.
     """
     save_formatted_file(data, path, schema, TOML, writer)
+
+
+def _path(path: StrPath) -> str:
+    """A path as the one spelling the seams and the error messages use.
+
+    A value that is neither raises `usage` and not `read`, so a caller's mistake
+    is not reported as a filesystem failure.
+    """
+    try:
+        return os.fspath(path)
+    except TypeError as err:
+        raise UsageError(None, f"path is {type(path).__name__}, not a string or path") from err
 
 
 def _require(schema: object, codec: object, io: object, io_name: str) -> None:

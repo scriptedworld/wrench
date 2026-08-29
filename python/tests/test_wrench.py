@@ -658,6 +658,45 @@ def test_round_trip_through_the_real_filesystem(tmp_path):
     assert back["metadata"]["statistics"]["checked"] == 12
 
 
+# COVERS: FR-2.1, FR-6.3 | positive
+def test_a_path_object_is_accepted_and_normalised(tmp_path):
+    """A Python caller passes `pathlib.Path`, and the annotation once said `str`.
+    It ran correctly and a consumer type-checking against the pack got four
+    errors on calls that worked, so the annotation was narrower than the
+    contract.
+
+    The seam still sees a string: `saw` is what the substituted writer was
+    handed, and a reader or writer that had to accept both types would be paying
+    for the caller's convenience.
+    """
+    target = tmp_path / "output.yaml"
+    value = {"success": True}
+    saw = []
+
+    class RecordingWriter:
+        def write(self, path, data):
+            saw.append(path)
+            wrench.LOCAL_FILE.write(path, data)
+
+    wrench.save_formatted_file(value, target, wrench.ENVELOPE_SCHEMA, wrench.YAML, RecordingWriter())
+    back = wrench.load_formatted_file(target, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE)
+
+    assert back == value
+    assert saw == [str(target)], "the writer was handed something other than a string"
+
+
+# COVERS: FR-2.11 | negative
+def test_a_path_that_is_neither_string_nor_pathlike_is_a_usage_error():
+    """Refused before any file is touched, so it is `usage` and not `read`.
+    Reaching the reader it would surface as a filesystem failure and send
+    somebody looking at the disk for a caller's mistake."""
+    with pytest.raises(wrench.UsageError) as caught:
+        wrench.load_formatted_file(42, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE)
+
+    assert caught.value.step == "usage"
+    assert "int" in str(caught.value)
+
+
 # COVERS: FR-2.8, FR-6.3 | positive
 def test_local_file_writes_atomically(tmp_path):
     path = tmp_path / "output.yaml"

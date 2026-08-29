@@ -34,6 +34,29 @@ Rust and Ruby spell functions in snake case, so both match the contract directly
 transforms the contract exactly as Go does. Two of the four planned packs
 therefore rename, which is the rule working rather than an exception to it.
 
+## A pack may widen an argument's type to its language's idiom
+
+Go and Rust take a path as a string because neither has anything else. Python
+takes `str | os.PathLike[str]`, which is what `open()` takes and what a caller
+expects of a path parameter.
+
+That is the same rule as the naming, applied to a type: what the packs share is
+behaviour, and a `pathlib.Path` has always worked here because every path
+reaches the shipped IO through `Path(path)`. Annotating the parameter `str`
+reported four errors in the first consumer to type-check against the pack, on
+calls that run correctly, which is an annotation narrower than the contract
+rather than a contract the consumer broke.
+
+Widening the surface does not widen the seams. A path is normalised once on the
+way in, so a `Reader` or `Writer` is handed one type and an error message quotes
+one spelling. A value that is neither raises `usage`, because the call was made
+wrongly before any file was touched; reaching the reader it would surface as
+`read` and blame the filesystem.
+
+The limit is that widening must not change what the packs agree on. A type a
+caller passes is that caller's convenience, and a type wrench hands back is the
+contract, which FR-2.9 fixes for every pack.
+
 ## What does not vary
 
 The argument order and meaning are the contract, and no pack reorders them:

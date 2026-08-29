@@ -15,6 +15,7 @@ suites cover what the calls do.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import wrench
@@ -23,6 +24,22 @@ import wrench
 def read_an_envelope(path: str) -> Any:
     """The shipped schema, codec and IO, which is the ordinary call."""
     return wrench.load_formatted_file(path, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE)
+
+
+def read_an_envelope_by_path_object(path: Path) -> Any:
+    """The same call with `pathlib.Path`, which is what a Python caller reaches
+    for and what the first real consumer passed.
+
+    Here because a stub exercising only the types the pack expects keeps passing
+    while a real caller's argument is wrong. That is how `path: str` survived:
+    it ran correctly and nothing type-checked a `Path` against it.
+    """
+    return wrench.load_formatted_file(path, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE)
+
+
+def write_by_path_object(envelope: Any, directory: Path) -> None:
+    """The save side with a path built the way a caller builds one."""
+    wrench.save_yaml_file(envelope, directory / "output.yaml", wrench.ENVELOPE_SCHEMA, wrench.LOCAL_FILE)
 
 
 def write_an_envelope(envelope: Any, path: str) -> None:
