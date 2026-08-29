@@ -83,8 +83,20 @@ down:
     grep -rln 'success": false' <output-dir>/
 
 **Give it a fresh `--output-dir`.** bolt refuses a directory that already holds
-a run, and the Go build rewrites the earlier `result.yaml` while refusing, so
-the previous verdict is destroyed rather than preserved. Measured by checksum.
+a run, and **the two builds differ in what the refusal costs.**
+
+The Go build, which is what `~/bin/bolt` resolves to, rewrites the earlier
+`result.yaml` while refusing. Measured against a run that passed: `success` went
+from `true` to `false` and the checksum changed, with all 28 execution
+directories still in place. So the refusal replaces a real verdict with a record
+of itself.
+
+The Rust build preserves it, by FR-2.6b and FR-10.7c and a test named for it,
+confirmed by the bolt session against a freshly built binary.
+
+Measure this against a jig that **passes**. A run that refused for some other
+reason never wrote a verdict, so a second refusal looks like an overwrite and is
+two refusals in a row.
 
 **Analysis never scans an output or artefact directory.** The jig defines
 `artefacts_regex` once and the tasks that need it filter with it: every

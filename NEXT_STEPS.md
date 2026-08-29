@@ -48,9 +48,13 @@ rather than inventing them.
 
 Two constraints any recipe here has to respect, both measured: it must not name
 a fixed `--output-dir`, because bolt refuses a directory that already holds a
-run and rewrites the earlier verdict while refusing; and it must read `success`
-in `result.yaml` rather than bolt's exit status or summary line, which hard rule
-6 already requires.
+run and the Go build rewrites the earlier verdict while refusing; and it must
+read `success` in `result.yaml` rather than bolt's exit status or summary line,
+which hard rule 6 already requires.
+
+The Rust build preserves the earlier verdict, so the first constraint is a
+property of the build in service today rather than of bolt. It still shapes the
+recipe, because a recipe outlives the cutover and the refusal remains.
 
 **The estate-wide threshold rule.** Above the context limit the permitted set is
 the prepare-clear skill, `START_HERE.md` and `NEXT_STEPS.md`, and nothing else.
