@@ -50,6 +50,18 @@ class WrenchError(Exception):
         where = f" {path}" if path else ""
         super().__init__(f"wrench: {self._doing}{where}: {cause}")
 
+    @property
+    def step(self) -> str:
+        """Which step failed, as a word a consumer can match on without matching
+        the class.
+
+        The three packs return the same six words, and bolt writes one into a
+        reason's `kind`. It is deliberately not `_doing`: that is the gerund the
+        message reads with, "parsing f.yaml", where this is the noun a consumer
+        compares against. Rust keeps the same pair apart for the same reason.
+        """
+        return self._step
+
     def at(self, path: str) -> WrenchError:
         """The same failure, said with the path the caller named.
 
@@ -60,6 +72,7 @@ class WrenchError(Exception):
         return type(self)(path, self.cause)
 
     _doing = "handling"
+    _step = "handling"
 
 
 class ReadError(WrenchError):
@@ -67,6 +80,7 @@ class ReadError(WrenchError):
     of format or conformance arose."""
 
     _doing = "reading"
+    _step = "read"
 
 
 class ParseError(WrenchError):
@@ -74,6 +88,7 @@ class ParseError(WrenchError):
     format it was read as."""
 
     _doing = "parsing"
+    _step = "parse"
 
 
 class ValidationError(WrenchError):
@@ -81,18 +96,21 @@ class ValidationError(WrenchError):
     the wrong shape, which is a different condition with a different fix."""
 
     _doing = "validating"
+    _step = "validate"
 
 
 class EncodeError(WrenchError):
     """A valid structure could not be rendered in the codec's canonical form."""
 
     _doing = "encoding"
+    _step = "encode"
 
 
 class WriteError(WrenchError):
     """The bytes could not be put in place."""
 
     _doing = "writing"
+    _step = "write"
 
 
 class SchemaError(WrenchError):
@@ -108,3 +126,4 @@ class SchemaError(WrenchError):
     """
 
     _doing = "compiling"
+    _step = "schema"

@@ -1,6 +1,7 @@
 package wrench_test
 
 import (
+	"errors"
 	"math"
 	"strings"
 	"testing"
@@ -292,6 +293,49 @@ func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
 		}
 		if got, _ := back.(map[string]any)["n"].(string); got != text {
 			t.Errorf("yaml U+%04X read back %q", c.point, got)
+		}
+	}
+}
+
+// COVERS: FR-2.11 | property
+func TestEveryFailureIsWrenchsOwnTypeWithItsStep(t *testing.T) {
+	// Six kinds on three axes. `schema` against `validate` is the pair most
+	// easily lost: a schema that will not compile is not a document that does
+	// not match one, and the fix is to a different file.
+	good := compileAnything(t)
+	strict, err := wrench.CompileSchema("strict.json", strings.NewReader(
+		`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["a"]}`))
+	if err != nil {
+		t.Fatalf("compile: %v", err)
+	}
+
+	_, schemaErr := wrench.CompileSchema("bad.json", strings.NewReader(`{"type": 42}`))
+	_, parseErr := wrench.YAML.Decode([]byte("a: [1,\n"))
+	_, encodeErr := wrench.YAML.Encode(map[string]any{"a": make(chan int)})
+	_, readErr := wrench.LoadYAMLFile("f.yaml", good, &stubReader{err: errors.New("nope")})
+	writeErr := wrench.SaveYAMLFile(map[string]any{"a": 1}, "f.yaml", good, &stubWriter{err: errors.New("nope")})
+
+	for want, err := range map[string]error{
+		"schema":   schemaErr,
+		"validate": strict.Validate(map[string]any{}),
+		"parse":    parseErr,
+		"encode":   encodeErr,
+		"read":     readErr,
+		"write":    writeErr,
+	} {
+		if err == nil {
+			t.Errorf("%s: no error", want)
+			continue
+		}
+		// The family is one check rather than six, which is what the interface
+		// is for.
+		var we wrench.Error
+		if !errors.As(err, &we) {
+			t.Errorf("%s: %T is not a wrench.Error", want, err)
+			continue
+		}
+		if we.Step() != want {
+			t.Errorf("step %q, want %q", we.Step(), want)
 		}
 	}
 }

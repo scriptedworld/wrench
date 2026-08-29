@@ -2,6 +2,33 @@ package wrench
 
 import "fmt"
 
+// An Error is any failure wrench refuses. Every error this package returns
+// satisfies it, so a consumer can match the family rather than naming six types.
+//
+// Python spells the same thing as a WrenchError base class and Rust as one enum;
+// Go has neither, so the interface is what gives all three packs the same
+// capability. Without it, "was this wrench's fault" needs six errors.As calls.
+type Error interface {
+	error
+
+	// Step names which step failed, as a word a consumer can match on without
+	// matching the concrete type. The three packs return the same six words,
+	// and bolt writes one into a reason's kind.
+	Step() string
+}
+
+// The six steps, as the words every pack returns. They are the vocabulary a
+// consumer matches on, so they are declared once here rather than spelled at
+// each method.
+const (
+	StepRead     = "read"
+	StepParse    = "parse"
+	StepSchema   = "schema"
+	StepValidate = "validate"
+	StepEncode   = "encode"
+	StepWrite    = "write"
+)
+
 // describe words a failure, omitting the path where there is none.
 //
 // A codec is handed bytes and a schema a structure, so neither knows which file
@@ -52,6 +79,8 @@ func (e *ReadError) Error() string { return describe("reading", e.Path, e.Err) }
 
 func (e *ReadError) Unwrap() error { return e.Err }
 
+func (e *ReadError) Step() string { return StepRead }
+
 // A ParseError says the codec could not turn the bytes into a structure. The
 // file is not the format it was read as.
 type ParseError struct {
@@ -62,6 +91,8 @@ type ParseError struct {
 func (e *ParseError) Error() string { return describe("parsing", e.Path, e.Err) }
 
 func (e *ParseError) Unwrap() error { return e.Err }
+
+func (e *ParseError) Step() string { return StepParse }
 
 // A ValidationError says the structure parsed but does not match its schema.
 // The file is the right format and the wrong shape, which is a different
@@ -75,6 +106,8 @@ func (e *ValidationError) Error() string { return describe("validating", e.Path,
 
 func (e *ValidationError) Unwrap() error { return e.Err }
 
+func (e *ValidationError) Step() string { return StepValidate }
+
 // An EncodeError says a valid structure could not be rendered in the codec's
 // canonical form.
 type EncodeError struct {
@@ -86,6 +119,8 @@ func (e *EncodeError) Error() string { return describe("encoding", e.Path, e.Err
 
 func (e *EncodeError) Unwrap() error { return e.Err }
 
+func (e *EncodeError) Step() string { return StepEncode }
+
 // A WriteError says the bytes could not be put in place.
 type WriteError struct {
 	Path string
@@ -95,6 +130,8 @@ type WriteError struct {
 func (e *WriteError) Error() string { return describe("writing", e.Path, e.Err) }
 
 func (e *WriteError) Unwrap() error { return e.Err }
+
+func (e *WriteError) Step() string { return StepWrite }
 
 // A SchemaError says the schema itself will not compile.
 //
@@ -113,3 +150,5 @@ type SchemaError struct {
 func (e *SchemaError) Error() string { return describe("compiling", e.Name, e.Err) }
 
 func (e *SchemaError) Unwrap() error { return e.Err }
+
+func (e *SchemaError) Step() string { return StepSchema }

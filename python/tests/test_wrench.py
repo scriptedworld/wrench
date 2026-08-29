@@ -1049,3 +1049,33 @@ def test_a_control_character_is_escaped_in_every_codec(point, in_yaml, in_toml):
     # Reading it back is the half that was broken: two packs wrote files their
     # own parser then refused.
     assert wrench.YAML.decode(encoded)["n"] == text
+
+
+# COVERS: FR-2.11 | property
+def test_every_failure_is_wrenchs_own_type_with_its_step():
+    """Six kinds on three axes, and the cause kept.
+
+    `schema` against `validate` is the pair most easily lost: a schema that will
+    not compile is not a document that does not match one, and the fix is to a
+    different file.
+    """
+    strict = wrench.compile_schema(
+        "strict.json",
+        '{"$schema":"https://json-schema.org/draft/2020-12/schema", "type":"object","required":["a"]}',
+    )
+
+    def failing(call):
+        with pytest.raises(wrench.WrenchError) as caught:
+            call()
+        return caught.value
+
+    cases = {
+        "schema": lambda: wrench.compile_schema("bad.json", '{"type": 42}'),
+        "validate": lambda: strict.validate({}),
+        "parse": lambda: wrench.YAML.decode(b"a: [1,\n"),
+        "encode": lambda: wrench.YAML.encode({"a": object()}),
+        "read": lambda: wrench.load_yaml_file("f.yaml", ANYTHING, Stub(error=OSError("nope"))),
+        "write": lambda: wrench.save_yaml_file({"a": 1}, "f.yaml", ANYTHING, Stub(error=OSError("nope"))),
+    }
+    for want, call in cases.items():
+        assert failing(call).step == want

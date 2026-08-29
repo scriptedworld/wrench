@@ -298,3 +298,46 @@ fn a_control_character_is_escaped_in_every_codec() {
         assert_eq!(back.get("n").and_then(|v| v.as_str()), Some(text.as_str()));
     }
 }
+
+
+// COVERS: FR-2.11 | property
+#[test]
+fn every_failure_is_wrenchs_own_type_with_its_step() {
+    // Six kinds on three axes. `schema` against `validate` is the pair most
+    // easily lost: a schema that will not compile is not a document that does
+    // not match one, and the fix is to a different file.
+    let strict = wrench::compile_schema(
+        "strict.json",
+        r#"{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["a"]}"#,
+    )
+    .expect("compiles");
+
+    let cases: Vec<(&str, wrench::Error)> = vec![
+        (
+            "schema",
+            wrench::compile_schema("bad.json", r#"{"type": 42}"#)
+                .err()
+                .expect("a schema that will not compile"),
+        ),
+        (
+            "validate",
+            strict.validate(&json!({})).unwrap_err(),
+        ),
+        ("parse", wrench::YAML.decode(b"a: [1,\n").unwrap_err()),
+        (
+            "read",
+            wrench::load_yaml_file("f.yaml", strict.as_ref(), &Failing).unwrap_err(),
+        ),
+    ];
+
+    for (want, err) in cases {
+        assert_eq!(err.step(), want, "step for {want}");
+    }
+}
+
+struct Failing;
+impl Reader for Failing {
+    fn read(&self, _path: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+        Err("nope".into())
+    }
+}
