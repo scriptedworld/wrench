@@ -34,15 +34,15 @@ while specifying; do not let it default.
 
 Nothing.
 
-**The cutover has one blocker left and it is not wrench's.** The Rust build has
-no install path, producing only `target/debug/bolt`; that is our user's
-decision. The Go binary turns out to be gitignored too, so the two are the same
-kind of thing and the question is where a built binary is installed rather than
-which one is committed.
+**The cutover is done**, at `dotfiles 19df074`. `bolt` is a release build of
+bolt `cf37c50` and `bolt.go` stays installed under its own name. bolt's session
+checked all seven distinct jigs against an empty directory before switching, so
+validation and `requires` were exercised without running anybody's suites, and
+none refused.
 
-The naming collision is gone. The Go build is `bolt.go` as well as `bolt`, so
-the cutover is one symlink repoint and the old implementation stays reachable by
-name.
+wrench's gate was re-run afterwards rather than assumed: `success: true`, 28
+executions, nothing false anywhere including both children. Falsified in the
+same configuration, which is the one that gates from now on.
 
 wrench's own half is done. It held the estate's only two `jig:` tasks across all
 35 jigs; they are command tasks composing through

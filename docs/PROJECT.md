@@ -129,8 +129,14 @@ name**, so a claim about bolt can say which one it is about:
     bolt        whichever build bin/bolt points at
     bolt.go     the Go build, always
 
-`bolt` and `bolt.go` are the same binary today. When the Rust build gets an
-install path, `bolt` moves and `bolt.go` keeps naming the old implementation.
+`bolt` is the Rust build, since `dotfiles 19df074`. `bolt.go` stays installed
+and keeps naming the Go implementation, so a claim about either can still be
+checked rather than remembered.
+
+**`bin/bolt` is an installed artefact and nothing rebuilds it.** Change bolt,
+skip the reinstall, and every gate in the estate runs the old binary and passes.
+That is the shape `a-check-that-answers-a-weaker-question` describes, at the
+scale where it costs something.
 
     ls -la ~/bin/bolt ~/bin/bolt.go
 
