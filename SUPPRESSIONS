@@ -44,16 +44,25 @@ task over `python/wrench/` carries no suppressions at all.
 
 ## Index
 
-    tests/test_wrench.py   # nosec B404
-    tests/test_wrench.py   # nosec B603
+    python/tests/test_wrench.py   # nosec B404
+    python/tests/test_wrench.py   # nosec B603
 
-**The paths are relative to the base the checker scans, which is `python/`, and
-not to this file.** `common-quality` runs at each pack's own base, so
-`suppression-register.py` reports what it found as `tests/test_wrench.py` while
-this register sits one level up at the repository root. The two frames are a
-property of a shared register serving a per-base checker; wrench has one scanned
-base so the spelling is unambiguous here. Filed against toolbox as
-`clank/inbox/toolbox/a-shared-register-serves-two-bases`.
+**The paths are relative to the repository root, whichever base the checker is
+scanning from.** `common-quality` runs at each pack's own base, so a register
+serving more than one of them cannot be written in any single scan's frame. The
+checker resolves both sides against the repository, found by walking up for
+`.git`, which is the frame a person writes in anyway.
+
+That is toolbox `bed07d2`, and it closes
+`clank/inbox/toolbox/a-shared-register-serves-two-bases`. These rows were
+briefly written in the scan frame as a workaround for the bug that entry
+described, and are back to the root spelling they started with.
+
+**A row for a pack this scan does not cover is left alone rather than reported
+gone.** That is the half that makes one register serve two bases: without it, a
+scan at `python/` would call every Go row a pragma that had vanished. A row
+naming a file that exists nowhere is still a phantom wherever it sits, because
+no other scan would catch it either.
 
 **One row per pragma, not one per file.** The checker keys on the set of codes a
 single pragma carries, so the two lines above are two entries of one code each
