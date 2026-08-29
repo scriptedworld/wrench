@@ -135,7 +135,10 @@ fn toml_temporal_types_decode_to_iso_strings() {
         .expect("decode");
     assert_eq!(value["d"], json!("2026-01-01"));
     assert!(
-        value["dt"].as_str().unwrap().starts_with("2026-01-01T07:32:00"),
+        value["dt"]
+            .as_str()
+            .unwrap()
+            .starts_with("2026-01-01T07:32:00"),
         "an offset datetime became {}",
         value["dt"]
     );
@@ -158,8 +161,7 @@ fn a_wrapper_per_format_supplies_the_codec() {
     );
 
     let reader = Stub::new(br#"{"success": true}"#);
-    let value =
-        load_json_file("out.json", &wrench::ENVELOPE_SCHEMA, &reader).expect("load json");
+    let value = load_json_file("out.json", &wrench::ENVELOPE_SCHEMA, &reader).expect("load json");
     assert_eq!(value["success"], json!(true));
 
     let toml_writer = Stub::new(b"");
@@ -206,7 +208,6 @@ fn a_wrapper_still_validates() {
     );
 }
 
-
 /// The float spellings below are asserted identically in all three suites. A
 /// table that differs between packs is packs that differ.
 fn canonical_floats() -> Vec<(f64, &'static str)> {
@@ -248,7 +249,6 @@ fn a_float_has_one_spelling_in_every_codec() {
         }
     }
 }
-
 
 /// The escape spellings below are asserted identically in all three suites. A
 /// table that differs between packs is packs that differ.
@@ -299,7 +299,6 @@ fn a_control_character_is_escaped_in_every_codec() {
     }
 }
 
-
 // COVERS: FR-2.11 | property
 #[test]
 fn every_failure_is_wrenchs_own_type_with_its_step() {
@@ -319,10 +318,7 @@ fn every_failure_is_wrenchs_own_type_with_its_step() {
                 .err()
                 .expect("a schema that will not compile"),
         ),
-        (
-            "validate",
-            strict.validate(&json!({})).unwrap_err(),
-        ),
+        ("validate", strict.validate(&json!({})).unwrap_err()),
         ("parse", wrench::YAML.decode(b"a: [1,\n").unwrap_err()),
         (
             "read",
