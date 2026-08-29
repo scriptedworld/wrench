@@ -58,22 +58,36 @@ installed**, so apt holds it only through a dependency edge.
 `apt-mark showmanual` matches neither it nor `python3-jsonschema`, and the latter
 is not installed at all.
 
-**Why it is declared in dotfiles is UNVERIFIED**, and worth not repeating as
-though it were known. dotfiles first read commit `6239a8d` as an orphan swept up
-in a cleanup of installed-but-undeclared tools, declared pending a conversion of
-the manifests to YAML that then went the other way, to TOML. It withdrew that
-reading: the user says the package was exposed while testing the install on a
-QEMU virtual host, and no record of that run exists in the repository, so the
-commit message frames as a cleanup find something that may have come out of a
-real install failure on a real machine. Two readings remain open, and they point
-opposite ways:
+**Answered 2026-08-28: artefact, not floor.** The declaration was undeclared at
+dotfiles `bf38481`, and the package stays installed.
 
-    the install FAILED without it          -> a genuine floor
-    converge reported it undeclared        -> a cleanup find
+Neither of the two readings this file used to carry was right, and the true one
+is narrower than both: **the package is llvm's, and only the DECLARATION was ever
+dotfiles'.** It arrived as `llvm-19-tools`' dependency, and the line declaring it
+invented a reason — its comment said the system `python3` needs a parser before
+tooling exists, which was never true of anything in that repository.
 
-dotfiles has asked and will say which. **Do not cite the orphan reading**, and do
-not cite this file as authority on it either. The apt state above is measured; the
-reason behind it is not.
+Verified here rather than taken, 2026-08-28:
+
+    dotfiles bf38481                    resolves, subject matches
+    packages.toml                       no longer declares it; a comment says
+                                        deliberately not
+    apt-mark showmanual                 does not list it
+    dpkg -s python3-yaml                install ok installed
+
+So it is undeclared and still present, which is correct: `llvm` is declared, and
+removing the package would take `llvm-19-dev` and `llvm-19-tools` with it.
+
+**The retracted readings are recorded because the retraction is the lesson.**
+dotfiles first called it an orphan swept up in a cleanup, withdrew that when our
+user mentioned a QEMU install test, and marked it unverified. The QEMU run was
+real and left no record — and was not what put the package there. A true detail
+arriving mid-investigation moved the reading toward a wrong answer, which is
+worth more than the answer itself.
+
+**Nothing wrench holds ever rested on it**, which was the only part wrench needed
+settled, and it was settled by the paragraph above this rather than by what the
+package turned out to be.
 
 **Whether `jsonschema` is imported lazily is now wrench's own call**, on wrench's
 merits, with no external constraint. The reason to keep it at module level is

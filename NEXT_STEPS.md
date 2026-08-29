@@ -25,8 +25,10 @@ is no longer owed. FR-7.4 is retired as answered, and FR-6.1 and FR-6.2 keep the
 property while losing the bootstrap justification that motivated them.
 
 `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md` carries the
-measurements, including what is still unverified about `python3-yaml` and what is
-still owed by dotfiles.
+measurements. **`python3-yaml` is settled since 2026-08-28**: artefact, not
+floor. It is llvm's dependency and only the declaration was ever dotfiles',
+undeclared at their `bf38481` and correctly left installed. Nothing is owed by
+dotfiles on wrench's account.
 
 ### ~~2. Is the envelope schema versioned?~~ Answered 2026-08-27
 
