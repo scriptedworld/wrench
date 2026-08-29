@@ -88,6 +88,21 @@ bolt refuse the jig that runs wrench's own gate.
 since `allow-empty` became `optional` here. That field has already caused this
 drift once. They have been told.
 
+## Housekeeping owed
+
+**18 of the 20 `.complete` tasks in `clank/tasks/wrench/` name no commit SHA.**
+A completed task is supposed to name what landed it, and reviewing one should
+turn up commits that resolve. These say they are done and cannot show it.
+
+    cd ~/.projects/clank/tasks/wrench
+    for d in $(find . -name '*.complete' -type d); do
+        grep -qE '\b[0-9a-f]{7}\b' "$d"/*.md 2>/dev/null || echo "${d#./}"
+    done
+
+The two completed most recently do carry them. Retrofitting the rest means
+re-deriving which commits did what for each, which is real work rather than a
+tidy-up, and is why it was not done on the way past.
+
 ## Standing hazards
 
 **The gate breaks the day `bolt` moves to the Rust build**, and nothing
