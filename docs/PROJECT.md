@@ -134,6 +134,19 @@ contract, and it now delegates the Python base to toolbox's `common-quality` and
 completed, whatever the tools concluded, and says so in its own usage. The verdict
 is the `success` key.
 
+**Nor the summary line, which is a third thing and is wrong.** bolt's last line
+of stdout labels the TOTAL execution count with the run's overall verdict, so it
+reads as a count of failures and is not one. Measured 2026-08-28 on this gate:
+
+    stdout          failed: 23 execution(s)
+    result.yaml     3 reasons, and 4 artifacts reading false
+
+23 was every execution in the run. The same run passing prints `passed: 23`.
+Found by the skid session and filed at
+`clank/inbox/bolt/the-summary-line-counts-every-execution-as-failed/`; the
+figures above are wrench's own instance of it. Nothing here parses that line,
+checked, and this note is so nothing starts.
+
 **bolt refuses to reuse an output directory, and writes that refusal into
 `result.yaml` as `"success": false` with `kind: bolt-refused`.** So a stale
 directory yields a failing verdict for a run that never happened. Give it a fresh
