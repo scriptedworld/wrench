@@ -35,6 +35,14 @@ while specifying; do not let it default.
     schemas/60   drop the retired jig task fields. Dropping them makes bolt
                  refuse the jig that runs wrench's own gate.
 
+**The cutover has three blockers and only one is wrench's**, measured by the
+bolt session 2026-08-29. The `bolt-result` adapter does not exist and its entry
+is one of eighteen in toolbox's inbox. wrench's two `jig:` tasks are still the
+only ones in the estate, across all 35 jigs. And there is nowhere for the
+symlink to point: `bolt.go/bin/bolt` is a committed executable while the Rust
+tree produces only `target/debug/bolt`, which is a build artefact. The third
+needs an install decision and is with our user.
+
 All three wait on the `bolt-result` adapter, or on `~/bin/bolt` moving to the Rust
 build and `bolt.go` being retired.
 
