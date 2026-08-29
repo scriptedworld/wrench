@@ -23,6 +23,21 @@ already been silently inert once. dotfiles owns the dispatch and tests it.
 Nothing here checks that a given checkout has the symlink installed at all. That
 is a per-checkout manual step, and an installed check that does not run is
 indistinguishable from a passing one.
+
+**These survived a falsification pass, which is the only thing separating a test
+that passed from a test that cannot fail.** Two mutations of the hook, each
+failing exactly the tests it should and no others:
+
+    hook replaced by `exit 0`   the two refusal tests fail
+    hook replaced by `exit 1`   the clean-source test fails
+
+`test_the_same_commit_succeeds_without_the_hook` passes under both, correctly,
+because it installs no hook and must be insensitive to what the hook does.
+
+Run that pass and then distrust it, which is the dotfiles session's finding: their
+own falsification harness reported five tests passing under every mutation
+because `local got; [ $? = 0 ]` reads `local`'s status and not the command's, so
+the harness had never compared anything.
 """
 
 from __future__ import annotations

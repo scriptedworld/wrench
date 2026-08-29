@@ -128,3 +128,24 @@ confirming result ends the investigation**, and a control is the only thing that
 makes a confirming result mean anything. Ask of any probe, before believing it:
 *what else would have produced this exact output?* If the answer is "something I
 would be embarrassed to have missed", the probe is not finished.
+
+## The status you read may not be the status you want
+
+Three ways the exit status stops being the answer, in rising order of how hard
+they are to see:
+
+    cmd | tail -2 || echo FAILED     the status is tail's, and tail succeeded
+    gofmt -l x && echo NOT-CLEAN     gofmt exits 0 whatever it finds, so the
+                                     status was never the answer at all
+    local got; [ $? = 0 ]            `local` is a command and clobbers $?, so
+                                     the comparison compares nothing
+
+The first two happened here, the second twice in one session, once while
+checking whether a generated file was formatted. The third is the dotfiles
+session's, found when its falsification harness reported five tests passing
+under every mutation of the world they were testing.
+
+`dotfiles/docs/LESSONS/a-status-read-one-line-late-is-not-that-command-s-status.md`
+has all three. The one worth carrying here: a check that cannot fail reports
+success identically to one that passed, so **run the falsification pass, and
+then distrust the falsification pass.**
