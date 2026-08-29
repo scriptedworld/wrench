@@ -7,6 +7,31 @@ one message a caller has to read English out of.
 
 from __future__ import annotations
 
+import contextlib
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+
+@contextlib.contextmanager
+def wrapping(error: type[WrenchError]) -> Iterator[None]:
+    """Turn whatever a bound library raises into `error`, keeping the cause.
+
+    Every codec boundary needs the same three lines, and written out per codec
+    they were duplicated closely enough for pylint to say so. One place also
+    means the rule is stated once rather than re-derived.
+
+    A `WrenchError` passes through untouched: it is already this contract, and
+    wrapping it again would make a consumer unwrap twice to reach the cause.
+    """
+    try:
+        yield
+    except WrenchError:
+        raise
+    except Exception as err:
+        raise error(None, err) from err
+
 
 class WrenchError(Exception):
     """Anything wrench refuses. Carries the path it was working on.

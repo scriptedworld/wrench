@@ -26,7 +26,7 @@ import datetime
 import tomllib
 
 from wrench.codec import DELETE, FIRST_PRINTABLE, _normalise
-from wrench.errors import EncodeError, ParseError, WrenchError
+from wrench.errors import EncodeError, ParseError, wrapping
 from wrench.float_text import canonical_float_text
 
 
@@ -43,12 +43,8 @@ class TOMLCodec:
         `tomllib.TOMLDecodeError` does not cross this boundary; the cause is
         kept and reachable.
         """
-        try:
+        with wrapping(ParseError):
             return _normalise(tomllib.loads(data.decode("utf-8")))
-        except WrenchError:
-            raise
-        except Exception as err:
-            raise ParseError(None, err) from err
 
     def encode(self, value: object) -> bytes:
         """A structure into canonical bytes, keys sorted.
@@ -65,13 +61,9 @@ class TOMLCodec:
         """
         if not isinstance(value, dict):
             raise EncodeError(None, f"cannot write {type(value).__name__} in canonical form: a TOML document is a table")
-        try:
+        with wrapping(EncodeError):
             _refuse_null(value, "")
             return "".join(_table(value, [])).encode("utf-8")
-        except WrenchError:
-            raise
-        except Exception as err:
-            raise EncodeError(None, err) from err
 
 
 def _refuse_null(value: object, where: str) -> None:

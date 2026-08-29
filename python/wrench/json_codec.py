@@ -31,7 +31,7 @@ from __future__ import annotations
 import json
 
 from wrench.codec import _bare_scalar
-from wrench.errors import EncodeError, ParseError, WrenchError
+from wrench.errors import EncodeError, ParseError, wrapping
 
 INDENT = 2
 
@@ -44,21 +44,13 @@ class JSONCodec:
 
         `json.JSONDecodeError` does not cross this boundary; the cause is kept.
         """
-        try:
+        with wrapping(ParseError):
             return json.loads(data)
-        except WrenchError:
-            raise
-        except Exception as err:
-            raise ParseError(None, err) from err
 
     def encode(self, value: object) -> bytes:
         """A structure into canonical bytes."""
-        try:
+        with wrapping(EncodeError):
             return (_value(value, 0) + "\n").encode("utf-8")
-        except WrenchError:
-            raise
-        except Exception as err:
-            raise EncodeError(None, err) from err
 
 
 def _value(value: object, depth: int) -> str:
