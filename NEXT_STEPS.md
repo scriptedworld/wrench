@@ -35,16 +35,19 @@ while specifying; do not let it default.
     schemas/60   drop the retired jig task fields. Dropping them makes bolt
                  refuse the jig that runs wrench's own gate.
 
-**The cutover has three blockers and only one is wrench's**, measured by the
-bolt session 2026-08-29. The `bolt-result` adapter does not exist and its entry
-is one of eighteen in toolbox's inbox. wrench's two `jig:` tasks are still the
-only ones in the estate, across all 35 jigs. And there is nowhere for the
-symlink to point: `bolt.go/bin/bolt` is a committed executable while the Rust
-tree produces only `target/debug/bolt`, which is a build artefact. The third
-needs an install decision and is with our user.
+**The cutover has two blockers left and neither is wrench's.** The
+`bolt-result` adapter does not exist and its entry is one of eighteen in
+toolbox's inbox. And the Rust build has no install path, producing only
+`target/debug/bolt`; that is our user's decision. The Go binary turns out to be
+gitignored too, so the two are the same kind of thing and the question is where
+a built binary is installed rather than which one is committed.
 
-All three wait on the `bolt-result` adapter, or on `~/bin/bolt` moving to the Rust
-build and `bolt.go` being retired.
+wrench's own half is its two `jig:` tasks, still the only ones in the estate
+across all 35 jigs, and they wait on the adapter.
+
+The naming collision is gone. The Go build is now `bolt.go` as well as `bolt`,
+so the cutover is one symlink repoint and the old implementation stays
+reachable by name.
 
 ## Not yet started, and each is somebody else's to settle first
 
@@ -87,8 +90,9 @@ drift once. They have been told.
 
 ## Standing hazards
 
-**The gate breaks the day `~/bin/bolt` moves to the Rust build**, and nothing
-announces the switch. `docs/PROJECT.md` carries what to do.
+**The gate breaks the day `bolt` moves to the Rust build**, and nothing
+announces the switch. Run `bolt.go` to name the current build explicitly.
+`docs/PROJECT.md` carries what to do.
 
 **A consumer enforces the schema it was built with.** No guard here can catch
 the window, and `docs/LESSONS/a-consumer-enforces-the-schema-it-was-built-with.md`

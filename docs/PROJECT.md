@@ -85,7 +85,8 @@ down:
 **Give it a fresh `--output-dir`.** bolt refuses a directory that already holds
 a run, and **the two builds differ in what the refusal costs.**
 
-The Go build, which is what `~/bin/bolt` resolves to, rewrites the earlier
+The Go build, which is what `bolt` resolves to today and what `bolt.go` always
+names, rewrites the earlier
 `result.yaml` while refusing. Measured against a run that passed: `success` went
 from `true` to `false` and the checksum changed, with all 28 execution
 directories still in place. So the refusal replaces a real verdict with a record
@@ -120,15 +121,22 @@ is no `docs/MOCKS/`; that directory is claimed when something needs it.
 
 ### Check which bolt you ran before quoting what bolt does
 
-`~/bin/bolt` resolves to the Go build, and bolt itself is now a Rust
-implementation. The two disagree about whether this gate is even runnable.
+Two implementations exist and they disagree about whether this gate is even
+runnable. **Each now has a name**, so a claim about bolt can say which one it
+is about:
 
-    ls -la ~/bin/bolt
+    bolt        whichever build bin/bolt points at
+    bolt.go     the Go build, always
+
+`bolt` and `bolt.go` are the same binary today. When the Rust build gets an
+install path, `bolt` moves and `bolt.go` keeps naming the old implementation.
+
+    ls -la ~/bin/bolt ~/bin/bolt.go
 
 Nested jigs are retired, and wrench holds the estate's only two tasks written
 against them, `python-common` and `python-std`. Under the Rust build this gate
 is refused outright with `kind: bolt-refused`. It is green today only because
-the link still points at Go, and nothing announces a switch.
+`bolt` still resolves to the Go build, and nothing announces a switch.
 
 **Do not convert those two tasks yet.** The adapter that reads a child run's
 `result.yaml` does not exist, so a converted task falls to the exit-code adapter
