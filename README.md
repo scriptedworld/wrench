@@ -100,6 +100,34 @@ easy half, and C has nothing comparable to the JSON Schema implementations these
 languages already have. A language gets a pack when something needs to read or
 write a structured file in it.
 
+## Errors
+
+**Every failure that crosses the boundary is wrench's own type**, whatever the
+library underneath raised. A consumer catching a parse failure should not have to
+know whether wrench binds PyYAML or something else; if the bound library were
+visible in the error type, swapping it would break every consumer.
+
+    ReadError        the file could not be read at all
+    ParseError       the bytes are not the format they were read as
+    ValidationError  the structure parsed and does not match its schema
+    EncodeError      a value has no canonical form in this codec
+    WriteError       the bytes could not be put in place
+    SchemaError      the schema itself will not compile
+
+The cause is always preserved — Python `__cause__`, Go `errors.Unwrap`, Rust
+`source()` — so a caller who wants the underlying error can still reach it. A
+wrap that discarded it would be worse than a leak.
+
+**Python, changing in 0.1.0: these no longer derive from `ValueError`.** They
+derive from `WrenchError`, which derives from `Exception`. Code written as
+
+    except ValueError:          # catches nothing from wrench now
+
+silently stops catching, and an uncaught validator looks exactly like a passing
+one from anywhere except a test on the refusal path. Catch `wrench.WrenchError`,
+or the specific type. Found by a consumer whose refusal tests went red the moment
+it landed; those tests are the reason it was noticed rather than deployed.
+
 ## Three formats
 
     load_yaml_file  save_yaml_file
