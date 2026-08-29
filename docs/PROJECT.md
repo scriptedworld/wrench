@@ -200,10 +200,25 @@ Found by the skid session and filed at
 figures above are wrench's own instance of it. Nothing here parses that line,
 checked, and this note is so nothing starts.
 
-**bolt refuses to reuse an output directory, and writes that refusal into
-`result.yaml` as `"success": false` with `kind: bolt-refused`.** So a stale
-directory yields a failing verdict for a run that never happened. Give it a fresh
-`--output-dir`, or read the `reasons` before believing the verdict.
+**bolt refuses to reuse an output directory, and the Go build DESTROYS the
+previous run's verdict doing it.** Measured 2026-08-29 by checksum, because the
+two writes land in the same second and an mtime comparison says nothing:
+
+    run 1   "success": true    sha 4a24d4d8fc6e
+    run 2   "success": false   sha bf88e7f0978d   the refusal, overwriting it
+
+So a stale directory does not merely yield a failing verdict for a run that never
+happened: **it replaces a real one.** A caller that checks whether `result.yaml`
+exists is answered `true` about the wrong run, and reading its `success` gets that
+run's answer, which is worse than an absent file because absence is detectable.
+
+**Always give a fresh `--output-dir`**, and never point one at a directory
+holding a result worth keeping.
+
+The Rust build returns before writing, deliberately, which preserves the first
+result; bolt records the Go behaviour as FR-10.7's destructive shape. So this
+hazard goes when the symlink moves, and until then it is live in the binary that
+runs this gate.
 
 **The shared standard is adopted for the Python base and nowhere else.** The jig
 runs `bolt common-quality python/` and `bolt python-std-quality python/` as two of

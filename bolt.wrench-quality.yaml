@@ -141,6 +141,19 @@ tasks:
     description: every test cites what it discharges, and every settled requirement has one
     command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} .
 
+  # A requirement the traceability checker cannot PARSE is absent from its
+  # denominator rather than reported missing, so the run passes cleanly over a
+  # contract with a hole in it. Measured 2026-08-29: a well-formed file with a
+  # two-letter suffix left the output at `41 of 41` and exit 0, identical to not
+  # adding it at all.
+  #
+  # This compares the files on disk against what the checker managed to read, so
+  # it does not depend on the id grammar and catches whatever the next
+  # unparseable row turns out to be. The idea is the bolt session's.
+  - name: requirement-count
+    description: every live requirement file reaches the traceability checker
+    command: python3 {config_dir}/bin/test-requirement-count.py
+
   # `retired-rows-are-deliberate` STOOD HERE AND IS GONE, at the split. It
   # pinned the count of rows below `## Retired` in a single REQUIREMENTS.md,
   # because that heading was the file's last section and a row appended to the
