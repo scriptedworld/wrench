@@ -7,7 +7,16 @@ name = "wrench"
 version = "0.1.0"
 description = "Reads, writes and validates the form of the ecosystem's structured files"
 requires-python = ">=3.12"
+# `license-files` puts LICENSE and NOTICE in the built distribution, so a wheel
+# carries the terms rather than pointing at a repository somebody may not have.
+# The identifier alone says which licence; it does not ship it.
+#
+# Both are symlinks to the repository root, because PEP 639 resolves these globs
+# inside the project directory and `../LICENSE` is not permitted. A symlink keeps
+# ONE copy of the terms, which is the same reason the schemas are not copied per
+# pack: a second copy is a thing that drifts.
 license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 
 # All three are imported by name and expected to come from the platform.
 # Declaring them here is for a resolver that has one; FR-6.2 and FR-6.2a say the

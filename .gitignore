@@ -8,8 +8,14 @@ START_HERE.md
 
 # Python build and cache artifacts. The pack is installed editable, so the
 # egg-info lands beside the source rather than in a build directory.
+#
+# `build/` is here because building a wheel to check what it carries leaves one,
+# and the gate then GRADES it: measured 2026-08-28, `analyse` and `types` both
+# failed against copied sources under `python/build/`. The walk honours gitignore,
+# so ignoring it is what keeps the gate measuring the pack rather than a copy.
 __pycache__/
 *.egg-info/
+build/
 
 # bolt writes its evidence to .bolt-<iso8601> at the base unless told otherwise,
 # so a run from the repository root leaves one of these behind. Run it with
