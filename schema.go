@@ -50,10 +50,16 @@ var DefinitionsSchema Schema = shipped(
 //
 // The name identifies the schema in error messages and resolves any relative
 // reference inside it.
+// CompileSchema turns a JSON Schema document into a Schema.
+//
+// The JSON parser's and the validator's own error types do not cross this
+// boundary. A caller should not have to know which library wrench binds in order
+// to catch a schema that will not compile. The cause is kept and reachable
+// through errors.Unwrap.
 func CompileSchema(name string, document io.Reader) (Schema, error) {
 	compiled, err := compile(name, document)
 	if err != nil {
-		return nil, err
+		return nil, &SchemaError{Name: name, Err: err}
 	}
 	return &readySchema{compiled: compiled}, nil
 }
@@ -219,9 +225,15 @@ type lazySchema struct {
 func (s *lazySchema) Validate(value any) error {
 	compiled, err := s.load()
 	if err != nil {
-		return err
+		return &SchemaError{Err: err}
 	}
-	return compiled.Validate(value)
+	if err := compiled.Validate(value); err != nil {
+		// ValidationError with no path: Validate is handed a structure and does
+		// not know which file it came from. The two calls fill the path in with
+		// atPath rather than wrapping a second time.
+		return &ValidationError{Err: err}
+	}
+	return nil
 }
 
 type readySchema struct {
@@ -229,5 +241,9 @@ type readySchema struct {
 }
 
 func (s *readySchema) Validate(value any) error {
-	return s.compiled.Validate(value)
+	if err := s.compiled.Validate(value); err != nil {
+		// The validator's own type does not cross this boundary. FR-2.11.
+		return &ValidationError{Err: err}
+	}
+	return nil
 }

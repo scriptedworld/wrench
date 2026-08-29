@@ -25,28 +25,37 @@ var YAML Codec = yamlCodec{}
 
 type yamlCodec struct{}
 
+// Decode turns YAML bytes into maps, lists and scalars.
+//
+// The YAML library's own error type does not cross this boundary: a consumer
+// should not have to know which parser wrench binds in order to recognise a
+// parse failure. The cause is kept and reachable through errors.Unwrap.
 func (yamlCodec) Decode(data []byte) (any, error) {
 	var raw any
 	if err := yaml.Unmarshal(data, &raw); err != nil {
-		return nil, err
+		return nil, &ParseError{Err: err}
 	}
-	return normalise(raw)
+	value, err := normalise(raw)
+	if err != nil {
+		return nil, &ParseError{Err: err}
+	}
+	return value, nil
 }
 
 func (yamlCodec) Encode(value any) ([]byte, error) {
 	node, err := canonicalNode(value)
 	if err != nil {
-		return nil, err
+		return nil, &EncodeError{Err: err}
 	}
 
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(canonicalIndent)
 	if err := enc.Encode(node); err != nil {
-		return nil, err
+		return nil, &EncodeError{Err: err}
 	}
 	if err := enc.Close(); err != nil {
-		return nil, err
+		return nil, &EncodeError{Err: err}
 	}
 	return buf.Bytes(), nil
 }

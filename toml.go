@@ -40,9 +40,14 @@ type tomlCodec struct{}
 func (tomlCodec) Decode(data []byte) (any, error) {
 	var value map[string]any
 	if err := toml.Unmarshal(data, &value); err != nil {
-		return nil, err
+		// BurntSushi's ParseError does not cross this boundary.
+		return nil, &ParseError{Err: err}
 	}
-	return tomlNormalise(value)
+	normalised, err := tomlNormalise(value)
+	if err != nil {
+		return nil, &ParseError{Err: err}
+	}
+	return normalised, nil
 }
 
 // tomlNormalise is TOML's own rather than the YAML codec's, because TOML draws
@@ -100,15 +105,15 @@ func tomlTime(v time.Time) string {
 func (tomlCodec) Encode(value any) ([]byte, error) {
 	table, ok := value.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("cannot write %T in canonical form: a TOML document is a table", value)
+		return nil, &EncodeError{Err: fmt.Errorf("cannot write %T in canonical form: a TOML document is a table", value)}
 	}
 	if err := refuseNull(table, ""); err != nil {
-		return nil, err
+		return nil, &EncodeError{Err: err}
 	}
 
 	var out strings.Builder
 	if err := tomlTable(&out, table, nil); err != nil {
-		return nil, err
+		return nil, &EncodeError{Err: err}
 	}
 	return []byte(out.String()), nil
 }

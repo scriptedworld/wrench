@@ -47,14 +47,19 @@ func (jsonCodec) Decode(data []byte) (any, error) {
 
 	var value any
 	if err := decoder.Decode(&value); err != nil {
-		return nil, err
+		// encoding/json's SyntaxError does not cross this boundary.
+		return nil, &ParseError{Err: err}
 	}
 	// json.Unmarshal refuses trailing content and a Decoder does not, so the
 	// check is made here rather than lost with the switch.
 	if decoder.More() {
-		return nil, fmt.Errorf("unexpected content after the JSON value")
+		return nil, &ParseError{Err: fmt.Errorf("unexpected content after the JSON value")}
 	}
-	return jsonNumbers(value)
+	converted, err := jsonNumbers(value)
+	if err != nil {
+		return nil, &ParseError{Err: err}
+	}
+	return converted, nil
 }
 
 // jsonNumbers turns every json.Number in a decoded structure into the int64 or
@@ -119,7 +124,7 @@ func (jsonCodec) Encode(value any) ([]byte, error) {
 	// wants and which would make the bytes differ from every other pack's.
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(canonicalNumbers(value)); err != nil {
-		return nil, fmt.Errorf("cannot write in canonical form: %w", err)
+		return nil, &EncodeError{Err: fmt.Errorf("cannot write in canonical form: %w", err)}
 	}
 	// encoding/json sorts map keys already, and appends the newline this form
 	// ends with, so the buffer is the canonical bytes as it stands.

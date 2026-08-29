@@ -69,15 +69,30 @@ func LoadFormattedFile(path string, schema Schema, codec Codec, reader Reader) (
 
 	data, err := reader.Read(path)
 	if err != nil {
+		// Already wrench's, from a codec or a schema that has no path.
+		// Fill it in rather than wrap a second time.
+		if filled, ours := atPath(err, path); ours {
+			return nil, filled
+		}
 		return nil, &ReadError{Path: path, Err: err}
 	}
 
 	value, err := codec.Decode(data)
 	if err != nil {
+		// Already wrench's, from a codec or a schema that has no path.
+		// Fill it in rather than wrap a second time.
+		if filled, ours := atPath(err, path); ours {
+			return nil, filled
+		}
 		return nil, &ParseError{Path: path, Err: err}
 	}
 
 	if err := schema.Validate(value); err != nil {
+		// Already wrench's, from a codec or a schema that has no path.
+		// Fill it in rather than wrap a second time.
+		if filled, ours := atPath(err, path); ours {
+			return nil, filled
+		}
 		return nil, &ValidationError{Path: path, Err: err}
 	}
 
@@ -95,15 +110,30 @@ func SaveFormattedFile(value any, path string, schema Schema, codec Codec, write
 	}
 
 	if err := schema.Validate(value); err != nil {
+		// Already wrench's, from a codec or a schema that has no path.
+		// Fill it in rather than wrap a second time.
+		if filled, ours := atPath(err, path); ours {
+			return filled
+		}
 		return &ValidationError{Path: path, Err: err}
 	}
 
 	data, err := codec.Encode(value)
 	if err != nil {
+		// Already wrench's, from a codec or a schema that has no path.
+		// Fill it in rather than wrap a second time.
+		if filled, ours := atPath(err, path); ours {
+			return filled
+		}
 		return &EncodeError{Path: path, Err: err}
 	}
 
 	if err := writer.Write(path, data); err != nil {
+		// Already wrench's, from a codec or a schema that has no path.
+		// Fill it in rather than wrap a second time.
+		if filled, ours := atPath(err, path); ours {
+			return filled
+		}
 		return &WriteError{Path: path, Err: err}
 	}
 
