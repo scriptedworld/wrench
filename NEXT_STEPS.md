@@ -90,18 +90,23 @@ drift once. They have been told.
 
 ## Housekeeping owed
 
-**18 of the 20 `.complete` tasks in `clank/tasks/wrench/` name no commit SHA.**
-A completed task is supposed to name what landed it, and reviewing one should
-turn up commits that resolve. These say they are done and cannot show it.
+Nothing. Every `.complete` task in `clank/tasks/wrench/` names commits, and
+every one of them resolves. Measured 2026-08-29 over 22 tasks: 20 carry a
+`## Landed` section, and the two that do not, `prose-cleanup/10` and
+`schemas/20`, name their commits in prose instead.
+
+**Check that by heading rather than by hex.** `\b[0-9a-f]{7}\b` matches
+`defaced` and several other English words, so it reports a task as documented on
+the strength of its prose:
 
     cd ~/.projects/clank/tasks/wrench
     for d in $(find . -name '*.complete' -type d); do
-        grep -qE '\b[0-9a-f]{7}\b' "$d"/*.md 2>/dev/null || echo "${d#./}"
+        grep -qE '^## Landed' "$d"/*.md 2>/dev/null || echo "${d#./}"
     done
 
-The two completed most recently do carry them. Retrofitting the rest means
-re-deriving which commits did what for each, which is real work rather than a
-tidy-up, and is why it was not done on the way past.
+**Resolve against the right repository.** A `## Landed` block names one per
+line, and a task that touched both names a clank commit beside the wrench one.
+Checking every SHA against wrench reports the clank ones missing.
 
 ## Standing hazards
 
