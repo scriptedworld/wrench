@@ -769,16 +769,17 @@ def test_a_failed_write_leaves_no_temporary_behind(tmp_path):
 # COVERS: FR-1.1 | positive
 def test_the_pack_reads_the_one_copy_of_the_schemas():
     """The schemas and a library for each language live in one repository, so a
-    Go producer and a Python producer work from the same definition. This pack
-    reaching outside its own package for them is what makes that true, and is
-    also why it must be installed editable."""
+    Go producer and a Python producer work from the same definition. The pack
+    carries their text rather than resolving a path, so what makes that true is
+    the carried copy being byte for byte the directory's."""
+    from wrench._shipped import SHIPPED
     from wrench.schema import SCHEMA_DIR
 
-    assert SCHEMA_DIR == ROOT / "schemas", "the pack is reading a copy, not the copy"
-    assert SCHEMA_DIR.is_dir()
+    assert SCHEMA_DIR == ROOT / "schemas", "the test is measuring against a copy"
+    on_disk = {p.name: p.read_text() for p in SCHEMA_DIR.glob("*.schema.json")}
+    assert on_disk, "no schemas found where every pack takes them from"
 
-    shipped = {p.name for p in SCHEMA_DIR.glob("*.schema.json")}
-    assert shipped, "no schemas found where the Go pack embeds them"
+    assert on_disk == SHIPPED, "the generated copy has drifted from schemas/"
 
     package = ROOT / "python" / "wrench"
     assert not list(package.glob("*.schema.json")), "a second copy beside the package"

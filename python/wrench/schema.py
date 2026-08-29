@@ -30,9 +30,13 @@ import jsonschema.exceptions
 import jsonschema.validators
 import referencing
 
+from wrench._shipped import SHIPPED
 from wrench.errors import SchemaError, ValidationError
 
 # python/wrench/schema.py -> python/wrench -> python -> the repository root.
+# Where the schemas live in a source checkout. The pack carries their text in
+# `_shipped.py` and does not read this at run time; it is here so a test can
+# hold the two against each other.
 SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schemas"
 
 # The environment variable that lets a schema reference something outside the
@@ -72,20 +76,20 @@ def _external_refs_allowed() -> bool:
 def _shipped_documents() -> dict[str, dict]:
     """Every shipped schema, keyed by the `$id` it declares.
 
-    The directory is read rather than a list of filenames kept here, so a schema
-    added to `schemas/` is registered without this file being edited. A pack
-    that has to be told about each new schema is a pack that silently ships one
-    fewer than the other.
+    `_shipped.py` is generated from the directory by `bin/generate-shipped.py`,
+    so a schema added to `schemas/` is registered without this file being
+    edited. Carrying the text is what lets the pack resolve its schemas without
+    knowing where it was installed.
     """
     documents: dict[str, dict] = {}
-    for path in sorted(SCHEMA_DIR.glob("*.schema.json")):
-        document = json.loads(path.read_text())
+    for name, text in SHIPPED.items():
+        document = json.loads(text)
         declared = document.get("$id")
         if not isinstance(declared, str) or not declared:
-            raise ValueError(f"wrench: shipped schema {path.name} declares no $id")
+            raise ValueError(f"wrench: shipped schema {name} declares no $id")
         documents[declared] = document
     if not documents:
-        raise ValueError(f"wrench: no shipped schemas under {SCHEMA_DIR}")
+        raise ValueError("wrench: no shipped schemas")
     return documents
 
 

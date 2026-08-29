@@ -166,6 +166,17 @@ tasks:
     description: no suppression pragma in any language that SUPPRESSIONS misses
     command: python3 {config_dir}/bin/no-unregistered-suppression.py
 
+  - name: shipped-schemas-are-current
+    description: the Go and Python packs carry byte for byte what schemas/ holds
+    # The Go and Python packs carry the schemas as generated source, so each is
+    # a second copy of every schema and FR-3.2 exists to stop exactly that
+    # drifting. This is what makes the copy safe: edit a schema without
+    # regenerating and the gate says which file is stale.
+    #
+    # Rust is absent on purpose. `rust/build.rs` regenerates on every build, so
+    # its copy cannot be stale and there is nothing here to check.
+    command: python3 {config_dir}/bin/generate-shipped.py --check
+
   # `retired-rows-are-deliberate` STOOD HERE AND IS GONE, at the split. It
   # pinned the count of rows below `## Retired` in a single REQUIREMENTS.md,
   # because that heading was the file's last section and a row appended to the

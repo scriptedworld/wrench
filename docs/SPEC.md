@@ -6,6 +6,9 @@ behind the shape is `docs/DECISIONS/`; what the project is for is
 `docs/PROJECT.md`. This file sits between them and says what the pieces are, how
 they fit and what each one promises.
 
+An `FR-` citation names a requirement in that tree. A decision is named by its
+slug and a task by its group and ordinal, both findable where they live.
+
 The test it is written to pass: a fourth pack should be implementable from this
 file plus the schemas and the fixture set, without reading an existing pack.
 Where that is not yet true the gap is named in "What this does not specify".
@@ -32,14 +35,12 @@ trips.
 **What happens past the range of a 64-bit integer is decided and not yet
 built.** The rule is that such a number widens to a float in every codec and
 every pack, visibly, because FR-4.8 gives a whole float a trailing `.0`. The
-reasoning is in
-`docs/DECISIONS/parity-is-reached-by-widening-never-by-refusing.md`.
+decision is `parity-is-reached-by-widening-never-by-refusing`.
 
 Today the packs disagree. Python is exact everywhere, its integers being
 unbounded; Go is exact in YAML and wrong in JSON; Rust is the reverse; TOML
-refuses in two packs. A pack being written now should implement the widening
-and expect the existing three to follow.
-`clank/tasks/wrench/parity/40` holds the measurements and the mechanism.
+refuses in two packs. A pack being written now should implement the widening and
+expect the existing three to follow. Task `parity/40` holds the measurements.
 
 ## The two calls
 
@@ -69,7 +70,7 @@ produced by a save always survives a load.
 
 The schema argument cannot be omitted (FR-2.2). It can be wrong, and no part of
 the library detects that (FR-2.3). That hole is stated in the contract as
-permanent, and `clank/tasks/wrench/schemas/40` is the design that closes it for
+permanent, and task `schemas/40` is the design that closes it for
 any document carrying its own identifier.
 
 ## The four seams
@@ -207,13 +208,19 @@ Four ship: `envelope`, `jig`, `manifest` and `definitions`. They are files in
 one instead of carrying a copy free to drift.
 
 They stay files in the tree so a YAML language server can be pointed at one
-while a jig is being written. A pack may compile them in to link a single static
-binary, and what it compiles in is those same files.
+while a jig is being written. A pack compiles them in to link a single static
+binary, and what it compiles in is those same bytes.
 
 **A pack discovers them by reading the directory** (FR-3.7), never from a list
-of filenames in its own source. A schema added to `schemas/` is then available
-in every pack with no second place to remember, and a pack that has to be told
-about each new schema is one that silently ships one fewer than the others.
+of filenames a person maintains. No compiler here can read a directory, so each
+pack reads it in a generator instead: Rust in `build.rs` on every build, Go and
+Python in `bin/generate-shipped.py` into a committed file. A schema added to
+`schemas/` reaches every pack without anybody editing a source file.
+
+The two committed copies are the cost, and they are the drift FR-3.2 exists to
+prevent. The gate task `shipped-schemas-are-current` runs the generator with
+`--check`, which compares bytes and names the stale file. Rust has no such task,
+having no committed copy to go stale.
 
 **A schema is named by the `$id` it declares, never by its filename** (FR-3.6).
 A relative filename resolves against whatever directory the process started in,
@@ -248,21 +255,21 @@ wrong control.
 
 ## What each pack spells
 
-The calls are the same and the spelling is each language's own
-(`docs/DECISIONS/each-pack-spells-the-calls-its-own-way.md`). A pack is idiomatic
-in its language before it is symmetrical with its siblings.
+The calls are the same and the spelling is each language's own, by
+`each-pack-spells-the-calls-its-own-way`. A pack is idiomatic in its language
+before it is symmetrical with its siblings.
 
 | | Go | Python | Rust |
 |---|---|---|---|
 | Core calls | `LoadFormattedFile` | `load_formatted_file` | `load_formatted_file` |
 | Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum |
 | Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants |
-| Schemas reach the pack by | `//go:embed` | reading `schemas/` at import | `build.rs` generating `shipped.rs` |
+| Schemas reach the pack by | generated `shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` |
 | Validator | santhosh-tekuri/jsonschema | `jsonschema` | `jsonschema` crate |
 
 Each pack binds its language's established implementation instead of
-implementing JSON Schema itself (FR-5.2), and which one, with the reasoning, is
-`docs/DECISIONS/which-json-schema-library-each-pack-binds.md`.
+implementing JSON Schema itself (FR-5.2). Which one, and why, is
+`which-json-schema-library-each-pack-binds`.
 
 **Every pack exposes the same set of schemas** (FR-5.7), and each checks itself
 against the directory rather than against another pack. A schema present in one
@@ -290,20 +297,15 @@ one pack is the finding.
 The known limit of the fixture mechanism, recorded so it is not rediscovered:
 `testdata/canonical/` feeds `input.yaml` only, so JSON and TOML decode is
 exercised against a single hand-written constant copied into three suites. A gap
-in that set looks exactly like agreement. `clank/tasks/wrench/parity/40` holds
+in that set looks exactly like agreement. task `parity/40` holds
 the measurement and the mechanism that closes it.
 
 ## Reaching the library
 
 The Python pack is importable from a source checkout with no install having run
-(FR-6.1), and its own suite runs that way on `PYTHONPATH`. It reads `schemas/`
-from the repository rather than from package data, which is why an editable
-install is the only supported form.
-
-That property has a cost worth knowing before you meet it: a PEP 660 editable
-install exposes the package through an import hook, and mypy resolves statically
-and cannot follow one. `clank/tasks/wrench/library/60` carries the measurement
-and the two ways out.
+(FR-6.1), and its own suite runs that way on `PYTHONPATH`. Carrying the schemas
+as source is what frees it: it resolves them without reference to where it sits,
+so a plain install, an editable one and a bare `PYTHONPATH` all work.
 
 Dependencies are on names being importable, not on a resolver having run
 (FR-6.2). The pack imports `yaml`, `jsonschema` and `referencing` by name, so a
@@ -328,7 +330,7 @@ one layer later.
 **The shape of `metadata.evidence` and `metadata.statistics` in the envelope.**
 Both carry a description and no type, so a producer may write either as a
 string, a list, a mapping or a number and validation passes.
-`clank/inbox/wrench/the-envelope-schema-does-not-constrain-evidence` holds a
+the inbox entry `the-envelope-schema-does-not-constrain-evidence` holds a
 real producer's shape and the range of options.
 
 **Which type a number comes back as within the widened range.** The range rule

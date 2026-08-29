@@ -1,26 +1,23 @@
 package wrench
 
 import (
-	"bytes"
-	"embed"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
-// schemaFiles holds the shipped schemas. They are embedded so a consumer links
-// one static binary and still names a schema rather than carrying a copy that
-// can drift. The files stay in the tree as files, so a YAML language server can
-// be pointed at them while a jig is being written.
+// The shipped schemas are carried as source in shipped_gen.go, generated from
+// schemas/ by bin/generate-shipped.py, so the pack links one static binary and
+// need not sit in the directory the schemas do. //go:embed cannot reach above
+// its own package: a ../ pattern is invalid syntax and a symlink is an
+// irregular file.
 //
-//go:embed schemas/*.schema.json
-var schemaFiles embed.FS
-
-// schemaDir is where the shipped schemas sit, both embedded and in the tree.
-const schemaDir = "schemas"
+// The generated file is a second copy, so the gate task
+// `shipped-schemas-are-current` runs the generator with --check.
 
 // EnvelopeSchema is the result envelope every producer in the ecosystem writes.
 var EnvelopeSchema Schema = shipped(
@@ -103,18 +100,13 @@ func newCompiler() (*jsonschema.Compiler, error) {
 		compiler.UseLoader(localOnly{})
 	}
 
-	entries, err := schemaFiles.ReadDir(schemaDir)
-	if err != nil {
-		return nil, fmt.Errorf("wrench: shipped schemas: %w", err)
-	}
-	for _, entry := range entries {
-		file := schemaDir + "/" + entry.Name()
-		document, declared, err := readShipped(file)
+	for _, entry := range shippedSchemas {
+		document, declared, err := readShipped(entry)
 		if err != nil {
 			return nil, err
 		}
 		if err := compiler.AddResource(declared, document); err != nil {
-			return nil, fmt.Errorf("wrench: adding schema %s: %w", file, err)
+			return nil, fmt.Errorf("wrench: adding schema %s: %w", entry.Name, err)
 		}
 	}
 	return compiler, nil
@@ -149,16 +141,12 @@ func compile(name string, document io.Reader) (*jsonschema.Schema, error) {
 	return compiled, nil
 }
 
-// shippedIDs is the set of $ids the shipped schemas declare, read from the
-// embedded directory so it cannot drift from what actually ships.
+// shippedIDs is the set of $ids the shipped schemas declare, read from what the
+// pack actually carries so it cannot drift from what ships.
 func shippedIDs() map[string]bool {
 	ids := make(map[string]bool)
-	entries, err := schemaFiles.ReadDir(schemaDir)
-	if err != nil {
-		return ids
-	}
-	for _, entry := range entries {
-		if _, declared, err := readShipped(schemaDir + "/" + entry.Name()); err == nil {
+	for _, entry := range shippedSchemas {
+		if _, declared, err := readShipped(entry); err == nil {
 			ids[declared] = true
 		}
 	}
@@ -195,25 +183,21 @@ func compileShipped(id string) (*jsonschema.Schema, error) {
 	return compiled, nil
 }
 
-// readShipped decodes one embedded schema and returns it with its own $id,
-// which is what every other schema references it by.
-func readShipped(file string) (any, string, error) {
-	data, err := schemaFiles.ReadFile(file)
+// readShipped decodes one carried schema and returns it with its own $id, which
+// is what every other schema references it by.
+func readShipped(entry shippedSchema) (any, string, error) {
+	document, err := jsonschema.UnmarshalJSON(strings.NewReader(entry.Text))
 	if err != nil {
-		return nil, "", fmt.Errorf("wrench: shipped schema %s: %w", file, err)
-	}
-	document, err := jsonschema.UnmarshalJSON(bytes.NewReader(data))
-	if err != nil {
-		return nil, "", fmt.Errorf("wrench: reading schema %s: %w", file, err)
+		return nil, "", fmt.Errorf("wrench: reading schema %s: %w", entry.Name, err)
 	}
 
 	mapping, ok := document.(map[string]any)
 	if !ok {
-		return nil, "", fmt.Errorf("wrench: shipped schema %s is %T, want an object", file, document)
+		return nil, "", fmt.Errorf("wrench: shipped schema %s is %T, want an object", entry.Name, document)
 	}
 	declared, ok := mapping["$id"].(string)
 	if !ok || declared == "" {
-		return nil, "", fmt.Errorf("wrench: shipped schema %s declares no $id", file)
+		return nil, "", fmt.Errorf("wrench: shipped schema %s declares no $id", entry.Name)
 	}
 	return document, declared, nil
 }
