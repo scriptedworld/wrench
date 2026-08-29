@@ -4,6 +4,46 @@
 the context behind the open questions and nothing that is sized enough to be a
 task.
 
+## A handoff writes two files and stops
+
+Ruled by our user 2026-08-29. Above the context threshold the permitted set is
+the prepare-clear skill, `START_HERE.md` and `NEXT_STEPS.md`. Nothing else: no
+commits, no writes into clank, no gate runs, no inbox entries.
+
+**This needs to reach the standing rules**, since it is true of every repository
+and is only recorded here and in `START_HERE.md` today. It is silo's to write,
+and the session that would have filed it against silo was the one being stopped.
+Raise it when a session is next below the threshold and free to file.
+
+The related finding is already at
+`clank/inbox/silo/a-session-ran-past-90-percent-without-stopping`, which asks who
+enforces the threshold and carries our user's proposal that grim deny tool use
+above it. **That entry does not yet carry this three-item permitted set**, which
+is the concrete answer to the wrinkle it names about a handoff needing tools.
+
+### Our user's reading: this is grim's starter rule
+
+The wrinkle that entry raises is that grim would have to recognise a handoff
+rather than trust a session claiming to do one. **The three-item set removes
+that.** It is a whitelist of two literal paths and one skill, not a mode:
+
+    context_percent >= threshold
+        allow   Write/Edit to START_HERE.md and NEXT_STEPS.md
+        allow   the prepare-clear skill
+        deny    everything else
+
+Both paths are repository-root files with fixed names, so the rule is a string
+comparison. Nothing has to infer intent, and a session cannot talk its way past
+it, which is the property rule 4a asks for and that a session judging itself
+does not have.
+
+It is also a good first rule because the failure is loud and safe. A session
+denied everything but its handoff is visibly stopped rather than reading as
+`idle`, and the worst outcome of a false positive is a handoff written early.
+
+**grim owns the mechanism, silo owns the threshold and the rule.** Neither is
+wrench's. File both when a session is below the line and free to.
+
 `docs/REQUIREMENTS/` covers what the README, bolt's contract rows, silo's platform
 decision and wrench's inbox entries support, plus what building all three packs
 settled.
