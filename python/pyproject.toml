@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wrench"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reads, writes and validates the form of the ecosystem's structured files"
 requires-python = ">=3.12"
 # `license-files` puts LICENSE and NOTICE in the built distribution, so a wheel
