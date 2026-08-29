@@ -130,6 +130,47 @@ direction: the gate started grading something it had been ignoring.
 contract, and it now delegates the Python base to toolbox's `common-quality` and
 `python-std-quality`.
 
+## THE GATE BREAKS THE DAY `~/bin/bolt` MOVES TO THE RUST BUILD
+
+**Nested jigs are retired.** bolt removed them at `f3304d8`, 2026-08-28: a task
+never names a jig, it names `bolt` in its command like any other tool. 26
+requirement rows went with it.
+
+**wrench holds the estate's only two tasks written against the retired field**,
+`python-common` and `python-std`. Measured here, running wrench's gate under
+`~/.projects/bolt/target/debug/bolt`:
+
+    bolt: task python-common carries the retired jig field;
+          run the jig as a command instead, bolt <jig> <directory>
+
+    result.yaml   "success": false, kind: bolt-refused
+
+The gate is green today only because `~/bin/bolt` still resolves to the **Go**
+build, `bolt.go/bin/bolt`. Nothing announces the switch.
+
+**Check which binary you are running before believing a verdict**, because the
+two builds disagree about whether this gate is even runnable:
+
+    ls -la ~/bin/bolt
+
+**DO NOT CONVERT THE TWO TASKS YET, and the reason is a trap rather than a
+preference.** The adapter that reads a child run's `result.yaml` does not exist;
+it is filed against toolbox as `an-adapter-that-reads-a-child-runs-result`.
+Without it a task running `bolt <jig> <dir>` falls to the exit-code adapter, and
+bolt exits 0 whenever it carried a run out. Measured on the Rust build:
+
+    a run whose only task ran `false`   exit code 0, result.yaml "success": false
+
+So a converted task would report **pass** however badly the child failed. That is
+worse than the refusal, which at least stops. This is the same hazard as "read
+`result.yaml`, never the exit status", arriving structurally rather than as a
+habit.
+
+**Two of the retired build's messages exist and only one is current.** The
+release binary at `target/release` predates `f3304d8` and says "nested jigs are
+specified and not built yet"; the debug binary says the retired-field message
+above. Date the binary before quoting what it told you.
+
 **Read `result.yaml`, never the exit status.** bolt exits 0 whenever the run
 completed, whatever the tools concluded, and says so in its own usage. The verdict
 is the `success` key.
