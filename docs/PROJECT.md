@@ -166,10 +166,22 @@ worse than the refusal, which at least stops. This is the same hazard as "read
 `result.yaml`, never the exit status", arriving structurally rather than as a
 habit.
 
-**Two of the retired build's messages exist and only one is current.** The
-release binary at `target/release` predates `f3304d8` and says "nested jigs are
-specified and not built yet"; the debug binary says the retired-field message
-above. Date the binary before quoting what it told you.
+**Check which binary you ran before quoting what bolt does.** Measuring against
+bolt's tree on 2026-08-28 found two Rust builds giving opposite answers to the
+same probe: `target/release`, built at 14:15, predated `f3304d8` and said "nested
+jigs are specified and not built yet", while `target/debug` at 19:53 gave the
+retired-field message above.
+
+bolt deleted the stale one and wrote it up as
+`bolt/docs/LESSONS/a-second-build-answers-for-the-tree.md`, `960edbb`. **Deleting
+it is not the fix**, since `cargo build --release` re-creates it; bolt's
+`docs/PROJECT.md` now says build first and use `target/debug`.
+
+**Their reason for treating it as worse than a stale document is the part worth
+carrying here.** A document is read as prose and weighed. A binary is run, and
+its output is evidence — so it defeats the measure-rather-than-believe check by
+supplying a measurement. Wrench's own habit of re-running a claim rather than
+citing it would not have caught this; running the wrong binary IS re-running it.
 
 **Read `result.yaml`, never the exit status.** bolt exits 0 whenever the run
 completed, whatever the tools concluded, and says so in its own usage. The verdict
