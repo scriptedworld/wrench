@@ -68,3 +68,28 @@ without judgement.
 Both halves are facts now and the entry still keeps them marked apart, so a
 reader who later finds the count behaves differently on the Rust bolt knows which
 claim to re-run and whose it was.
+
+## Quote the bytes, or a disagreement is invisible
+
+FACT 2026-08-28. wrench ran bolt's `target/release` binary, got one refusal
+message, and only tried `target/debug` because the wording did not match what
+bolt had quoted. Two builds, opposite answers, same probe.
+
+**The mismatch was visible only because both sides had quoted the exact output.**
+"The refusal names the field" and "task child carries the retired jig field" are
+the same claim, and only the second can be noticed to differ from what the other
+party is holding. A summary cannot disagree with a summary.
+
+**So the check that fired was not measuring.** Wrench's habit is to re-run a
+claim rather than cite it, and running the wrong binary *is* re-running it: the
+check does not fail, it does not happen, and from the inside that is
+indistinguishable from it passing. What caught it was measuring **and having
+something to disagree with**. Either alone fails — a message with no measurement
+is one unverified claim, and a measurement with no second source returns whatever
+the artifact says and reports it as fact.
+
+bolt's `docs/LESSONS/a-second-build-answers-for-the-tree.md`, `960edbb`, carries
+the case and the rule it ends on. The half worth having here is why a stale
+binary beats a stale document: a document is read as prose and weighed, where a
+binary is run and its output is evidence, so it defeats a measure-rather-than-
+believe habit by supplying a measurement.
