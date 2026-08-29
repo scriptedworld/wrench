@@ -23,7 +23,7 @@ import wrench
 
 def read_an_envelope(path: str) -> Any:
     """The shipped schema, codec and IO, which is the ordinary call."""
-    return wrench.load_formatted_file(path, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE)
+    return wrench.load_formatted_file(path, wrench.schemas.ENVELOPE, wrench.YAML, wrench.LOCAL_FILE)
 
 
 def read_an_envelope_by_path_object(path: Path) -> Any:
@@ -34,17 +34,17 @@ def read_an_envelope_by_path_object(path: Path) -> Any:
     while a real caller's argument is wrong. That is how `path: str` survived:
     it ran correctly and nothing type-checked a `Path` against it.
     """
-    return wrench.load_formatted_file(path, wrench.ENVELOPE_SCHEMA, wrench.YAML, wrench.LOCAL_FILE)
+    return wrench.load_formatted_file(path, wrench.schemas.ENVELOPE, wrench.YAML, wrench.LOCAL_FILE)
 
 
 def write_by_path_object(envelope: Any, directory: Path) -> None:
     """The save side with a path built the way a caller builds one."""
-    wrench.save_yaml_file(envelope, directory / "output.yaml", wrench.ENVELOPE_SCHEMA, wrench.LOCAL_FILE)
+    wrench.save_yaml_file(envelope, directory / "output.yaml", wrench.schemas.ENVELOPE, wrench.LOCAL_FILE)
 
 
 def write_an_envelope(envelope: Any, path: str) -> None:
     """The save side, through a wrapper rather than the core call."""
-    wrench.save_yaml_file(envelope, path, wrench.ENVELOPE_SCHEMA, wrench.LOCAL_FILE)
+    wrench.save_yaml_file(envelope, path, wrench.schemas.ENVELOPE, wrench.LOCAL_FILE)
 
 
 class MemoryReader:
@@ -66,7 +66,7 @@ class MemoryReader:
 def read_without_a_filesystem(data: bytes) -> Any:
     """Substituting the IO, which a consumer does in its own tests."""
     reader: wrench.Reader = MemoryReader(data)
-    return wrench.load_formatted_file("in-memory.yaml", wrench.JIG_SCHEMA, wrench.YAML, reader)
+    return wrench.load_formatted_file("in-memory.yaml", wrench.schemas.JIG, wrench.YAML, reader)
 
 
 def compile_a_consumers_own_schema(document: str) -> wrench.Schema:
@@ -92,4 +92,4 @@ def each_codec(path: str) -> list[Any]:
     """Every shipped codec through the seam, so `Codec` is exercised as a type
     and not only as three concrete classes."""
     codecs: list[wrench.Codec] = [wrench.YAML, wrench.JSON, wrench.TOML]
-    return [wrench.load_formatted_file(path, wrench.MANIFEST_SCHEMA, codec, wrench.LOCAL_FILE) for codec in codecs]
+    return [wrench.load_formatted_file(path, wrench.schemas.MANIFEST, codec, wrench.LOCAL_FILE) for codec in codecs]

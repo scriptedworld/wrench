@@ -207,6 +207,18 @@ Four ship: `envelope`, `jig`, `manifest` and `definitions`. They are files in
 `schemas/`, one copy read by every pack (FR-3.2, FR-3.5), so a consumer names
 one instead of carrying a copy free to drift.
 
+Each pack groups them so the names carry no suffix, the grouping saying what
+kind of thing they are:
+
+    wrench.schemas.JIG        Python
+    wrench.Schemas.Jig        Go, a struct value, having no namespace in a package
+    wrench::schemas::JIG      Rust
+
+The older `JIG_SCHEMA` and `JigSchema` spellings are the same objects and are
+kept while consumers move. Two names for one object cannot drift the way two
+copies can, which is why keeping both costs nothing; only one of them is the
+spelling to write.
+
 They stay files in the tree so a YAML language server can be pointed at one
 while a jig is being written. A pack compiles them in to link a single static
 binary, and what it compiles in is those same bytes.

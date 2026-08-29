@@ -41,6 +41,25 @@ var DefinitionsSchema Schema = shipped(
 	"https://scriptedworld.github.io/wrench/definitions.schema.json",
 )
 
+// Schemas groups the shipped set so the names carry no suffix:
+// wrench.Schemas.Jig rather than wrench.JigSchema, which says schema twice and
+// reads worse the more of them there are. Go has no namespace inside a package,
+// so a struct value is what gives the other packs' wrench.schemas.JIG shape.
+//
+// Each field is the same Schema as its older name, so the two cannot drift. The
+// older ones stay while consumers move.
+var Schemas = struct {
+	Envelope    Schema
+	Jig         Schema
+	Manifest    Schema
+	Definitions Schema
+}{
+	Envelope:    EnvelopeSchema,
+	Jig:         JigSchema,
+	Manifest:    ManifestSchema,
+	Definitions: DefinitionsSchema,
+}
+
 // CompileSchema turns a JSON Schema document into a Schema. The shipped pair
 // are not special: anything in the ecosystem can attach a schema to its own
 // structured files and hand it to the same two calls.

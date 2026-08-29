@@ -163,6 +163,52 @@ fn canonical_form_is_a_fixed_point() {
     }
 }
 
+// COVERS: FR-5.7 | positive
+#[test]
+fn the_shipped_set_is_reachable_without_the_suffix() {
+    // wrench::schemas::JIG rather than wrench::JIG_SCHEMA, the module carrying
+    // what kind of thing these are so the names do not have to.
+    //
+    // Comparing by address and not by name: these are two paths to one static,
+    // which is why keeping both cannot drift the way two copies would.
+    for (what, short, suffixed) in [
+        (
+            "envelope",
+            &wrench::schemas::ENVELOPE as *const _ as usize,
+            &wrench::ENVELOPE_SCHEMA as *const _ as usize,
+        ),
+        (
+            "jig",
+            &wrench::schemas::JIG as *const _ as usize,
+            &wrench::JIG_SCHEMA as *const _ as usize,
+        ),
+        (
+            "manifest",
+            &wrench::schemas::MANIFEST as *const _ as usize,
+            &wrench::MANIFEST_SCHEMA as *const _ as usize,
+        ),
+        (
+            "definitions",
+            &wrench::schemas::DEFINITIONS as *const _ as usize,
+            &wrench::DEFINITIONS_SCHEMA as *const _ as usize,
+        ),
+    ] {
+        assert_eq!(
+            short, suffixed,
+            "schemas::{what} is not the same static as the suffixed name"
+        );
+    }
+
+    // It validates, so the module carries working schemas and not just names.
+    load_formatted_file(
+        "out.yaml",
+        &wrench::schemas::ENVELOPE,
+        &YAML,
+        &Stub::new(b"success: true\n"),
+    )
+    .expect("schemas::ENVELOPE did not validate a passing envelope");
+}
+
 // COVERS: FR-3.8 | positive
 #[test]
 fn every_shipped_schema_has_an_instance_fixture() {

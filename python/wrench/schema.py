@@ -39,6 +39,11 @@ from wrench.errors import SchemaError, ValidationError
 # hold the two against each other.
 SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schemas"
 
+# The four shipped instances are defined below as `*_SCHEMA` and re-exported by
+# `wrench.schemas` without the suffix, which is the spelling to write:
+# `wrench.schemas.JIG` rather than `wrench.JIG_SCHEMA`. Same objects, so the two
+# names cannot drift; the older ones are kept while consumers move.
+
 # The environment variable that lets a schema reference something outside the
 # shipped set. Unset, which is the ordinary case, a $ref resolves only against
 # the shipped schemas and the document's own fragments.

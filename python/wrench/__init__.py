@@ -8,11 +8,14 @@ boundary wholly outside the call.
 
     from wrench import (
         load_formatted_file, save_formatted_file,
-        ENVELOPE_SCHEMA, YAML, LOCAL_FILE,
+        schemas, YAML, LOCAL_FILE,
     )
 
-    envelope = load_formatted_file(path, ENVELOPE_SCHEMA, YAML, LOCAL_FILE)
-    save_formatted_file(envelope, path, ENVELOPE_SCHEMA, YAML, LOCAL_FILE)
+    envelope = load_formatted_file(path, schemas.ENVELOPE, YAML, LOCAL_FILE)
+    save_formatted_file(envelope, path, schemas.ENVELOPE, YAML, LOCAL_FILE)
+
+`schemas.ENVELOPE` is the spelling to write. `ENVELOPE_SCHEMA` is the same
+object under its older name and is kept while consumers move.
 
 The contract names these calls `load_formatted_file` and `save_formatted_file`,
 and Python spells them the same way. What the packs share is behaviour, and Go
@@ -25,6 +28,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from wrench import schemas
 from wrench.codec import YAML, Codec, YAMLCodec
 from wrench.errors import (
     EncodeError,
@@ -87,6 +91,7 @@ __all__ = [
     "save_json_file",
     "save_toml_file",
     "save_yaml_file",
+    "schemas",
 ]
 
 

@@ -58,6 +58,7 @@ mod float_text;
 pub mod json_codec;
 pub mod localfile;
 pub mod schema;
+pub mod schemas;
 pub mod toml_codec;
 
 pub use codec::{Codec, YamlCodec, YAML};

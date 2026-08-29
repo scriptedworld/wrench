@@ -310,6 +310,27 @@ def test_all_four_shipped_schemas_load_from_the_one_copy():
     wrench.DEFINITIONS_SCHEMA.validate({"requirements": "../REQUIREMENTS.md"})
 
 
+# COVERS: FR-5.7 | positive
+def test_the_shipped_set_is_reachable_without_the_suffix():
+    """wrench.schemas.JIG rather than wrench.JIG_SCHEMA, the namespace carrying
+    what kind of thing these are so the names do not have to.
+
+    Asserting identity and not merely equality: these are two names for one
+    object, which is why keeping both cannot drift the way two copies would."""
+    from wrench import schemas
+
+    for short, suffixed in (
+        ("ENVELOPE", "ENVELOPE_SCHEMA"),
+        ("JIG", "JIG_SCHEMA"),
+        ("MANIFEST", "MANIFEST_SCHEMA"),
+        ("DEFINITIONS", "DEFINITIONS_SCHEMA"),
+    ):
+        assert getattr(schemas, short) is getattr(wrench, suffixed), f"schemas.{short} is not {suffixed}"
+
+    # It validates, so the namespace carries working schemas and not just names.
+    assert wrench.load_formatted_file("out.yaml", schemas.ENVELOPE, wrench.YAML, Stub(VALID_ENVELOPE)) == {"success": True}
+
+
 # COVERS: FR-3.7, FR-5.7 | regression
 def test_every_shipped_schema_is_exported():
     """A schema added to schemas/ and picked up by one pack but not the other is

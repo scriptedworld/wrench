@@ -72,13 +72,13 @@ Go, at the repository root.
     import "github.com/scriptedworld/wrench"
 
     envelope, err := wrench.LoadFormattedFile(
-        path, wrench.EnvelopeSchema, wrench.YAML, wrench.LocalFile)
+        path, wrench.Schemas.Envelope, wrench.YAML, wrench.LocalFile)
 
 Python, under `python/`.
 
-    from wrench import load_formatted_file, ENVELOPE_SCHEMA, YAML, LOCAL_FILE
+    from wrench import load_formatted_file, schemas, YAML, LOCAL_FILE
 
-    envelope = load_formatted_file(path, ENVELOPE_SCHEMA, YAML, LOCAL_FILE)
+    envelope = load_formatted_file(path, schemas.ENVELOPE, YAML, LOCAL_FILE)
 
     uv pip install python/
 
@@ -88,9 +88,9 @@ sits.
 
 Rust, under `rust/`.
 
-    use wrench::{load_formatted_file, ENVELOPE_SCHEMA, YAML, LOCAL_FILE};
+    use wrench::{load_formatted_file, schemas, YAML, LOCAL_FILE};
 
-    let envelope = load_formatted_file(path, &ENVELOPE_SCHEMA, &YAML, &LOCAL_FILE)?;
+    let envelope = load_formatted_file(path, &schemas::ENVELOPE, &YAML, &LOCAL_FILE)?;
 
 Each spells the calls the way its language spells things; what the packs share
 is behaviour, not identifiers. The decoded value is that language's natural

@@ -92,6 +92,35 @@ func declaredIDs(t *testing.T) map[string]string {
 	return ids
 }
 
+// COVERS: FR-5.7 | positive
+func TestTheShippedSetIsReachableWithoutTheSuffix(t *testing.T) {
+	// wrench.Schemas.Jig rather than wrench.JigSchema. Go has no namespace
+	// inside a package, so a struct value is what gives the shape the other two
+	// packs spell as a module.
+	//
+	// Asserting identity and not merely equality: these are two names for one
+	// Schema, which is why keeping both cannot drift the way two copies would.
+	for name, pair := range map[string][2]wrench.Schema{
+		"envelope":    {wrench.Schemas.Envelope, wrench.EnvelopeSchema},
+		"jig":         {wrench.Schemas.Jig, wrench.JigSchema},
+		"manifest":    {wrench.Schemas.Manifest, wrench.ManifestSchema},
+		"definitions": {wrench.Schemas.Definitions, wrench.DefinitionsSchema},
+	} {
+		if pair[0] != pair[1] {
+			t.Errorf("Schemas.%s is not the same Schema as the suffixed name", name)
+		}
+		if pair[0] == nil {
+			t.Errorf("Schemas.%s is nil", name)
+		}
+	}
+
+	// It validates, so the grouping carries working schemas and not just names.
+	if _, err := wrench.LoadFormattedFile("out.yaml", wrench.Schemas.Envelope, wrench.YAML,
+		&stubReader{data: []byte("success: true\n")}); err != nil {
+		t.Errorf("Schemas.Envelope did not validate a passing envelope: %v", err)
+	}
+}
+
 // COVERS: FR-3.7, FR-5.7 | regression
 func TestEveryShippedSchemaIsExported(t *testing.T) {
 	// A schema added to schemas/ and picked up by one pack but not the other is
