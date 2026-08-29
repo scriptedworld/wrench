@@ -29,19 +29,21 @@ pub struct TomlCodec;
 /// The one instance callers use.
 pub const TOML: TomlCodec = TomlCodec;
 
-type Fail = Box<dyn std::error::Error + Send + Sync>;
+type Fail = crate::Error;
 
 impl Codec for TomlCodec {
     fn decode(&self, data: &[u8]) -> Result<Value, Fail> {
-        let text = std::str::from_utf8(data)?;
-        let parsed: toml::Value = toml::from_str(text)?;
+        let text = std::str::from_utf8(data).map_err(crate::Error::parse)?;
+        let parsed: toml::Value = toml::from_str(text).map_err(crate::Error::parse)?;
         Ok(from_toml(&parsed))
     }
 
     fn encode(&self, value: &Value) -> Result<Vec<u8>, Fail> {
         let table = value
             .as_object()
-            .ok_or("cannot write in canonical form: a TOML document is a table")?;
+            .ok_or_else(|| {
+                crate::Error::encode("cannot write in canonical form: a TOML document is a table")
+            })?;
         refuse_null(value, "")?;
 
         let mut out = String::new();
@@ -81,7 +83,9 @@ fn refuse_null(value: &Value, where_: &str) -> Result<(), Fail> {
             } else {
                 format!(" at {where_}")
             };
-            Err(format!("cannot write null in canonical form{at}: TOML has no null").into())
+            Err(crate::Error::encode(format!(
+                "cannot write null in canonical form{at}: TOML has no null"
+            )))
         }
         Value::Object(table) => {
             for (name, item) in table {
@@ -188,8 +192,12 @@ fn inline(value: &Value) -> Result<String, Fail> {
         }
         // An inline table would be a second way to spell a sub-table, and two
         // spellings of one thing is what canonical form exists to remove.
-        Value::Object(_) => return Err("cannot write a table inline in canonical form".into()),
-        Value::Null => return Err("cannot write null in canonical form".into()),
+        Value::Object(_) => {
+            return Err(crate::Error::encode(
+                "cannot write a table inline in canonical form",
+            ))
+        }
+        Value::Null => return Err(crate::Error::encode("cannot write null in canonical form")),
     })
 }
 

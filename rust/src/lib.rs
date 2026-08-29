@@ -88,15 +88,9 @@ pub fn load_formatted_file(
         source,
     })?;
 
-    let value = codec.decode(&data).map_err(|source| Error::Parse {
-        path: path.to_string(),
-        source,
-    })?;
+    let value = codec.decode(&data).map_err(|e| e.at(path))?;
 
-    schema.validate(&value).map_err(|source| Error::Validate {
-        path: path.to_string(),
-        source,
-    })?;
+    schema.validate(&value).map_err(|e| e.at(path))?;
 
     Ok(value)
 }
@@ -113,15 +107,9 @@ pub fn save_formatted_file(
     codec: &dyn Codec,
     writer: &dyn Writer,
 ) -> Result<()> {
-    schema.validate(value).map_err(|source| Error::Validate {
-        path: path.to_string(),
-        source,
-    })?;
+    schema.validate(value).map_err(|e| e.at(path))?;
 
-    let encoded = codec.encode(value).map_err(|source| Error::Encode {
-        path: path.to_string(),
-        source,
-    })?;
+    let encoded = codec.encode(value).map_err(|e| e.at(path))?;
 
     writer.write(path, &encoded).map_err(|source| Error::Write {
         path: path.to_string(),

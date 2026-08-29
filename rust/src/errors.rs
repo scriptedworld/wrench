@@ -9,12 +9,27 @@
 
 use std::fmt;
 
+/// The path, spaced, or nothing where a boundary did not have one.
+///
+/// A codec is handed bytes and a schema a structure, so neither knows which file
+/// it is working on. Those fail with an empty path and the two calls fill it in
+/// with `at`, rather than wrapping a second time and making a consumer unwrap
+/// twice to reach the cause.
+fn located(path: &str) -> String {
+    if path.is_empty() {
+        String::new()
+    } else {
+        format!(" {path}")
+    }
+}
+
+
 /// What a call could not do. Each variant is one step of
 /// `reader -> decoder -> value -> validated` or its mirror on the way out.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// The reader could not produce bytes.
-    #[error("wrench: reading {path}: {source}")]
+    #[error("wrench: reading{}: {source}", located(.path))]
     Read {
         path: String,
         #[source]
@@ -22,7 +37,7 @@ pub enum Error {
     },
 
     /// The bytes were not the format the codec expected.
-    #[error("wrench: parsing {path}: {source}")]
+    #[error("wrench: parsing{}: {source}", located(.path))]
     Parse {
         path: String,
         #[source]
@@ -31,7 +46,7 @@ pub enum Error {
 
     /// The structure did not match the schema. Distinct from Parse: the file
     /// was readable and well formed, and says the wrong thing.
-    #[error("wrench: validating {path}: {source}")]
+    #[error("wrench: validating{}: {source}", located(.path))]
     Validate {
         path: String,
         #[source]
@@ -39,7 +54,7 @@ pub enum Error {
     },
 
     /// The value has no canonical form, so writing it would invent one.
-    #[error("wrench: encoding {path}: {source}")]
+    #[error("wrench: encoding{}: {source}", located(.path))]
     Encode {
         path: String,
         #[source]
@@ -47,7 +62,7 @@ pub enum Error {
     },
 
     /// The writer could not put the bytes down.
-    #[error("wrench: writing {path}: {source}")]
+    #[error("wrench: writing{}: {source}", located(.path))]
     Write {
         path: String,
         #[source]
@@ -58,6 +73,40 @@ pub enum Error {
     /// library refuses, such as redefining a shipped schema.
     #[error("wrench: {0}")]
     Schema(String),
+}
+
+impl Error {
+    /// A parse failure with no path, from a codec that was handed bytes.
+    pub(crate) fn parse(source: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
+        Error::Parse { path: String::new(), source: source.into() }
+    }
+
+    /// An encode failure with no path, from a codec that was handed a value.
+    pub(crate) fn encode(source: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
+        Error::Encode { path: String::new(), source: source.into() }
+    }
+
+    /// A validation failure with no path, from a schema handed a structure.
+    pub(crate) fn validate(source: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
+        Error::Validate { path: String::new(), source: source.into() }
+    }
+
+    /// The same failure said with the path the caller named.
+    ///
+    /// Used instead of wrapping a second time: a Parse from a codec and a Parse
+    /// from load_formatted_file are one event, and nesting them would make a
+    /// consumer unwrap twice to reach the cause.
+    #[must_use]
+    pub fn at(self, path: &str) -> Self {
+        match self {
+            Error::Read { source, .. } => Error::Read { path: path.into(), source },
+            Error::Parse { source, .. } => Error::Parse { path: path.into(), source },
+            Error::Validate { source, .. } => Error::Validate { path: path.into(), source },
+            Error::Encode { source, .. } => Error::Encode { path: path.into(), source },
+            Error::Write { source, .. } => Error::Write { path: path.into(), source },
+            other => other,
+        }
+    }
 }
 
 impl Error {

@@ -31,11 +31,11 @@ pub struct JsonCodec;
 pub const JSON: JsonCodec = JsonCodec;
 
 impl Codec for JsonCodec {
-    fn decode(&self, data: &[u8]) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-        Ok(serde_json::from_slice(data)?)
+    fn decode(&self, data: &[u8]) -> Result<Value, crate::Error> {
+        serde_json::from_slice(data).map_err(crate::Error::parse)
     }
 
-    fn encode(&self, value: &Value) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+    fn encode(&self, value: &Value) -> Result<Vec<u8>, crate::Error> {
         // `PrettyFormatter` indents with two spaces, which is what the other two
         // packs emit and what `deno fmt` produces. Everything about serde_json's
         // output is right except how it spells a float, so the formatter is
@@ -47,7 +47,9 @@ impl Codec for JsonCodec {
             pretty: PrettyFormatter::new(),
         };
         let mut serializer = serde_json::Serializer::with_formatter(&mut out, formatter);
-        value.serialize(&mut serializer)?;
+        value
+            .serialize(&mut serializer)
+            .map_err(crate::Error::encode)?;
         out.push(b'\n');
         Ok(out)
     }

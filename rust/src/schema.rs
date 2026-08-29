@@ -31,7 +31,7 @@ pub trait Schema: Send + Sync {
     /// The identifier this schema is named by in an error.
     fn name(&self) -> &str;
 
-    fn validate(&self, value: &Value) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    fn validate(&self, value: &Value) -> Result<(), crate::Error>;
 }
 
 /// Every shipped schema, keyed by the `$id` it declares.
@@ -105,7 +105,7 @@ impl Schema for Compiled {
         &self.name
     }
 
-    fn validate(&self, value: &Value) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    fn validate(&self, value: &Value) -> Result<(), crate::Error> {
         if let Err(error) = self.validator.validate(value) {
             let path = error.instance_path().to_string();
             let at = if path.is_empty() {
@@ -113,7 +113,7 @@ impl Schema for Compiled {
             } else {
                 format!(" at '{path}'")
             };
-            return Err(Box::new(Message(format!("{}{at}: {error}", self.name))));
+            return Err(crate::Error::validate(Message(format!("{}{at}: {error}", self.name))));
         }
         Ok(())
     }
@@ -165,7 +165,7 @@ impl Schema for Shipped {
         self.id
     }
 
-    fn validate(&self, value: &Value) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    fn validate(&self, value: &Value) -> Result<(), crate::Error> {
         let compiled = self.validator.get_or_init(|| {
             let document = documents()
                 .get(self.id)
@@ -174,7 +174,7 @@ impl Schema for Shipped {
         });
 
         match compiled {
-            Err(problem) => Err(Box::new(Message(problem.clone()))),
+            Err(problem) => Err(crate::Error::Schema(problem.clone())),
             Ok(validator) => {
                 if let Err(error) = validator.validate(value) {
                     let path = error.instance_path().to_string();
@@ -183,7 +183,7 @@ impl Schema for Shipped {
                     } else {
                         format!(" at '{path}'")
                     };
-                    return Err(Box::new(Message(format!("{}{at}: {error}", self.id))));
+                    return Err(crate::Error::validate(Message(format!("{}{at}: {error}", self.id))));
                 }
                 Ok(())
             }

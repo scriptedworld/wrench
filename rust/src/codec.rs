@@ -21,8 +21,8 @@ const INDENT: usize = 2;
 
 /// A format, knowing nothing about where the bytes came from.
 pub trait Codec {
-    fn decode(&self, data: &[u8]) -> Result<Value, Box<dyn std::error::Error + Send + Sync>>;
-    fn encode(&self, value: &Value) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>;
+    fn decode(&self, data: &[u8]) -> Result<Value, crate::Error>;
+    fn encode(&self, value: &Value) -> Result<Vec<u8>, crate::Error>;
 }
 
 /// The YAML codec that ships.
@@ -32,19 +32,19 @@ pub struct YamlCodec;
 pub const YAML: YamlCodec = YamlCodec;
 
 impl Codec for YamlCodec {
-    fn decode(&self, data: &[u8]) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-        let text = std::str::from_utf8(data)?;
-        let documents = YamlLoader::load_from_str(text)?;
+    fn decode(&self, data: &[u8]) -> Result<Value, crate::Error> {
+        let text = std::str::from_utf8(data).map_err(crate::Error::parse)?;
+        let documents = YamlLoader::load_from_str(text).map_err(crate::Error::parse)?;
         match documents.len() {
             0 => Ok(Value::Null),
             1 => Ok(normalise(&documents[0])?),
-            n => Err(Box::new(Message(format!(
+            n => Err(crate::Error::parse(Message(format!(
                 "{n} documents in one file, want exactly one"
             )))),
         }
     }
 
-    fn encode(&self, value: &Value) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+    fn encode(&self, value: &Value) -> Result<Vec<u8>, crate::Error> {
         Ok(canonical(value, 0)?.into_bytes())
     }
 }
@@ -54,7 +54,7 @@ impl Codec for YamlCodec {
 /// FR-2.9: maps, lists and JSON scalars, and nothing else. A mapping key that is
 /// not a string has no JSON equivalent and is refused rather than coerced,
 /// because coercing invents a document nobody wrote.
-fn normalise(node: &Yaml) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+fn normalise(node: &Yaml) -> Result<Value, crate::Error> {
     Ok(match node {
         Yaml::Null | Yaml::BadValue => Value::Null,
         Yaml::Boolean(b) => Value::Bool(*b),
@@ -72,42 +72,41 @@ fn normalise(node: &Yaml) -> Result<Value, Box<dyn std::error::Error + Send + Sy
             let mut out = Map::new();
             for (key, item) in pairs {
                 let name = key.as_str().ok_or_else(|| {
-                    Message(format!("mapping key {key:?} is not a string"))
+                    crate::Error::parse(Message(format!("mapping key {key:?} is not a string")))
                 })?;
                 out.insert(name.to_string(), normalise(item)?);
             }
             Value::Object(out)
         }
         Yaml::Alias(_) => {
-            return Err(Box::new(Message(
-                "an alias has no JSON equivalent and is refused rather than expanded".into(),
+            return Err(crate::Error::parse(Message(
+                "an alias has no JSON equivalent and is refused rather than expanded".to_string(),
             )))
         }
     })
 }
 
 /// A YAML real, refused where JSON has no way to say it.
-fn real(text: &str) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-    let parsed: f64 = text.parse()?;
+fn real(text: &str) -> Result<Value, crate::Error> {
+    let parsed: f64 = text.parse().map_err(crate::Error::parse)?;
     // NaN and the infinities are refused: YAML can spell them and JSON Schema
     // cannot represent them, so a file carrying one is a file no consumer in
     // this ecosystem can validate.
     serde_json::Number::from_f64(parsed)
         .map(Value::Number)
         .ok_or_else(|| {
-            Box::new(Message(format!("cannot represent {text} in canonical form")))
-                as Box<dyn std::error::Error + Send + Sync>
+            crate::Error::parse(Message(format!("cannot represent {text} in canonical form")))
         })
 }
 
 /// Where in the structure a failure happened, so a caller can find the value.
 /// The Go and Python packs word it identically; a message that differs by pack
 /// is one a consumer cannot be told to look for.
-fn at(where_: String, error: Box<dyn std::error::Error + Send + Sync>) -> Box<dyn std::error::Error + Send + Sync> {
-    Box::new(Message(format!("{where_}: {error}")))
+fn at(where_: String, error: crate::Error) -> crate::Error {
+    crate::Error::encode(Message(format!("{where_}: {error}")))
 }
 
-fn canonical(value: &Value, depth: usize) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+fn canonical(value: &Value, depth: usize) -> Result<String, crate::Error> {
     let pad = " ".repeat(INDENT * depth);
 
     Ok(match value {
@@ -212,7 +211,7 @@ fn nested(value: &Value) -> bool {
     }
 }
 
-fn inline(value: &Value) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+fn inline(value: &Value) -> Result<String, crate::Error> {
     Ok(match value {
         Value::Object(_) => "{}".to_string(),
         Value::Array(_) => "[]".to_string(),
@@ -220,7 +219,7 @@ fn inline(value: &Value) -> Result<String, Box<dyn std::error::Error + Send + Sy
     })
 }
 
-fn scalar(value: &Value) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+fn scalar(value: &Value) -> Result<String, crate::Error> {
     Ok(match value {
         Value::Null => "null".to_string(),
         Value::Bool(true) => "true".to_string(),
@@ -237,7 +236,7 @@ fn scalar(value: &Value) -> Result<String, Box<dyn std::error::Error + Send + Sy
         }
         Value::String(s) => format!("\"{}\"", escape(s)),
         other => {
-            return Err(Box::new(Message(format!(
+            return Err(crate::Error::encode(Message(format!(
                 "cannot write {other} in canonical form"
             ))))
         }
