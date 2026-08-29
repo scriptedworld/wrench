@@ -20,10 +20,32 @@ import contextlib
 import os
 import tempfile
 from pathlib import Path
+from typing import Protocol
 
 # What a written file ends up with. mkstemp makes a file only its owner can
 # read, which is not what evidence meant to be handed around should carry.
 FILE_MODE = 0o644
+
+
+class Reader(Protocol):
+    """What a load requires of its IO.
+
+    A reader is handed the path and not an open handle or the bytes, so
+    substituting one in a test replaces the whole IO boundary rather than only
+    the parse. FR-2.5a.
+    """
+
+    def read(self, path: str) -> bytes:
+        """The whole contents of the named file."""
+        ...
+
+
+class Writer(Protocol):
+    """What a save requires of its IO."""
+
+    def write(self, path: str, data: bytes) -> None:
+        """Put the whole contents of the named file in place."""
+        ...
 
 
 class LocalFileIO:

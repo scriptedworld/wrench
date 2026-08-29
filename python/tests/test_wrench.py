@@ -323,7 +323,11 @@ def test_every_shipped_schema_is_exported():
         assert document.get("$id"), f"{path.name} declares no $id"
         declared[document["$id"]] = path.name
 
-    exported = {schema.name: name for name in wrench.__all__ if isinstance(schema := getattr(wrench, name), wrench.Schema)}
+    exported = {}
+    for name in wrench.__all__:
+        candidate = getattr(wrench, name)
+        if isinstance(candidate, wrench.Schema):
+            exported[candidate.name] = name
 
     for identifier, filename in declared.items():
         assert identifier in exported, f"{filename} declares {identifier} and this pack exports no schema for it"
@@ -810,11 +814,14 @@ def test_codec_and_io_are_independent():
     # change to the two calls, and adding two was not: the calls above are the
     # ones they were before FR-2.7 was restated.
     assert isinstance(wrench.YAML, wrench.YAMLCodec)
-    assert sorted(n for n in wrench.__all__ if n.endswith("Codec")) == [
+    # `Codec` is the seam the three implement, which Go and Rust also export,
+    # so it is excluded here rather than counted as a fourth shipped format.
+    assert sorted(n for n in wrench.__all__ if n.endswith("Codec") and n != "Codec") == [
         "JSONCodec",
         "TOMLCodec",
         "YAMLCodec",
     ]
+    assert {"Codec", "Reader", "Writer"} <= set(wrench.__all__), "a seam the other packs name is not exported"
 
 
 # COVERS: FR-5.2 | property

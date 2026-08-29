@@ -22,7 +22,7 @@
 
 version: 1.0.0
 
-requires: [go, gofmt, python3, jq, deno, bolt]
+requires: [go, gofmt, python3, jq, deno, bolt, mypy]
 
 definitions:
   # A DIRECTORY, one file per requirement, nested by category. Both checkers
@@ -165,6 +165,18 @@ tasks:
   - name: suppressions-everywhere
     description: no suppression pragma in any language that SUPPRESSIONS misses
     command: python3 {config_dir}/bin/no-unregistered-suppression.py
+
+  - name: consumer-types
+    description: the pack is annotated under --strict and a consumer of the install resolves it
+    # py.typed asserts that a consumer type-checking its own code gets types
+    # from wrench. The marker landed while the public API carried no
+    # annotations, so the pack asserted something it did not meet and a strict
+    # consumer traded `cannot find wrench` for `wrench is untyped in 22 places`.
+    #
+    # Two halves, because either alone passes in that state. The checker's own
+    # docstring carries why the consumer half has to run against an install
+    # rather than against the source tree.
+    command: python3 {config_dir}/bin/check-consumer-types.py
 
   - name: shipped-schemas-are-current
     description: the Go and Python packs carry byte for byte what schemas/ holds

@@ -73,7 +73,7 @@ def _external_refs_allowed() -> bool:
 
 
 @functools.cache
-def _shipped_documents() -> dict[str, dict]:
+def _shipped_documents() -> dict[str, dict[str, Any]]:
     """Every shipped schema, keyed by the `$id` it declares.
 
     `_shipped.py` is generated from the directory by `bin/generate-shipped.py`,
@@ -81,7 +81,7 @@ def _shipped_documents() -> dict[str, dict]:
     edited. Carrying the text is what lets the pack resolve its schemas without
     knowing where it was installed.
     """
-    documents: dict[str, dict] = {}
+    documents: dict[str, dict[str, Any]] = {}
     for name, text in SHIPPED.items():
         document = json.loads(text)
         declared = document.get("$id")
@@ -109,7 +109,7 @@ class Schema:
     def __init__(
         self,
         name: str,
-        document: dict,
+        document: dict[str, Any],
         registry: referencing.Registry | None = None,
     ) -> None:
         """Hold the document and defer compiling it.
@@ -197,7 +197,7 @@ class _Shipped(Schema):
         super().validate(value)
 
 
-def compile_schema(name: str, document: str | dict) -> Schema:
+def compile_schema(name: str, document: str | dict[str, Any]) -> Schema:
     """Turn a JSON Schema document into a Schema.
 
     The shipped set are not special: anything in the ecosystem can attach a

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import datetime
 import tomllib
+from typing import TypeGuard
 
 from wrench.codec import DELETE, FIRST_PRINTABLE, _normalise
 from wrench.errors import EncodeError, ParseError, wrapping
@@ -84,7 +85,7 @@ def _refuse_null(value: object, where: str) -> None:
             _refuse_null(item, f"{where}[{index}]")
 
 
-def _table(value: dict, path: list[str]) -> list[str]:
+def _table(value: dict[str, object], path: list[str]) -> list[str]:
     """One table: its scalars, then its sub-tables, each sorted.
 
     Scalars first because TOML binds a bare key to the most recent `[header]`,
@@ -104,29 +105,41 @@ def _table(value: dict, path: list[str]) -> list[str]:
             out.append(f"{_key(name)} = {_inline(item)}\n")
 
     for name in sections:
-        item = value[name]
-        deeper = [*path, name]
-        if isinstance(item, dict):
-            out.append("\n")
-            out.extend(_table(item, deeper))
-            continue
-        # An array of tables is repeated `[[path]]` sections. TOML has no inline
-        # form for one, so this is the only spelling available rather than a
-        # choice between two.
-        header = ".".join(_key(part) for part in deeper)
-        for entry in item:
-            out.append(f"\n[[{header}]]\n")
-            out.extend(_table(entry, [])[0:])
+        out.extend(_section(value[name], [*path, name]))
     return out
 
 
-def _is_table_array(value: object) -> bool:
+def _section(item: object, path: list[str]) -> list[str]:
+    """One sub-table or one array of tables, under `path`.
+
+    Split out from `_table` so each holds one shape. An array of tables is
+    repeated `[[path]]` sections, TOML having no inline form for one, so that is
+    the only spelling available rather than a choice between two.
+    """
+    if isinstance(item, dict):
+        return ["\n", *_table(item, path)]
+
+    if not _is_table_array(item):
+        return []
+
+    header = ".".join(_key(part) for part in path)
+    out: list[str] = []
+    for entry in item:
+        out.append(f"\n[[{header}]]\n")
+        out.extend(_table(entry, []))
+    return out
+
+
+def _is_table_array(value: object) -> TypeGuard[list[dict[str, object]]]:
     """A non-empty list whose every item is a table.
 
     Empty stays inline as `[]`, because an empty array of tables and an empty
     array of anything else are the same document and `[]` is the shorter of the
     two spellings. A mixed list is not a table array and is refused by
     `_inline`, which is where the message about it belongs.
+
+    A TypeGuard and not a bool, so the emitter's caller gets the narrowing this
+    already establishes instead of restating it.
     """
     return bool(value) and isinstance(value, list) and all(isinstance(i, dict) for i in value)
 

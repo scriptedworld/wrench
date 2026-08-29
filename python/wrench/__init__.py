@@ -22,7 +22,9 @@ spells things.
 
 from __future__ import annotations
 
-from wrench.codec import YAML, YAMLCodec
+from typing import Any
+
+from wrench.codec import YAML, Codec, YAMLCodec
 from wrench.errors import (
     EncodeError,
     Error,
@@ -34,7 +36,7 @@ from wrench.errors import (
     WriteError,
 )
 from wrench.json_codec import JSON, JSONCodec
-from wrench.localfile import LOCAL_FILE, LocalFileIO
+from wrench.localfile import LOCAL_FILE, LocalFileIO, Reader, Writer
 from wrench.schema import (
     DEFINITIONS_SCHEMA,
     ENVELOPE_SCHEMA,
@@ -54,18 +56,21 @@ __all__ = [
     "MANIFEST_SCHEMA",
     "TOML",
     "YAML",
+    "Codec",
     "EncodeError",
     "Error",
     "JSONCodec",
     "LocalFileIO",
     "ParseError",
     "ReadError",
+    "Reader",
     "Schema",
     "SchemaError",
     "TOMLCodec",
     "UsageError",
     "ValidationError",
     "WriteError",
+    "Writer",
     "YAMLCodec",
     "compile_schema",
     "load_formatted_file",
@@ -79,7 +84,7 @@ __all__ = [
 ]
 
 
-def load_formatted_file(path, schema, codec, reader):
+def load_formatted_file(path: str, schema: Schema, codec: Codec, reader: Reader) -> Any:
     """Read `path` through `reader`, decode it with `codec`, and validate the
     result against `schema`.
 
@@ -118,7 +123,7 @@ def load_formatted_file(path, schema, codec, reader):
     return value
 
 
-def save_formatted_file(data, path, schema, codec, writer):
+def save_formatted_file(data: Any, path: str, schema: Schema, codec: Codec, writer: Writer) -> None:
     """Validate `data` against `schema`, encode it with `codec` in canonical
     form, and write it to `path` through `writer`.
 
@@ -165,27 +170,27 @@ def save_formatted_file(data, path, schema, codec, writer):
 # change how it is read. FR-2.2 exists to remove exactly that implicitness.
 
 
-def load_yaml_file(path, schema, reader):
+def load_yaml_file(path: str, schema: Schema, reader: Reader) -> Any:
     """Load a YAML file, validated against `schema`."""
     return load_formatted_file(path, schema, YAML, reader)
 
 
-def save_yaml_file(data, path, schema, writer):
+def save_yaml_file(data: Any, path: str, schema: Schema, writer: Writer) -> None:
     """Save a structure as canonical YAML, validated against `schema`."""
     save_formatted_file(data, path, schema, YAML, writer)
 
 
-def load_json_file(path, schema, reader):
+def load_json_file(path: str, schema: Schema, reader: Reader) -> Any:
     """Load a JSON file, validated against `schema`."""
     return load_formatted_file(path, schema, JSON, reader)
 
 
-def save_json_file(data, path, schema, writer):
+def save_json_file(data: Any, path: str, schema: Schema, writer: Writer) -> None:
     """Save a structure as canonical JSON, validated against `schema`."""
     save_formatted_file(data, path, schema, JSON, writer)
 
 
-def load_toml_file(path, schema, reader):
+def load_toml_file(path: str, schema: Schema, reader: Reader) -> Any:
     """Load a TOML file, validated against `schema`.
 
     A native date, time or datetime decodes to its ISO 8601 string, which is what
@@ -194,7 +199,7 @@ def load_toml_file(path, schema, reader):
     return load_formatted_file(path, schema, TOML, reader)
 
 
-def save_toml_file(data, path, schema, writer):
+def save_toml_file(data: Any, path: str, schema: Schema, writer: Writer) -> None:
     """Save a structure as canonical TOML, validated against `schema`.
 
     Refuses a structure containing null, which TOML cannot spell, and refuses one
@@ -203,10 +208,15 @@ def save_toml_file(data, path, schema, writer):
     save_formatted_file(data, path, schema, TOML, writer)
 
 
-def _require(schema, codec, io, io_name: str) -> None:
+def _require(schema: object, codec: object, io: object, io_name: str) -> None:
     """The signature compels a schema. None is the one way round that in a
     language with no compile-time check, and it is refused here so the
-    guarantee holds rather than being a convention."""
+    guarantee holds rather than being a convention.
+
+    Typed as `object` because the whole point is to receive what the annotations
+    say cannot arrive. Rust needs no equivalent: there the same call does not
+    compile, which is why it is the one pack that cannot raise `usage`.
+    """
     if schema is None:
         raise UsageError(None, "no schema given")
     if codec is None:

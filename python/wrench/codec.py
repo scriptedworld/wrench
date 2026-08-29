@@ -16,6 +16,7 @@ ambiguous rather than by what the value is.
 from __future__ import annotations
 
 import datetime
+from typing import Any, Protocol
 
 import yaml
 
@@ -23,6 +24,27 @@ from wrench.errors import EncodeError, ParseError, wrapping
 from wrench.float_text import canonical_float_text
 
 INDENT = 2
+
+
+class Codec(Protocol):
+    """What the two calls require of a format.
+
+    Named here so a consumer can annotate against the seam rather than against
+    one of the three shipped codecs, which is what the Go and Rust packs give
+    with their `Codec` interface and trait.
+
+    `Any` and not `object` for the value: a decoded document is indexed by
+    whatever reads it, and `object` would make every consumer cast. The Go pack
+    spells the same choice `any`.
+    """
+
+    def decode(self, data: bytes) -> Any:
+        """Bytes into maps, lists and JSON scalars."""
+        ...
+
+    def encode(self, value: Any) -> bytes:
+        """A structure into canonical bytes."""
+        ...
 
 
 class YAMLCodec:
@@ -117,7 +139,7 @@ def _spans_lines(value: object) -> bool:
     return isinstance(value, (dict, list)) and bool(value)
 
 
-def _mapping(value: dict, depth: int, pad: str) -> str:
+def _mapping(value: dict[str, object], depth: int, pad: str) -> str:
     """A mapping, one key to a line and keys sorted.
 
     Sorted because two producers emitting the same structure must emit the same
@@ -153,7 +175,7 @@ def _key(name: object) -> str:
     return _scalar(name)
 
 
-def _sequence(value: list, depth: int, pad: str) -> str:
+def _sequence(value: list[object], depth: int, pad: str) -> str:
     """A sequence, one entry to a dash, in the order it was given."""
     if not value:
         return pad + "[]\n"

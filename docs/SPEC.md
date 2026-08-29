@@ -264,6 +264,7 @@ before it is symmetrical with its siblings.
 | Core calls | `LoadFormattedFile` | `load_formatted_file` | `load_formatted_file` |
 | Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum |
 | Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants |
+| Reading the kind | `Step()` method | `step` property | `step()` method |
 | Schemas reach the pack by | generated `shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` |
 | Validator | santhosh-tekuri/jsonschema | `jsonschema` | `jsonschema` crate |
 
