@@ -44,10 +44,14 @@ def main() -> int:
     live = sorted(p for p in requirements.rglob("FR-*.md") if ".retired" not in p.name)
 
     checker = root / "bin" / "test-traceability.py"
-    # No pragma here. bandit runs at base python/ and does not scan bin/, so a
-    # nosec would suppress nothing while going unregistered in SUPPRESSIONS,
-    # which is the shape hard rule 4 exists to prevent. If the scan ever widens,
-    # the finding surfaces for a person to answer rather than being pre-empted.
+    # No pragma here. bandit runs at base python/ and does not scan bin/, so one
+    # would suppress nothing while going unregistered in SUPPRESSIONS, which is
+    # the shape hard rule 4 exists to prevent. If the scan ever widens, the
+    # finding surfaces for a person to answer rather than being pre-empted.
+    #
+    # KEEP THE SPELLING OFF THE START OF A COMMENT LINE. The register reads a
+    # line opening with the pragma as a bare one silencing everything, and it
+    # cannot tell prose from a directive. Caught here 2026-08-29 by the hook.
     run = subprocess.run(
         [sys.executable, str(checker), "--requirements", str(requirements), str(root)],
         capture_output=True,
