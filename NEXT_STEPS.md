@@ -10,7 +10,8 @@ Open questions and the context behind them. Sized work is in
                  committed to writing the key.
     schemas/50   the unanimity check, now that the shape is decided.
     parity/40    numbers agree on range and type, mechanism first.
-    prose-cleanup/10   71 markdown files, plus source comments and task files.
+    prose-cleanup/10   70 markdown files, plus source comments and task files.
+
 
 **`schemas/40` is the largest and it changes the error contract in three
 packs.** A caller and a document disagreeing about what a file is fits none of
@@ -28,11 +29,13 @@ while specifying; do not let it default.
 
 ## Blocked
 
-    gate/05    the Go pack under go/. The embed problem is solved; the move
-               waits on something being able to use the symmetry.
-    gate/10    a composite jig. Its premise went with nested jigs.
+    gate/05      the Go pack under go/. The embed problem is solved; the move
+                 waits on something being able to use the symmetry.
+    gate/10      a composite jig. Its premise went with nested jigs.
+    schemas/60   drop the retired jig task fields. Dropping them makes bolt
+                 refuse the jig that runs wrench's own gate.
 
-Both wait on the `bolt-result` adapter, or on `~/bin/bolt` moving to the Rust
+All three wait on the `bolt-result` adapter, or on `~/bin/bolt` moving to the Rust
 build and `bolt.go` being retired.
 
 ## Not yet started, and each is somebody else's to settle first
@@ -62,21 +65,13 @@ qwark left its Go comments alone on the opposite reading.
 
 ## The inbox
 
-Four entries from bolt, none resolved:
+Empty. Four bolt entries were resolved: three acted on, and the fourth promoted
+to `schemas/60` blocked, because dropping the retired jig task fields would make
+bolt refuse the jig that runs wrench's own gate.
 
-    allow-empty-should-be-optional            a rename our user already decided
-    the-envelope-schema-does-not-constrain-evidence
-    the-jig-schema-does-not-carry-time-limit
-    the-jig-task-fields-are-retired
-
-The first is the one piece of ready work in there and it is coupled: toolbox
-holds a second copy of `jig.schema.json` and the two have already drifted over
-this exact field, so renaming one and not the other reproduces the drift.
-
-The last asks whether the schema should drop the five task fields bolt no longer
-reads. Keeping them means the schema accepts a jig bolt will refuse; dropping
-them means an old jig fails with an unexpected-field message rather than one
-saying what replaced it. Neither is obviously right.
+**toolbox holds a second copy of `jig.schema.json` and it is now out of step**,
+since `allow-empty` became `optional` here. That field has already caused this
+drift once. They have been told.
 
 ## Standing hazards
 
