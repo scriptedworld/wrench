@@ -2,7 +2,7 @@
 
 ## What happened
 
-FACT 2026-08-27. `bolt wrench-quality .` ran for the first time and reported
+On 2026-08-27 `bolt wrench-quality .` ran for the first time and reported
 `traceability` failing. The same command had been run by hand many times that day
 and every time it was reported as passing.
 
@@ -62,7 +62,7 @@ direction.
 
 ## The same shape, a day later, about code rather than a check
 
-FACT 2026-08-27. Handing the Rust pack to bolt, I warned that it refused a
+On 2026-08-27, handing the Rust pack to bolt, I warned that it refused a
 non-string mapping key at the **parse** step where Go and Python refused during
 **normalisation**, and asked bolt to reconcile the difference because its FR-6.11
 matches on that word. I put the same warning into the follow-on task.

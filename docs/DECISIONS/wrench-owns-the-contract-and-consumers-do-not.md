@@ -20,7 +20,7 @@ tested together have to agree.
 
 ## What it looks like in practice, measured
 
-**2026-08-26.** Two commits changed wrench's shipped schemas and were written by
+Two commits changed wrench's shipped schemas and were written by
 the session working in bolt, landing Go-only and leaving the Python pack broken on
 `main`. That is precisely the failure this decision names: a consumer changing the
 contract to suit itself, with the change reaching only the pack that consumer
@@ -55,7 +55,7 @@ the place it is decided alone.
 
 ## Retired requirement ID
 
-This replaces FR-1.3, retired 2026-08-26. It stated who decides rather than a
+This replaces FR-1.3. It stated who decides rather than a
 property of wrench, so no test could discharge it. The Go test that cited it was
 really testing FR-2.3, that the signature compels a schema and not the right one,
 and now cites that alone.

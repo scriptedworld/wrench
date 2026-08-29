@@ -1,6 +1,6 @@
 # Parity is reached by widening, never by refusing
 
-**Decided 2026-08-28.** Every pack treats the same input the same way and
+Every pack treats the same input the same way and
 produces the same output. Where they do not, the fix is to teach the laggards,
 and **never** to narrow what wrench accepts so that the packs agree by handling
 less.

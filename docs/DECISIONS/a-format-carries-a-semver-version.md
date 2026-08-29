@@ -1,7 +1,7 @@
 # A format carries a semver version, and a major gets its own schema file
 
 Answers `clank/tasks/wrench/schemas/10-is-the-envelope-schema-versioned`, which
-was deferred on 2026-08-26 and settled on 2026-08-27.
+was deferred once and is now settled.
 
 ## What is built now
 
@@ -34,8 +34,8 @@ shape of a key and every key is a placeholder name. Reserving `version` there
 means a jig can never have a `{version}` placeholder, which is a real cost the
 other three formats do not pay.
 
-Put to bolt, which owns what a definitions file means. **Answered no on
-2026-08-27, and the reasoning is better than the reasoning for asking.**
+Put to bolt, which owns what a definitions file means. **Answered no, and the
+reasoning is better than the reasoning for asking.**
 
 **definitions is the one shipped schema whose keys are entirely a user
 namespace.** The envelope, jig and manifest all have named properties, so

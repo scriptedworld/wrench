@@ -10,7 +10,7 @@ and `clank/inbox/wrench/python-library-runs-before-pip-exists/`, an inbox entry
 that was resolved and therefore deleted. **The path is kept because it names
 where a source came from, not where to find it now**; what it established lives
 in `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`, and its
-premise was later disproven there. Checked 2026-08-28: the entry is gone, as a
+premise was later disproven there. The entry is gone, as a
 resolved one should be.
 
 Those rows have left bolt, which now states only its own use of the contract.
@@ -71,7 +71,6 @@ open and is now just the house shape.
 
 **Read the exit status, not the summary.** That checker prints a count and exits
 non-zero when a settled row has no test, and this contract stood in that state
-from before 2026-08-26 until 2026-08-27 while the printed line was being quoted
-as a pass. The rows that caused it were design notes and a platform note; each
+for over a day while the printed line was being quoted as a pass. The rows that caused it were design notes and a platform note; each
 was retired to `docs/DECISIONS/` or struck once its purpose had gone, never
 excluded.

@@ -35,5 +35,5 @@ declared cases, not from both calling the same code.
 
 ## Retired requirement IDs
 
-This replaces FR-5.1 and FR-5.1a, retired 2026-08-26. They stated the reasoning
+This replaces FR-5.1 and FR-5.1a. They stated the reasoning
 above as requirements, and no test could ever have discharged them.

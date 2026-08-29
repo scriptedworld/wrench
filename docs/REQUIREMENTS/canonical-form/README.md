@@ -4,7 +4,7 @@
 Every pack covers the row for `property`: all three emit canonical form and are
 held to the same fixtures. Its `edge` and `negative` cases test refusing a value
 that has no canonical form, and in Rust no such value can be constructed.
-Measured 2026-08-27: `serde_json::Number::from_f64` returns `None` for NaN and
+`serde_json::Number::from_f64` returns `None` for NaN and
 for both infinities, and every one of `Value`'s six variants encodes. Go reaches
 the case with a channel under `any`, and Python with `float("nan")`.
 

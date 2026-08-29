@@ -1,6 +1,6 @@
 # An installed check is not a running check
 
-2026-08-29. A pre-commit hook was written, made executable, and symlinked into
+A pre-commit hook was written, made executable, and symlinked into
 `.git/hooks/pre-commit`. Every one of those steps succeeded. The hook never ran,
 and the only reason anybody found out was that it was asked to refuse something.
 

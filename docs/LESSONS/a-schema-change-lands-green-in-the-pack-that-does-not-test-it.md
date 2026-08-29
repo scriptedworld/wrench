@@ -2,7 +2,7 @@
 
 ## What happened
 
-FACT 2026-08-26. Two commits changed the shipped schemas and touched Go only.
+Two commits changed the shipped schemas and touched Go only.
 
     bd62361  a schema for definitions, shared by the jig that carries them
     9b3700f  a manifest variable says which layer supplied it

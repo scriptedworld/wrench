@@ -67,7 +67,7 @@ consumer are a real check of this tree, because both recompile. **Running a
 prebuilt binary is a check of whenever it was last built**, and it will report
 your change as absent or the old shape as still valid.
 
-FACT 2026-08-26: this cost bolt ten minutes twice in one day. A binary built
+This cost bolt ten minutes twice in one day. A binary built
 before `cdef684` reported `needs-repository-root` as accepted on a jig task,
 which looked like wrench's claim was wrong. It was a stale binary.
 

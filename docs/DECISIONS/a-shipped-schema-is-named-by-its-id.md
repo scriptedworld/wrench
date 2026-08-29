@@ -36,7 +36,7 @@ itself, so a refusal can only have come from the referenced schema.
 A pack discovers the shipped schemas by reading `schemas/`, not from a list of
 filenames kept in its source.
 
-FACT 2026-08-26: this is not a style preference. The Python pack named three
+This is not a style preference. The Python pack named three
 files in `schema.py` while Go read the directory. A fourth schema was added, Go
 picked it up and Python did not, and the divergence was invisible until something
 validated a document that used it. Reading the directory removes the step where

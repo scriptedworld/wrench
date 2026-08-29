@@ -1,7 +1,7 @@
 # A check that answers a weaker question than the one it is named for
 
 The name is the bolt session's, arrived at after six instances turned up across
-three repositories on 2026-08-28 and 29. **In every one the check ran, reported
+three repositories over two days. **In every one the check ran, reported
 success, and had not looked at the thing.**
 
 ## The six

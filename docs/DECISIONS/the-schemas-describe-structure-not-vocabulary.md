@@ -5,7 +5,7 @@ what types they take, what is required, how they nest. It does not enumerate the
 **values** a producer may put in an open string field, and it does not carry a
 list of the values in use.
 
-Asked twice on 2026-08-28, by two sessions, about two different fields. The
+Asked twice, by two sessions, about two different fields. The
 answer was the same both times, so it is written here rather than re-derived a
 third time.
 

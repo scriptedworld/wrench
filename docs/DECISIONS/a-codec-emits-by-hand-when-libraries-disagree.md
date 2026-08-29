@@ -9,7 +9,7 @@ Where two disagree, write the emitter.**
 
 ## What was measured
 
-FACT 2026-08-28. The same structure, `{"b": 1, "a": {"z": [1, 2], "y": "x"}}`,
+The same structure, `{"b": 1, "a": {"z": [1, 2], "y": "x"}}`,
 through each language's established TOML writer:
 
     tomli_w 1.2.0            z = [\n    1,\n    2,\n]   and no indent under [a]

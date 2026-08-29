@@ -2,7 +2,7 @@
 
 Four schemas ship. Nothing said why those four, or what a fifth would have to be,
 until silo asked whether a resolved execution graph would fit beside them on
-2026-08-27. Answering meant reconstructing a criterion that had never been
+Answering meant reconstructing a criterion that had never been
 written down, which is the sort of thing that should not live in one session's
 head.
 

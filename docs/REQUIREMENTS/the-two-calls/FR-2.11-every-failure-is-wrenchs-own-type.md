@@ -20,7 +20,7 @@ time because both let an interface or a name be nil, which is FR-2.3's guarantee
 holding in the two languages that need it enforced.
 
 **The family is one catch, and this is the requirement's teeth.** `wrench.Error`
-in Go and Python, `wrench::Error` in Rust — one name in all three. Before it,
+in Go and Python, `wrench::Error` in Rust, one name in all three. Before it,
 Go's argument checks were plain `errors.New` sentinels and Python's were bare
 `ValueError`, so a consumer catching "any wrench failure" missed exactly the
 failures that mean it called wrench wrong. Go's sentinels stay sentinels, so
@@ -38,7 +38,7 @@ consumer could not tell "your schema is broken" from "your file is wrong".
 the other a token a consumer compares against, and bolt writes the token into a
 reason's `kind`.
 
-**The cause is always reachable** — Python `__cause__`, Go `errors.Unwrap`, Rust
+**The cause is always reachable** through Python `__cause__`, Go `errors.Unwrap`, Rust
 `source()`. A wrap that discarded it would be worse than the leak it replaced,
 because the leak at least says what went wrong.
 

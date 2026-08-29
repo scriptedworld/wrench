@@ -2,7 +2,7 @@
 
 ## What happened
 
-2026-08-27. I filed a finding about language startup cost with a `repro.sh` that
+I filed a finding about language startup cost with a `repro.sh` that
 regenerated its own figures. The script wrote its two compiled sources as `_p.go`
 and `_p.rs`.
 
