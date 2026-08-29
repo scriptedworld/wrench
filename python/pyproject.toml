@@ -35,6 +35,18 @@ dependencies = [
 [tool.setuptools]
 packages = ["wrench"]
 
+# PEP 561. The pack is annotated and, without this marker, none of it is visible
+# to a consumer's type checker: mypy reports `Cannot find implementation or
+# library stub for module named "wrench"` and stops there. Measured 2026-08-28
+# from skid, which imports wrench in four places and got four errors that were
+# not about skid's code.
+#
+# The marker is an empty file that does nothing locally, which is exactly why it
+# is easy to lose in a packaging change, so `package-data` names it rather than
+# leaving it to be picked up.
+[tool.setuptools.package-data]
+wrench = ["py.typed"]
+
 # Ruff does everything it can; pylint does only what ruff cannot. That split is
 # what the shared jig's header describes and never configured.
 [tool.ruff]
