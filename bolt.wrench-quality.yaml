@@ -31,6 +31,25 @@ definitions:
   # heading whose switch reaches every row below it in the same file.
   requirements: docs/REQUIREMENTS
 
+  # Output and artefact directories, which no analysis task may scan. None of
+  # this is source: `.ephemera` is working files, the rest is build output that
+  # a tool recreates whenever it runs.
+  #
+  # Scanning them turns the gate red for reasons unrelated to the code, and the
+  # message names the artefact rather than the cause. Measured here: a scratch
+  # `.go` file under `.ephemera` fails `go-format`, and a stale `python/build/`
+  # gives mypy a duplicate module and pylint a duplicate-code hit, three red
+  # tasks between them and nothing wrong with the repository.
+  #
+  # Go's own `./...` already skips a directory whose name begins with a dot, so
+  # `go vet` and `go test` need nothing. `gofmt` is a plain file walk and does.
+  #
+  # Every dot-directory, anything named for a cache, and the four output names.
+  # Stated as a class rather than a list of the ones that have bitten, because
+  # the next tool brings its own directory and naming it after the fact means
+  # meeting the failure first.
+  artefacts_regex: (^|/)(\.[^/]+|build|dist|out|target|[^/]*cache[^/]*|[^/]+\.egg-info)/
+
 tasks:
   # ---- the structured files this project exists to define --------------------
 
@@ -98,7 +117,9 @@ tasks:
     # gofmt -l lists unformatted files and exits 0 either way, so its exit status
     # answers "did gofmt run" and never "is this formatted". test -z makes the
     # empty list the success condition.
-    command: test -z "$(gofmt -l .)"
+    # No quotes around the placeholder: bolt shell-quotes a substituted value,
+    # so adding a pair produces '' and sh fails to parse the line.
+    command: test -z "$(gofmt -l . | grep -Ev {artefacts_regex} || true)"
 
   - name: go-vet
     command: go vet ./...
