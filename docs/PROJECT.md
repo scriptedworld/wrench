@@ -96,7 +96,15 @@ confirmed by the bolt session against a freshly built binary.
 
 Measure this against a jig that **passes**. A run that refused for some other
 reason never wrote a verdict, so a second refusal looks like an overwrite and is
-two refusals in a row.
+two refusals in a row. Compare by checksum: both writes land inside one second
+and mtime reports the file unchanged.
+
+Filed at `clank/inbox/bolt.go/a-refusal-overwrites-the-run-it-refused`, which
+also carries a race between two runs starting in the same second. Do not file it
+again. bolt.go gets no agent by our user's ruling, so the fix is the cutover;
+what the entry is for is stopping anybody writing a recipe with a fixed
+`--output-dir` before the symlink moves, since that is the ordinary way to write
+one and it triggers this every run.
 
 **Analysis never scans an output or artefact directory.** The jig defines
 `artefacts_regex` once and the tasks that need it filter with it: every
