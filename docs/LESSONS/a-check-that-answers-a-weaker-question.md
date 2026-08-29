@@ -6,8 +6,10 @@ success, and had not looked at the thing.**
 ## The collection is bolt's, and this file is not it
 
 `~/.projects/bolt/docs/LESSONS/a-check-that-answers-a-weaker-question.md` is the
-authority and grows as instances turn up. **Eleven across four repositories at
-bolt `c908332`, 2026-08-29**, where the list below said six across three.
+authority and grows as instances turn up. **It states its own current count and
+says that a version reporting fewer is not the one being maintained.** Read it
+there; a number repeated here would be a second copy of the thing that already
+drifted once.
 
 That drift is this repository's other lesson happening to this one,
 `a-document-that-restates-another-becomes-the-stale-copy`, in the file least
@@ -15,10 +17,15 @@ likely to be suspected of it. The remedy that lesson gives is the one applied
 here: point at the source, and let what stays be what only this repository can
 say.
 
+**Where the collection should live is open and is silo's**, at
+`clank/inbox/silo/a-cross-repository-lesson-collection-lives-in-one-project/`.
+It spans four repositories, which `CLAUDE.md` layers as silo's tier, and sits in
+a project tree. Nothing here is blocked on the answer.
+
 ## The six this file was written from, 2026-08-28 to 2026-08-29
 
 A dated snapshot, kept because the analysis below is measured against it and not
-against bolt's eleven. **Read bolt's file for the current set.**
+against whatever bolt's holds now. **Read bolt's file for the current set.**
 
     bolt      a summary line labelling the TOTAL execution count with the run's
               verdict, so "failed: 23" was every execution rather than 3 failures
