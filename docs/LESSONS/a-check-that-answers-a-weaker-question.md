@@ -1,10 +1,24 @@
 # A check that answers a weaker question than the one it is named for
 
-The name is the bolt session's, arrived at after six instances turned up across
-three repositories over two days. **In every one the check ran, reported
+The name is the bolt session's. **In every instance the check ran, reported
 success, and had not looked at the thing.**
 
-## The six
+## The collection is bolt's, and this file is not it
+
+`~/.projects/bolt/docs/LESSONS/a-check-that-answers-a-weaker-question.md` is the
+authority and grows as instances turn up. **Eleven across four repositories at
+bolt `c908332`, 2026-08-29**, where the list below said six across three.
+
+That drift is this repository's other lesson happening to this one,
+`a-document-that-restates-another-becomes-the-stale-copy`, in the file least
+likely to be suspected of it. The remedy that lesson gives is the one applied
+here: point at the source, and let what stays be what only this repository can
+say.
+
+## The six this file was written from, 2026-08-28 to 2026-08-29
+
+A dated snapshot, kept because the analysis below is measured against it and not
+against bolt's eleven. **Read bolt's file for the current set.**
 
     bolt      a summary line labelling the TOTAL execution count with the run's
               verdict, so "failed: 23" was every execution rather than 3 failures
@@ -18,6 +32,8 @@ success, and had not looked at the thing.**
               `tail`'s status
     wrench    two writes inside one second compared by mtime, which said
               "unchanged" about a file that had been replaced
+
+The last two are wrench's own and are why this file exists here at all.
 
 ## What makes them one thing
 
@@ -40,9 +56,9 @@ exactly when it matters most.
 ## Why measuring does not save you
 
 This repository's habit is to re-run a claim rather than cite it, and **four of
-the six survived that habit**. Running the wrong binary is re-running. Reading
-through a pipe is measuring. The check fires, and from the inside a check that
-did not happen is indistinguishable from one that passed.
+the six above survived that habit**. Running the wrong binary is re-running.
+Reading through a pipe is measuring. The check fires, and from the inside a
+check that did not happen is indistinguishable from one that passed.
 
 What caught them was a second source that disagreed:
 `docs/LESSONS/vary-one-thing-or-the-measurement-cannot-say-which.md`.
@@ -53,14 +69,19 @@ What caught them was a second source that disagreed:
 answer is the same as when it is present and correct, the check is not doing the
 work its name claims.
 
-That is one question, answerable at the desk, and it finds all six. The two-letter
-requirement row is the cleanest demonstration: add it and remove it, and
-`test-traceability.py` says `41 of 41, exit 0` both times.
+That is one question, answerable at the desk, and it finds all six. The
+two-letter requirement row is the cleanest demonstration: add it and remove it,
+and `test-traceability.py` says `41 of 41, exit 0` both times.
 
 **Then close it by comparison rather than by fixing the instance.**
 `bin/test-requirement-count.py` counts the files on disk and compares them
 against what the checker managed to read, which does not depend on the grammar
 and so survives whatever the next unparseable id turns out to be.
+
+**Where the thing checked is a built artefact, compare bytes and not `mtime`.**
+`cargo build --release && cmp -s target/release/bolt bin/bolt` is bolt's, and
+`cp` sets a fresh `mtime` whatever it copied, which is the same trap as this
+file's own sixth instance reached from the other direction.
 
 `docs/LESSONS/read-the-artifact-not-the-summary-line.md` is this lesson's first
 four instances in wrench alone, written before the class had a name.

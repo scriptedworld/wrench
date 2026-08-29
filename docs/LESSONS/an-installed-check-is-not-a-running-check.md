@@ -28,8 +28,9 @@ evidence of the second.** They look identical from outside: the file is there,
 the permissions are right, the syntax is valid, nothing errors. Every observation
 available short of making it refuse is consistent with both.
 
-`docs/LESSONS/a-check-that-answers-a-weaker-question.md` collects six of these
-across three repositories. Every one of them ran and measured the wrong thing,
+`docs/LESSONS/a-check-that-answers-a-weaker-question.md` names the class, and
+bolt's file of that name is the collection. Every instance ran and measured the
+wrong thing,
 so every one produced output that could be read sceptically. **This one produced
 none**, which is the harder case: scepticism has nothing to bite on, and the
 absence of a complaint is what a passing check looks like.
