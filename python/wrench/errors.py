@@ -75,6 +75,39 @@ class WrenchError(Exception):
     _step = "handling"
 
 
+# NONE OF THESE SUBCLASS ValueError, AND THE TAXONOMY IS WHY.
+#
+# It looks like they should. `ValueError` is documented as "inappropriate
+# argument value (of correct type)", `validate` means the value does not match
+# its schema, and Python's own `json.JSONDecodeError` and
+# `tomllib.TOMLDecodeError` are both `ValueError` subclasses.
+#
+# **But a validation failure is not always about the value.** Measured against
+# `{"count": {"type": "integer", "minimum": 0}}`:
+#
+#     {"count": -1}        -1 is less than the minimum of 0     a VALUE problem
+#     {"count": "three"}   'three' is not of type 'integer'     a TYPE problem
+#
+# The second is `TypeError` by Python's own definition, "inappropriate argument
+# type", and `ValueError` explicitly excludes it with "(of correct type)". So
+# `ValidationError` spans both and is a subclass of neither. Declaring it a
+# `ValueError` would assert that every validation failure is a value-with-correct
+# -type problem, which is false for a whole class of schema keyword.
+#
+# `EncodeError` is the same shape: a NaN has no canonical form because of its
+# value, and an `object()` has none because of its type.
+#
+# **So wrench's six kinds are orthogonal to Python's value/type split**, and a
+# consumer catches `WrenchError` or the kind it means. That is also why
+# `except ValueError` stopped working when the wraps landed: it was never a
+# statement about wrench's contract, only about what one library happened to
+# raise.
+#
+# `read` and `write` are not `OSError` either, and for a related reason: OSError
+# carries an errno and filename contract, and a `Reader` may be a network, a
+# buffer or a test stub rather than an operating system.
+
+
 class ReadError(WrenchError):
     """The file could not be read at all. The reader failed before any question
     of format or conformance arose."""
