@@ -55,8 +55,9 @@ class Error(Exception):
         """Which step failed, as a word a consumer can match on without matching
         the class.
 
-        The three packs return the same six words, and bolt writes one into a
-        reason's `kind`. It is deliberately not `_doing`: that is the gerund the
+        Go and Python return the same seven words and Rust returns six, having
+        no usage step. bolt writes one into a reason's `kind`. It is
+        deliberately not `_doing`: that is the gerund the
         message reads with, "parsing f.yaml", where this is the noun a consumer
         compares against. Rust keeps the same pair apart for the same reason.
         """
@@ -169,7 +170,7 @@ class UsageError(Error):
     and `None` is the one way round that in a language with no compile-time
     check, so it is refused here rather than left as a convention.
 
-    It is a seventh kind beside the six steps because it is not one of them: no
+    Its step word is `usage`, and it is the one that names no step that ran: no
     read was attempted, nothing was parsed, and no schema was consulted. The
     Rust pack cannot raise it at all, since `&dyn Schema` makes the same call
     fail to compile.

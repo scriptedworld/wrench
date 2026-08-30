@@ -7,9 +7,9 @@
 //! puts the IO boundary wholly outside the call.
 //!
 //! ```no_run
-//! use wrench::{load_formatted_file, ENVELOPE_SCHEMA, YAML, LOCAL_FILE};
+//! use wrench::{load_formatted_file, schemas, YAML, LOCAL_FILE};
 //!
-//! let envelope = load_formatted_file("output.yaml", &ENVELOPE_SCHEMA, &YAML, &LOCAL_FILE)?;
+//! let envelope = load_formatted_file("output.yaml", &schemas::ENVELOPE, &YAML, &LOCAL_FILE)?;
 //! # Ok::<(), wrench::Error>(())
 //! ```
 //!
@@ -27,7 +27,7 @@
 //! A caller wanting its own struct writes one line rather than walking maps:
 //!
 //! ```no_run
-//! # use wrench::{load_formatted_file, JIG_SCHEMA, YAML, LOCAL_FILE};
+//! # use wrench::{load_formatted_file, schemas, YAML, LOCAL_FILE};
 //! #[derive(serde::Deserialize)]
 //! struct Jig {
 //!     tasks: Vec<Task>,
@@ -43,7 +43,7 @@
 //!     stop: bool,
 //! }
 //!
-//! let value = load_formatted_file("bolt.q.yaml", &JIG_SCHEMA, &YAML, &LOCAL_FILE)?;
+//! let value = load_formatted_file("bolt.q.yaml", &schemas::JIG, &YAML, &LOCAL_FILE)?;
 //! let jig: Jig = serde_json::from_value(value)?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```

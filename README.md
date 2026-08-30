@@ -17,9 +17,8 @@ them one library instead of three is a property that is tested, not intended.
 
 The same document, through any pack and any codec, produces the same bytes.
 
-That sounds obvious and is not. Standard libraries disagree about how to spell
-ordinary values, quietly, in ways that survive every test until a consumer
-notices:
+Standard libraries disagree about how to spell ordinary values, quietly, in
+ways that survive every test until a consumer notices:
 
 | value | Go | Python | Rust |
 |---|---|---|---|
@@ -43,9 +42,8 @@ escapes it, in each format's own spelling, and no value is refused for carrying
 one.
 
 Parity is reached by widening, never by narrowing. Where the packs disagree, the
-one that handles more is right and the others learn from it. Restricting what
-wrench accepts so the packs agree by handling less is an outcome this project
-treats as a failure.
+one that handles more is right and the others learn from it. Agreement bought by
+accepting less counts here as a failure.
 
 ## The two calls
 
@@ -124,8 +122,7 @@ the same call does not compile there.
 Nothing escapes the family, so one catch reaches every failure wrench can
 produce: `wrench.Error` in Python and Rust, and the `Error` interface in Go. The
 cause is always preserved (Python `__cause__`, Go `errors.Unwrap`, Rust
-`source()`), so a caller who wants the underlying error can still reach it. A
-wrap that discarded it would be worse than a leak.
+`source()`), so a caller who wants the underlying error can still reach it.
 
 Python's errors derive from `Exception` and deliberately not from `ValueError`.
 A validation failure can be a wrong type, which `'three' is not of type
@@ -136,9 +133,8 @@ written as
 
 silently stops catching, and an uncaught validator looks exactly like a passing
 one from anywhere except a test on the refusal path. Catch `wrench.Error`, or a
-specific one such as `wrench.ValidationError`. Found by a consumer whose refusal
-tests went red the moment it landed, and those tests are why it was noticed
-instead of deployed.
+specific one such as `wrench.ValidationError`. A consumer's refusal tests went
+red the moment it landed, which is how it was caught instead of deployed.
 
 ## Three formats
 
@@ -146,13 +142,14 @@ instead of deployed.
     load_json_file  save_json_file
     load_toml_file  save_toml_file
 
+Go spells these `LoadYAMLFile` and `SaveYAMLFile`, the way it spells everything
+else it exports.
+
 The codec is named and never guessed from the file extension, because choosing a
 parser by filename makes behaviour depend on what a file is called.
 
 Every save writes canonical form. Keys are sorted, layout is fixed, and comments
-do not survive a load. That is what the guarantee costs: two producers of the
-same structure emit the same bytes, which is what stops components drifting
-while all of them believe they conform.
+do not survive a load. That is what the guarantee costs.
 
 So wrench is the wrong writer for a file a person edits. A config with comments
 and a deliberate entry order goes in and comes out reordered and stripped. Reach
@@ -160,9 +157,9 @@ for a round-trip-preserving editor there, such as `tomlkit` in Python, and use
 wrench for the read half: decoding and validating against a schema is the larger
 win, and it is where a config file is usually unchecked.
 
-Machine-written files are what canonical form is for. Envelopes, jigs,
-manifests, queue entries. Nobody has typed a note into one, the ordering carries
-no meaning, and byte-identical output between producers is worth having.
+Machine-written files are what canonical form is for: envelopes, jigs,
+manifests, queue entries. Nobody has typed a note into one and the ordering
+carries no meaning.
 
 ## What holds the packs level
 
@@ -173,9 +170,9 @@ is the oracle for another: if they disagree, the fixture is right.
 tested in all of them, and fails when it is not. Divergence is possible but has
 to be declared and reasoned for, not merely allowed to happen.
 
-That check earned itself. It began at seven requirements the Go pack tested
-alone, and a schema change once landed green in Go because the only test of that
-schema lived in the Python suite.
+It began at seven requirements the Go pack tested alone, and a schema change
+once landed green in Go because the only test of that schema lived in the Python
+suite.
 
 A fixture set only proves agreement over the values it holds, which is the
 lesson both defects above taught. Boundary cases are derived from the type

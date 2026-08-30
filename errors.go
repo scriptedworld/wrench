@@ -3,23 +3,24 @@ package wrench
 import "fmt"
 
 // An Error is any failure wrench refuses. Every error this package returns
-// satisfies it, so a consumer can match the family rather than naming six types.
+// satisfies it, so a consumer can match the family instead of naming all seven
+// types.
 //
 // Python spells the same thing as a WrenchError base class and Rust as one enum;
 // Go has neither, so the interface is what gives all three packs the same
-// capability. Without it, "was this wrench's fault" needs six errors.As calls.
+// capability. Without it, "was this wrench's fault" needs seven errors.As calls.
 type Error interface {
 	error
 
 	// Step names which step failed, as a word a consumer can match on without
-	// matching the concrete type. The three packs return the same six words,
-	// and bolt writes one into a reason's kind.
+	// matching the concrete type. Go and Python return the same seven words and
+	// Rust returns six, having no usage step. bolt writes one into a reason's
+	// kind.
 	Step() string
 }
 
-// The six steps, as the words every pack returns. They are the vocabulary a
-// consumer matches on, so they are declared once here rather than spelled at
-// each method.
+// The steps, as the words a pack returns. They are the vocabulary a consumer
+// matches on, so they are declared once here instead of spelled at each method.
 const (
 	StepRead     = "read"
 	StepParse    = "parse"

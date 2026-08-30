@@ -64,7 +64,7 @@ The work itself is not in this repository. `clank/tasks/wrench/` holds it and
 
 The Go pack is at the root and the other two are under their own directories.
 That asymmetry is known: `clank/tasks/wrench/gate/05` holds why the move is
-deferred rather than open.
+deferred, not open.
 
 ## The gate
 
@@ -74,40 +74,32 @@ deferred rather than open.
 whenever the run completed, whatever the tools concluded, and says so in its own
 usage.
 
-**Nor the summary line, which is a third thing and is wrong.** Its last line of
-stdout labels the total execution count with the run's verdict, so `failed: 27`
-and `passed: 27` count the same 27 executions.
-
-**Read the per-task artifacts too**, because a nested run's failure is a level
+**Read the per-task artifacts too**, because a composed run's failure is a level
 down:
 
     grep '^"success"' <output-dir>/result.yaml
     grep -rln 'success": false' <output-dir>/
 
 **Give it a fresh `--output-dir`.** bolt refuses a directory that already holds
-a run, and **the two builds differ in what the refusal costs.**
+a run, and the two builds differ in what the refusal costs. `bolt` preserves the
+earlier verdict, by FR-2.6b and FR-10.7c. `bolt.go` rewrites it: measured
+against a run that passed, `success` went from `true` to `false` and the
+checksum changed with all 28 execution directories still in place, so the
+refusal replaced a real verdict with a record of itself.
 
-The Go build, which is what `bolt` resolves to today and what `bolt.go` always
-names, rewrites the earlier
-`result.yaml` while refusing. Measured against a run that passed: `success` went
-from `true` to `false` and the checksum changed, with all 28 execution
-directories still in place. So the refusal replaces a real verdict with a record
-of itself.
-
-The Rust build preserves it, by FR-2.6b and FR-10.7c and a test named for it,
-confirmed by the bolt session against a freshly built binary.
-
-Measure this against a jig that **passes**. A run that refused for some other
+Measure that against a jig that **passes**. A run that refused for some other
 reason never wrote a verdict, so a second refusal looks like an overwrite and is
 two refusals in a row. Compare by checksum: both writes land inside one second
 and mtime reports the file unchanged.
 
-Filed at `clank/inbox/bolt.go/a-refusal-overwrites-the-run-it-refused`, which
-also carries a race between two runs starting in the same second. Do not file it
-again. bolt.go gets no agent by our user's ruling, so the fix is the cutover;
-what the entry is for is stopping anybody writing a recipe with a fixed
-`--output-dir` before the symlink moves, since that is the ordinary way to write
-one and it triggers this every run.
+`bolt.go` also prints a summary line labelling the total execution count with
+the run's verdict, so `failed: 27` and `passed: 27` count the same 27
+executions. `bolt` prints the result path alone.
+
+Both are filed under `clank/inbox/bolt.go/`, with a race between two runs
+starting in the same second. Do not file them again: bolt.go gets no agent, so
+the cutover was the fix, and the entries stand as the record of a build still
+installed under its own name.
 
 **Analysis never scans an output or artefact directory.** The jig defines
 `artefacts_regex` once and the tasks that need it filter with it: every
@@ -118,7 +110,7 @@ against toolbox.
 
 Two lines are silenced and nothing is mocked. `SUPPRESSIONS` carries both with
 the question asked and the answer given, and `suppressions-everywhere` checks
-the register against every source file rather than only the Python pack. There
+the register against every source file, not only the Python pack. There
 is no `docs/MOCKS/`; that directory is claimed when something needs it.
 
 ### Check which bolt you ran before quoting what bolt does
@@ -131,7 +123,7 @@ name**, so a claim about bolt can say which one it is about:
 
 `bolt` is the Rust build, since `dotfiles 19df074`. `bolt.go` stays installed
 and keeps naming the Go implementation, so a claim about either can still be
-checked rather than remembered.
+checked instead of remembered.
 
 **`bin/bolt` is an installed artefact and nothing rebuilds it.** Change bolt,
 skip the reinstall, and every gate in the estate runs the old binary and passes.
@@ -140,7 +132,7 @@ scale where it costs something.
 
     ls -la ~/bin/bolt ~/bin/bolt.go
 
-**Both builds run this gate, 28 executions each**, measured 2026-08-29. Nested
+**Both builds run this gate, 28 executions each.** Nested
 jigs are retired at bolt `f3304d8` and this jig holds none: `python-common` and
 `python-std` are command tasks whose program is bolt, each giving its child a
 `{work_dir}/child` of its own.
@@ -167,7 +159,7 @@ either order.
 | Ruby | Consumer not yet identified | Not built |
 
 `packs-follow-demand` says what decides when a pack gets written, and it is a
-consumer rather than a library.
+consumer, not a library.
 
 **Bump the pack version in the same commit as a change to its surface.** uv
 resolves from its cache by version, so an unchanged number is a package it
@@ -186,7 +178,7 @@ caution; `a-fixture-set-agrees-about-the-values-somebody-thought-of` carries
 what it cost, and boundary cases are derived from each type instead of from
 imagination.
 
-Divergence between the suites is declared rather than accidental, and the scope
+Divergence between the suites is declared, never accidental, and the scope
 marker on a requirement row is the only place it is declared. A scope may name
 kinds as well as suites, which is what `FR-4.1` needs: every pack covers it for
 `property` and only two can construct its `edge` and `negative` values.
@@ -230,8 +222,8 @@ could.
 
 `clank/tasks/wrench/` is the register and `NEXT_STEPS.md` carries the open
 questions. In summary: the Go and Rust packs have no shared-standard base of
-their own, the Go pack is at the root rather than under `go/`, and the
-documents have not all been swept to the writing standard.
+their own, the Go pack is at the root instead of under `go/`, and the prose
+sweep has had no validator pass, which by its own design cannot be the writer.
 
 There is no git remote, which is the expected state across this ecosystem while
 the history rewrite settles. Re-adding one is not this project's call.
