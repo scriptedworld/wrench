@@ -18,13 +18,20 @@ while never running against anything that could fail. Unclaimed has to be
 distinguishable from checked and correct. Decide it while specifying; do not let
 it default.
 
-**The unanimity check**, once the shape above is decided.
+**The unanimity check.** The shape is settled and the check is unwritten: the
+gate asks every validator wrench binds and requires them to agree, plus at
+least one implementation no pack binds.
+`docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md` has
+why. Measure first whether each binding can validate against the 2020-12
+meta-schema without reaching the network, because the whole shape rests on it
+and none has been asked.
 
-**Numbers agree on range and type**, mechanism first. The range rule is settled
-and the agreement mechanism is not. Go's YAML gives an `int` where its JSON
-gives an `int64`, and `-0` in JSON reads as `-0.0` in Rust and `0` in the other
-two. All three are decode defects and none is caught by a fixture set that feeds
-YAML only.
+**Numbers agree on range and type**, mechanism first. The rules are settled and
+the agreement mechanism is not. FR-4.10 carries the range rule and FR-4.11
+carries `-0`, both landed. Go's YAML still gives an `int` where its JSON and
+TOML give an `int64`, measured 2026-08-30, and that is a decode defect a fixture
+set feeding YAML only cannot catch. Every divergence found so far has been on
+the decode path, which is why the mechanism is the work rather than the rules.
 
 **A cold read of the prose sweep**, which by its own design cannot be the writer.
 
