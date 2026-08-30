@@ -91,15 +91,18 @@ tasks:
     # schemas cannot catch both bindings misreading the specification the same
     # way, and nothing outside wrench had ever read these files.
     #
-    # ajv, in JavaScript. The rule is that the gate's validator must not be a
-    # library any pack binds: Go's santhosh-tekuri and Python's jsonschema are
-    # already ours, and a Rust pack would take boon.
+    # ajv, in JavaScript, which no pack binds. The rule is that a pack and the
+    # gate's independent validator may never bind the same library: Go's
+    # santhosh-tekuri, Python's jsonschema and Rust's jsonschema crate are all
+    # already ours.
     #
-    # ADDING TYPESCRIPT PUTS THIS AT RISK. A TypeScript pack would naturally bind
-    # ajv, and the gate would then be asking one of wrench's own bindings. It has
-    # to move to another implementation before that pack is written, and
-    # @hyperjump/json-schema is the measured alternative. See
-    # clank/tasks/wrench/schemas/50-typescript-binds-the-validator-the-gate-uses.
+    # This is one implementation, and one is not the shape the check ends up.
+    # The gate asks every validator wrench binds and requires them to agree,
+    # plus at least one implementation no pack binds, so unanimity cannot
+    # quietly become unanimity among wrench's own bindings. The rest of that is
+    # unwritten, so ajv is the only implementation asked today. The argument is
+    # in docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md
+    # and the remaining work is clank/tasks/wrench/schemas/50.
     #
     # Run through deno, which is installed and declared, so this needs no global
     # npm install and no package.json in a repository that has no JavaScript.
