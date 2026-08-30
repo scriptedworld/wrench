@@ -3,6 +3,7 @@ package wrench
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"time"
@@ -80,6 +81,21 @@ func normalise(value any) (any, error) {
 	switch v := value.(type) {
 	case time.Time:
 		return v.Format(time.RFC3339), nil
+	case uint64:
+		// THE ONE BAND WHERE GO KEPT AN EXACT INTEGER AND THE OTHER PACKS DID
+		// NOT. go-yaml reaches for uint64 when a positive integer will not fit
+		// int64, so values in (int64max, uint64max] arrived here exact while
+		// anything larger, and anything negative past the boundary, had already
+		// become a float64. Go's own JSON codec widens the whole band.
+		//
+		// Past int64 a number widens to a float in every pack and every codec,
+		// and the widening is visible: 18446744073709551615 comes back spelled
+		// 18446744073709552000.0 rather than as a different exact integer.
+		// docs/DECISIONS/parity-is-reached-by-widening-never-by-refusing.md
+		if v > math.MaxInt64 {
+			return float64(v), nil
+		}
+		return int64(v), nil
 	case map[string]any:
 		return normaliseMap(v)
 	case map[any]any:

@@ -1,0 +1,27 @@
+# Integers on both sides of the int64 boundary, where the packs disagree about
+# the VALUE rather than about its spelling.
+#
+# `floats-never-use-an-exponent` settled how a float is written. This settles
+# which values survive decoding and what type they come back as, measured
+# divergent three ways: Python is exact everywhere because its integers are
+# unbounded, Go is exact in YAML and widens in JSON, Rust is the other way
+# round. A document past int64 therefore means different numbers to different
+# packs, in a way no emitter test could reach.
+#
+# Past int64 a number widens to a float in every pack and every codec, which is
+# what `parity-is-reached-by-widening-never-by-refusing` decides. The widening
+# is deliberately VISIBLE: `9223372036854775808` comes back spelled
+# `9223372036854776000.0`, so a reader sees the precision go rather than
+# receiving a different integer that still looks exact.
+#
+# `uint64_max` and `past_uint64` are one apart and widen to the same float. That
+# is the loss stated as plainly as the fixture set can state it.
+exact_small: 1
+mantissa_edge: 9007199254740993
+within_max: 9223372036854775807
+within_min: -9223372036854775808
+past_max: 9223372036854775808
+past_min: -9223372036854775809
+uint64_max: 18446744073709551615
+past_uint64: 18446744073709551616
+far_past: 1000000000000000000000

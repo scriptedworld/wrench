@@ -69,6 +69,31 @@ class YAMLCodec:
 YAML = YAMLCodec()
 
 
+INT64_MIN = -(2**63)
+INT64_MAX = 2**63 - 1
+
+
+def widen(value: int) -> int | float:
+    """An integer past int64, as the float every pack agrees on.
+
+    PYTHON IS THE PACK THIS COSTS SOMETHING. Its integers are unbounded, so it
+    alone decoded every value exactly and every other pack widened or refused,
+    which meant one document meant different numbers depending on who read it.
+    Go keeps int64 and reaches for uint64 above it; Rust keeps i64 and falls to
+    f64. Neither can be asked to grow, so the agreement is reached by widening.
+
+    THE LOSS IS DELIBERATE AND VISIBLE. 18446744073709551615 comes back spelled
+    18446744073709552000.0, so a reader sees the precision go rather than
+    receiving a different exact integer. Two inputs one apart can land on the
+    same float, which is the plainest statement of the cost this makes.
+
+    docs/DECISIONS/parity-is-reached-by-widening-never-by-refusing.md
+    """
+    if INT64_MIN <= value <= INT64_MAX:
+        return value
+    return float(value)
+
+
 def _normalise(value: object) -> object:
     """What the parser produced, in the shape a JSON Schema validator expects.
 
@@ -89,6 +114,8 @@ def _normalise(value: object) -> object:
     """
     if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
         return value.isoformat()
+    if isinstance(value, int) and not isinstance(value, bool):
+        return widen(value)
     if isinstance(value, dict):
         out = {}
         for key, item in value.items():

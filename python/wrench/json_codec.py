@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import json
 
-from wrench.codec import _bare_scalar
+from wrench.codec import _bare_scalar, _normalise
 from wrench.errors import EncodeError, ParseError, wrapping
 
 INDENT = 2
@@ -43,9 +43,14 @@ class JSONCodec:
         """Bytes into maps, lists and scalars.
 
         `json.JSONDecodeError` does not cross this boundary; the cause is kept.
+
+        `_normalise` is shared with the YAML and TOML codecs rather than
+        reimplemented, so an integer past int64 widens to a float here on the
+        same terms. json.loads produces Python's unbounded int, which is the one
+        type no other pack has.
         """
         with wrapping(ParseError):
-            return json.loads(data)
+            return _normalise(json.loads(data))
 
     def encode(self, value: object) -> bytes:
         """A structure into canonical bytes."""
