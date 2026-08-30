@@ -2,12 +2,12 @@
 
 ## What happened
 
-FACT 2026-08-30. Sizing a Zig pack needed a JSON Schema validator, a YAML codec
+Sizing a Zig pack needed a JSON Schema validator, a YAML codec
 and a TOML codec. Each was chosen the same way: GitHub search on one or two
 terms, sorted by stars, top few taken.
 
-**That method missed the better answer three times, and all three better answers
-came from our user naming them.**
+**That method missed the better answer three times, and all three came from
+somebody naming them instead.**
 
     validator   sized against WhiskeyTuesday/zig-jsonschema, 2 stars, carried
                 over from a previous session and never compared against
@@ -22,15 +22,31 @@ came from our user naming them.**
                 shaped like std.json's, 21 of 21 escapes, and it vendors and
                 passes the official YAML test suite, 402/402.
 
+    TOML        OrlovEvgeny/serde.zig, which matches FR-4.10 and FR-4.9 as
+                written. Its YAML half has a defect, `Value.deinit` freeing
+                borrowed memory, so it is a TOML answer and not a YAML one.
+
     JSON        two simdjson ports were offered and both were rejected on
                 measurement, so the standard library held. That one worked.
+                `std.json` answers FR-4.11 without being asked to.
+
+The shortlist as it stood, by remote and commit, because the names collide
+badly and a star count does not identify a library:
+
+    h0rv/jsonschema.zig    15577ff
+    cloudboss/yaml-zig     cde5c1d
+    OrlovEvgeny/serde.zig  dd8cc6f
+
+No Zig pack is being built. This survey is kept because the next time the
+question is asked, the answer is here rather than in another GitHub search
+sorted by stars.
 
 ## What it cost
 
 A fortnight of reference-resolution work was designed, sized and written up
 against a validator that was never compared to anything. The whole item
-evaporated when the field was actually surveyed: our user's ruling to support
-every reference form turned out to cost nothing, because a library already did.
+evaporated when the field was actually surveyed: the ruling to support every
+reference form turned out to cost nothing, because a library already did.
 
 ## The general shape
 

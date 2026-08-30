@@ -2,7 +2,7 @@
 
 ## What happened
 
-FACT 2026-08-30. A Zig spike was timed against the Go, Rust and Python packs on
+A Zig spike was timed against the Go, Rust and Python packs on
 `testdata/canonical/an-envelope/input.yaml`, twelve lines, one load per process.
 
     Zig     627us      Rust   6383us      Go   8669us
@@ -10,8 +10,8 @@ FACT 2026-08-30. A Zig spike was timed against the Go, Rust and Python packs on
 That was reported as Zig being an order of magnitude faster, and the gap was
 attributed to the codec. Both halves were wrong.
 
-Our user said a document that small finishes before anything can be timed, and
-asked for a bigger file or a loop. Both were built. Varying only the iteration
+A document that small finishes before anything can be timed, so a bigger file
+and a loop were both wanted. Both were built. Varying only the iteration
 count, on `github-workflow.json` against the draft-07 meta-schema:
 
                  1 iteration   50 iterations   marginal per iteration
@@ -23,6 +23,11 @@ Fixed cost is a tie between Zig and Rust. Marginal cost is Rust's by 3.2x. The
 first run had measured **startup and schema compilation on a document holding no
 throughput to measure**, and reported it as throughput.
 
+Size went the other way and is the one thing Zig won outright: 348KB stripped
+against Go's 3.5MB and Rust's 5.9MB. So the honest summary of the whole spike is
+that Zig is decisively smaller, Rust is faster per document, and the crossover
+is around three documents per process.
+
 The codec attribution was worse than unproven. Isolated on matched pairs of the
 same content, YAML costs 2.36x JSON in Zig, 3.54x in Rust and 2.35x in Go, and
 the first run had put Zig on YAML. **The explanation offered had the sign
@@ -30,7 +35,7 @@ backwards.**
 
 ## What it cost
 
-A headline quoted to our user twice, a task file carrying it, and a commit
+A headline published twice, a working note carrying it, and a commit
 message. All three needed correcting, and the correction is now longer than the
 original claim.
 
@@ -45,10 +50,9 @@ The hardware counters said so and were ignored. Every command under 10ms had a
 sigma exceeding its mean and a minimum sample of 0, meaning most runs recorded
 nothing. That was visible in the first run's output and read past.
 
-## The sharper form, which is qwark's
+## The sharper form, which came from qwark
 
-CLAIM 2026-08-30, from the qwark session, recorded at `qwark 42f88d8`:
-**the case a property is about can be the one case no corpus contains.**
+**The case a property is about can be the one case no corpus contains.**
 
 Their instance: an engine's deny-by-default behaviour is invisible on real
 traffic, because real traffic always matches something and two architectures
