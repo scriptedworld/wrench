@@ -3,6 +3,71 @@
 Open questions and the context behind them. Sized work is in
 `clank/tasks/wrench/`; this file holds what is not yet a task.
 
+## The Zig pack is agreed, and it is a spike about Zig before it is a pack
+
+Agreed by our user 2026-08-30, and for a reason the task did not previously
+carry: **to assess Zig as what to reach for when something must be small and
+fast**, in the role Go and Rust hold today. Go is not being retired. The task is
+`clank/tasks/wrench/library/70-a-zig-pack.planning`, at `.planning` rather than
+`.ready` because a whole pack is a fortnight and it needs splitting first.
+
+**The libraries are settled and measured**, named by remote and commit because
+the names collide badly:
+
+    h0rv/jsonschema.zig    15577ff   validator, 10 of 10 ref forms, no deps
+    cloudboss/yaml-zig     cde5c1d   YAML, official suite 402/402, 21/21 escapes
+    OrlovEvgeny/serde.zig  dd8cc6f   TOML only, matches FR-4.10 and FR-4.9 exactly
+    std.json                         JSON, and it answers FR-4.11 unasked
+
+**Two rulings from our user land in the contract when the pack is built, and
+not before.** Both are written up in the task with their consequences.
+
+`-Dparity=level` against `-Dparity=native`, a build option choosing whether the
+pack is held level with the other three. Level widens past int64 and is the
+default; native keeps the digits Zig can hold. **This makes FR-4.10 conditional,
+which is a contract change**, and the proposed amendment sits in the task rather
+than in `docs/REQUIREMENTS/` because a conditional requirement with no
+implementation is a row nothing discharges. It ratifies with the pack.
+
+Support every reference form rather than only wrench's four. That sized as a
+substantial upstream pull request against the validator a previous session had
+named, and costs nothing against the one measured: see
+`docs/LESSONS/the-first-library-named-is-not-the-field.md`.
+
+### What the assessment found, so nobody re-runs it
+
+FACT 2026-08-30, two tools agreeing, `evidence/` in the task holds the repro:
+
+    small     Zig, decisively. 348KB stripped against Go's 3.5MB and Rust's
+              5.9MB, and about four times lower fixed cost than either.
+    fast      Rust. About three times better marginal cost per document.
+    crossover about three documents per process.
+
+**The blockers are tooling and churn, not capability.** Zig ships no coverage
+tool at all, which hard rule 5 makes load-bearing here; the infobot session had
+to build one from sanitizer guards, and it works only in Debug because a release
+build folds the code being measured. And of thirteen Zig libraries built that
+day, three do not compile on 0.16.0 and three more hide a working library behind
+a broken `build.zig`: the ecosystem is split across the 0.16 boundary in both
+directions.
+
+### Three open questions, all our user's
+
+**Splitting the task.** It is one session's work only after it is split, and the
+first piece should be the spike rather than the pack.
+
+**Whether the serde.zig defect goes upstream.** Its YAML `Value.deinit` frees
+borrowed memory, with a 40-line reproducer in the task's evidence. wrench will
+not hit it, because YAML moved to cloudboss and serde is kept for TOML only. So
+this is a courtesy report and it is outward-facing.
+
+**Where `ast-yaml` lives.** A tool built this session that prints a tree-sitter
+parse tree as canonical wrench YAML, DOT or Mermaid.
+`evidence/HOMELESS-TOOLS.md` in the task carries the trade: the Python version
+travels anywhere pip does, the Rust version has no escaper because it emits
+through wrench's own codec and is tied here by a path dependency for exactly
+that reason. Its name is also wrong now that it emits three formats.
+
 ## Ready and unblocked
 
     schemas/40   a document names its own schema, cross-checked rather than
