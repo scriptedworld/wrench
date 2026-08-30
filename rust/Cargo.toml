@@ -1,7 +1,15 @@
 [package]
 name = "wrench"
 version = "0.3.0"
+
+# EDITION 2021 IS HELD RATHER THAN INHERITED. Edition 2024 builds under the
+# 1.97 floor declared below, so nothing about the toolchain keeps this at 2021
+# and the difference from bolt, which is on 2024 under the same floor, is
+# deliberate. An edition states what the code means rather than which compiler
+# builds it, so moving is a decision of its own and that decision has not been
+# made.
 edition = "2021"
+
 rust-version = "1.97"
 license = "Apache-2.0"
 description = "Reads, writes and validates the form of the ecosystem's structured files"
