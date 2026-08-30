@@ -69,8 +69,8 @@ var shippedSchemas = []shippedSchema{
 			"\n" +
 			"    \"reasons\": {\n" +
 			"      \"type\": \"array\",\n" +
-			"      \"description\": \"Why. Present when success is false. A member's shape is open beyond the two keys ev" +
-			"ery consumer can count on.\",\n" +
+			"      \"description\": \"Why. Required when success is false, and permitted when it is true, since success i" +
+			"s the verdict either way. A member's shape is open beyond the two keys every consumer can count on.\",\n" +
 			"      \"items\": { \"$ref\": \"#/$defs/reason\" }\n" +
 			"    },\n" +
 			"\n" +
@@ -105,7 +105,14 @@ var shippedSchemas = []shippedSchema{
 			"    \"required\": [\"reasons\"],\n" +
 			"    \"properties\": {\n" +
 			"      \"reasons\": { \"minItems\": 1 }\n" +
-			"    }\n" +
+			"    },\n" +
+			"    \"$comment\": \"The constraint runs one way and there is deliberately no else. success is the authoritat" +
+			"ive verdict, so reasons standing beside a true success are ignored rather than contradictory, and there is n" +
+			"othing here for the schema to protect. Constraining the other direction is not one more keyword: it needs a " +
+			"success variant and a failure variant validated in two passes, because the shape depends on a field nothing " +
+			"can trust until it has already validated. That is a large cost for a constraint that buys nothing. The asymm" +
+			"etry reads as a gap to anyone who meets it without this note, and a reader who acts on that reading rather t" +
+			"han asking adds the two-pass machinery.\"\n" +
 			"  },\n" +
 			"\n" +
 			"  \"$defs\": {\n" +
