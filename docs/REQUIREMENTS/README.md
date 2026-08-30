@@ -3,15 +3,13 @@
 One file per requirement, `<category>/FR-<id>-<slug>.md`. Both checkers read the
 tree, so a category may nest as deep as the grouping wants.
 
-Derived from four sources and nothing else: `README.md`, the rows in
-`bolt/REQUIREMENTS.md` that state the contract rather than bolt's use of it,
-`silo/docs/DECISIONS/yaml-everywhere-validated-against-the-decoded-structure.md`,
-and `clank/inbox/wrench/python-library-runs-before-pip-exists/`, an inbox entry
-that was resolved and therefore deleted. **The path is kept because it names
-where a source came from, not where to find it now**; what it established lives
-in `docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`, and its
-premise was later disproven there. The entry is gone, as a
-resolved one should be.
+Derived from four sources and nothing else: this repository's `README.md`; the
+rows in bolt's requirements that state the contract rather than bolt's use of
+it; the platform decision that every structured file is YAML validated as JSON
+Schema over the decoded structure; and a finding that the Python pack has to run
+before pip exists. What that last one established lives in
+`docs/DECISIONS/the-pack-is-installed-after-mise-not-before.md`, and its premise
+was later disproven there.
 
 Those rows have left bolt, which now states only its own use of the contract.
 The move landed as bolt 3d40517.

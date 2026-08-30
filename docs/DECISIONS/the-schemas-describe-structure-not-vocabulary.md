@@ -38,9 +38,9 @@ the rebuild problem and buys no enforcement in exchange.
 
 **A hand-maintained list of what exists, with nothing checking it, is a claim
 whose check does not exist.** It is wrong the first time anybody adds a kind
-without editing it, and nothing about the stale list looks stale. The family is
-recorded at `clank/inbox/silo/a-claim-outliving-its-own-check/`; a register of
-this kind is the purest instance available, because its whole content is a
+without editing it, and nothing about the stale list looks stale. The family of defect has a name,
+a claim outliving its own check, and a register of this kind is the purest
+instance available, because its whole content is a
 snapshot of something that changes elsewhere.
 
 The request that prompted this made the point by accident. It listed nine kinds,

@@ -8,9 +8,9 @@ wrench had been shaped around that claim.
 
 The investigation reached the right answer twice and left it once.
 
-dotfiles first called the package an orphan swept up in a cleanup. Our user then
-mentioned a QEMU install test, and dotfiles withdrew the orphan reading and
-marked it unverified.
+dotfiles first called the package an orphan swept up in a cleanup. A QEMU install
+test was then mentioned, and dotfiles withdrew the orphan reading and marked it
+unverified.
 
 **The QEMU run was real and had nothing to do with the package.** It arrived
 mid-investigation, it was true, and it moved the reading away from an answer

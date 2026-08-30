@@ -51,7 +51,7 @@ land, and the exit status alone would not say so. Here that is HEAD:
     ...attempt...
     [ "$before" = "$(git rev-parse HEAD)" ] && echo REFUSED
 
-**The probe belongs in the record.** `clank/inbox/dotfiles/no-global-pre-commit-dispatch/repro.sh`
+**The probe belongs in the record.** A script that
 builds a throwaway repository, gives it a hook that only refuses, commits, and
 reports whether the commit landed. It regenerates the reading in a second, and
 it fails loudly if the finding ever goes stale.

@@ -6,7 +6,7 @@ schemas live here, and a library per language that handles one.
 ## What it is FOR
 
 Every component here reads and writes YAML that another component has to
-understand. bolt writes a result envelope, a checker reads a jig, an adapter
+understand. A runner writes a result envelope, a checker reads a jig, an adapter
 writes a manifest. Without one place owning the form of those files, each
 component grows its own reader, its own emitter and its own idea of what a valid
 envelope is, and they drift while all of them believe they conform.
@@ -22,6 +22,8 @@ produce and consume them.
 
 ## Where to read what
 
+    README.md             what wrench is, for somebody arriving cold
+    CONTRIBUTING.md       how to build it, test it, and get a change accepted
     docs/SPEC.md          how the pieces fit: the two calls, the seams, the
                           error kinds, canonical form, the schema rules
     docs/REQUIREMENTS/    the contract, one file per requirement, and its
@@ -35,20 +37,16 @@ produce and consume them.
 what it does not specify. Read it before this file if the question is how
 something works; read this file for how the project is run.
 
-The work itself is not in this repository. `clank/tasks/wrench/` holds it and
-`clank/inbox/wrench/` holds findings filed by other sessions.
-
 ## Layout
 
     schemas/                 the schemas, one copy, read by every pack
     testdata/canonical/      the shared fixture set holding the packs level
     testdata/checkers/       tests for wrench's own checkers
     testdata/consumer/       a typed consumer, type-checked and never run
-    bin/                     wrench's own checkers, and two symlinks into
+    bin/                     wrench's own checkers, beside two links into
                              toolbox that change behaviour here with nothing
                              in this repository moving
-    adapters/                one symlink into toolbox, the composition adapter,
-                             resolved from the config directory like any other
+    adapters/ config/        adopted from toolbox, all links and none tracked
 
     wrench.go codec.go       the Go pack, at the repository root
     file.go schema.go        shipped_gen.go is generated from schemas/
@@ -63,108 +61,59 @@ The work itself is not in this repository. `clank/tasks/wrench/` holds it and
     rust/tests/              build.rs generates its copy every build
 
 The Go pack is at the root and the other two are under their own directories.
-That asymmetry is known: `clank/tasks/wrench/gate/05` holds why the move is
-deferred, not open.
+That asymmetry is known and the move is deferred work rather than an open
+question.
 
 ## The gate
 
     bolt wrench-quality .
 
-**Read `success` in `result.yaml`. Never the exit status.** bolt exits 0
-whenever the run completed, whatever the tools concluded, and says so in its own
-usage.
+Read `success` in `result.yaml`, never the exit status. bolt exits 0 whenever
+the run completed, whatever the tools concluded, and says so in its own usage.
 
-**Read the per-task artifacts too**, because a composed run's failure is a level
+Read the per-task artifacts too, because a composed run's failure is a level
 down:
 
     grep '^"success"' <output-dir>/result.yaml
     grep -rln 'success": false' <output-dir>/
 
-**Give it a fresh `--output-dir`.** bolt refuses a directory that already holds
-a run, and the two builds differ in what the refusal costs. `bolt` preserves the
-earlier verdict, by FR-2.6b and FR-10.7c. `bolt.go` rewrites it: measured
-against a run that passed, `success` went from `true` to `false` and the
-checksum changed with all 28 execution directories still in place, so the
-refusal replaced a real verdict with a record of itself.
+Give it an output directory that does not already hold a run. bolt refuses one
+that does, and a refusal is not a verdict about the code.
 
-Measure that against a jig that **passes**. A run that refused for some other
-reason never wrote a verdict, so a second refusal looks like an overwrite and is
-two refusals in a row. Compare by checksum: both writes land inside one second
-and mtime reports the file unchanged.
+`adapters/common/bolt-result.py` is what lets a composed task fail. bolt exits 0
+whenever it carried a run out, so under the generic exit-code adapter a parent
+passes however badly its child failed. With the adapter in place, a checker
+error inside `python/` surfaces here as the parent's own reason, keeping the
+child's `kind` and `message` and naming the child result it came from.
 
-`bolt.go` also prints a summary line labelling the total execution count with
-the run's verdict, so `failed: 27` and `passed: 27` count the same 27
-executions. `bolt` prints the result path alone.
-
-Both are filed under `clank/inbox/bolt.go/`, with a race between two runs
-starting in the same second. Do not file them again: bolt.go gets no agent, so
-the cutover was the fix, and the entries stand as the record of a build still
-installed under its own name.
-
-**Analysis never scans an output or artefact directory.** The jig defines
+Analysis never scans an output or artefact directory. The jig defines
 `artefacts_regex` once and the tasks that need it filter with it: every
 dot-directory, anything named for a cache, and build, dist, out and target. A
 scratch `.go` file under `.ephemera` used to fail `go-format`, and a stale
-`python/build/` still fails the shared Python jig's mypy and pylint, filed
-against toolbox.
+`python/build/` still fails the shared Python jig's mypy and pylint.
 
 Two lines are silenced and nothing is mocked. `SUPPRESSIONS` carries both with
 the question asked and the answer given, and `suppressions-everywhere` checks
-the register against every source file, not only the Python pack. There
-is no `docs/MOCKS/`; that directory is claimed when something needs it.
-
-### Check which bolt you ran before quoting what bolt does
-
-Two implementations exist and they differ in what a refusal costs. **Each has a
-name**, so a claim about bolt can say which one it is about:
-
-    bolt        whichever build bin/bolt points at
-    bolt.go     the Go build, always
-
-`bolt` is the Rust build, since `dotfiles 19df074`. `bolt.go` stays installed
-and keeps naming the Go implementation, so a claim about either can still be
-checked instead of remembered.
-
-**`bin/bolt` is an installed artefact and nothing rebuilds it.** Change bolt,
-skip the reinstall, and every gate in the estate runs the old binary and passes.
-That is the shape `a-check-that-answers-a-weaker-question` describes, at the
-scale where it costs something.
-
-    ls -la ~/bin/bolt ~/bin/bolt.go
-
-**Both builds run this gate, 28 executions each.** Nested
-jigs are retired at bolt `f3304d8` and this jig holds none: `python-common` and
-`python-std` are command tasks whose program is bolt, each giving its child a
-`{work_dir}/child` of its own.
-
-**`adapters/common/bolt-result.py` is what lets a composed task fail.** bolt
-exits 0 whenever it carried a run out, so under the generic exit-code adapter
-the parent passes however badly the child failed. toolbox measured one failing
-child both ways, `success=True` without it and `success=False` with it. A ruff
-error planted inside `python/` surfaces here as the parent's own reason, keeping
-the child's `kind` and `message` and naming the child result it came from.
-
-Write the flags before the positionals. The Go build prints usage to stderr and
-exits 1 otherwise, which reads as the adapter being wrong; the Rust build takes
-either order.
+the register against every source file, not only the Python pack. There is no
+`docs/MOCKS/`; that directory is claimed when something needs it.
 
 ## The packs
 
 | Pack | Serves | State |
 |---|---|---|
-| Go | `bolt.go`, the previous Go implementation | Built, at the repository root |
+| Go | bolt's Go implementation | Built, at the repository root |
 | Python | toolbox's adapters and checkers | Built, under `python/` |
-| Rust | bolt, which is now a Rust implementation | Built, suite level with the others |
+| Rust | bolt | Built, suite level with the others |
 | TypeScript | Consumer not yet identified | Not built |
 | Ruby | Consumer not yet identified | Not built |
 
 `packs-follow-demand` says what decides when a pack gets written, and it is a
 consumer, not a library.
 
-**Bump the pack version in the same commit as a change to its surface.** uv
-resolves from its cache by version, so an unchanged number is a package it
-already has. Eight commits of change shipped under one version before a consumer
-noticed receiving none of it.
+Bump the pack version in the same commit as a change to its surface. A resolver
+serves an unchanged version number out of its cache, so a consumer receives none
+of the change. Eight commits of change shipped under one version before a
+consumer noticed receiving none of it.
 
 ## What holds the packs level
 
@@ -173,9 +122,9 @@ in every suite. No pack is the oracle for another: if they disagree, the fixture
 is right.
 
 A fixture set proves agreement only over the values it holds, and a gap in it
-looks exactly like agreement. That is not a closed defect but the standing
-caution; `a-fixture-set-agrees-about-the-values-somebody-thought-of` carries
-what it cost, and boundary cases are derived from each type instead of from
+looks exactly like agreement. That is the standing caution rather than a closed
+defect; `a-fixture-set-agrees-about-the-values-somebody-thought-of` carries what
+it cost, and boundary cases are derived from each type instead of from
 imagination.
 
 Divergence between the suites is declared, never accidental, and the scope
@@ -183,13 +132,13 @@ marker on a requirement row is the only place it is declared. A scope may name
 kinds as well as suites, which is what `FR-4.1` needs: every pack covers it for
 `property` and only two can construct its `edge` and `negative` values.
 
-**Regenerate that rather than trusting this paragraph.**
+Regenerate that instead of trusting this paragraph.
 `bin/test-suite-parity.py` names every divergence and exits non-zero when it
 finds an undeclared one:
 
     ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
         --suite go='*_test.go' --suite python='python/tests/*.py' \
-        --suite rust='rust/tests/*.rs' . ; echo $?
+        --suite rust='rust/tests/*.rs' .
 
 `docs/PATTERNS/holding-two-packs-level.md` is what keeps it this way. Assert the
 same table in every suite; a table that differs is packs that differ. Its name
@@ -197,9 +146,8 @@ predates the third pack.
 
 ## How it fits against its siblings
 
-**bolt** is the Rust implementation and takes the Rust pack by path, so an
-uncommitted change under `rust/` is bolt's build. The `bolt` this gate executes
-is the Go one, a deliberate bridge kept while bolt is rebuilt.
+**bolt** takes the Rust pack by path, so an uncommitted change under `rust/` is
+bolt's build. It is also what runs this repository's gate.
 
 **toolbox** owns the shared jigs and the checkers `bin/` symlinks into. A change
 there lands here with nothing in this repository moving, which has turned the
@@ -220,10 +168,7 @@ could.
 
 ## What is not done
 
-`clank/tasks/wrench/` is the register and `NEXT_STEPS.md` carries the open
-questions. In summary: the Go and Rust packs have no shared-standard base of
-their own, the Go pack is at the root instead of under `go/`, and the prose
-sweep has had no validator pass, which by its own design cannot be the writer.
-
-There is no git remote, which is the expected state across this ecosystem while
-the history rewrite settles. Re-adding one is not this project's call.
+`NEXT_STEPS.md` carries the open questions. In summary: the Go and Rust packs
+have no shared-standard base of their own, the Go pack is at the root instead of
+under `go/`, and the prose sweep has had no validator pass, which by its own
+design cannot be the writer.

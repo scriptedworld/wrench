@@ -66,6 +66,5 @@ The float divergence found the same day is the same shape one level down:
 `repr`, `strconv.FormatFloat(v, 'g', -1, 64)` and `format!("{f}")` disagree about
 when to use an exponent, so three packs spell `1000000.0` three ways *inside*
 the YAML emitter they each wrote by hand.
-`clank/tasks/wrench/parity/30-three-packs-spell-floats-three-ways` carries it,
-and it is open. **A hand-written emitter removes the library's opinion and not
+That is open. **A hand-written emitter removes the library's opinion and not
 the language's**, which is the limit of this decision.

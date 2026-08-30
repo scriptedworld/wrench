@@ -16,9 +16,8 @@ cleanly.
 It cuts both ways. The same bump reaches a tree that has somebody and strands a
 tree that does not.
 
-`bolt.go` is the estate's counterexample. It consumes the Go pack, it gets no
-agent by our user's ruling, and it is what `~/bin/bolt` resolves to, so it gates
-every project here. It also still needs a rebuild to pick up schema changes
+`bolt.go` is the counterexample. It consumes the Go pack and has nobody
+assigned to it. It also still needs a rebuild to pick up schema changes
 already committed, because a consumer enforces the schema it was built with. A
 pack it cannot compile against takes that last rebuild away, and nobody is
 coming to fix the call sites.

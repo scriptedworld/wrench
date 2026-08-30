@@ -17,10 +17,8 @@ likely to be suspected of it. The remedy that lesson gives is the one applied
 here: point at the source, and let what stays be what only this repository can
 say.
 
-**Where the collection should live is open and is silo's**, at
-`clank/inbox/silo/a-cross-repository-lesson-collection-lives-in-one-project/`.
-It spans four repositories, which `CLAUDE.md` layers as silo's tier, and sits in
-a project tree. Nothing here is blocked on the answer.
+**Where the collection should live is open.** It spans four repositories and
+sits inside one project's tree. Nothing here is blocked on the answer.
 
 ## The six this file was written from, 2026-08-28 to 2026-08-29
 

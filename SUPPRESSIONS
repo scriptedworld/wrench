@@ -53,10 +53,9 @@ serving more than one of them cannot be written in any single scan's frame. The
 checker resolves both sides against the repository, found by walking up for
 `.git`, which is the frame a person writes in anyway.
 
-That is toolbox `bed07d2`, and it closes
-`clank/inbox/toolbox/a-shared-register-serves-two-bases`. These rows were
-briefly written in the scan frame as a workaround for the bug that entry
-described, and are back to the root spelling they started with.
+That is a toolbox change, and it closes a defect in the shared register. These
+rows were briefly written in the scan frame as a workaround for that defect,
+and are back to the root spelling they started with.
 
 **A row for a pack this scan does not cover is left alone rather than reported
 gone.** That is the half that makes one register serve two bases: without it, a

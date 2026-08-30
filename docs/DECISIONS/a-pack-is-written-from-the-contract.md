@@ -21,8 +21,7 @@ than evidence one was copied.
 
 The Python pack was written by the session that had just
 written the Go pack, with the Go source in context. Independence cannot be
-claimed for it. `clank/tasks/wrench/library/20-the-python-pack.complete/TASK.md`
-records this at the time it happened.
+claimed for it, and that was recorded at the time rather than reconstructed later.
 
 **What actually holds the two packs level is the shared fixture set**, and that
 does hold: both packs produce byte-identical canonical output

@@ -86,8 +86,8 @@ sequence reports `parse`. That is what made the answer mean something.
 
 ## The rule already existed
 
-`silo/docs/LESSONS/read-the-artifact-not-the-exit-status/` says this, and the
-global rules carry it as hard rule 6. Knowing it did not help. **What helped was a
+The rule to read the artifact and never the exit status already existed, and the
+house rules carry it. Knowing it did not help. **What helped was a
 gate**, because a gate cannot decide the number looked fine.
 
 ## And once more, one layer down, in the evidence

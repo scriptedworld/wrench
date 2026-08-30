@@ -1,7 +1,6 @@
 # A format carries a semver version, and a major gets its own schema file
 
-Answers `clank/tasks/wrench/schemas/10-is-the-envelope-schema-versioned`, which
-was deferred once and is now settled.
+Deferred once, and now settled.
 
 ## What is built now
 
@@ -129,7 +128,7 @@ distinguishes, and a document may carry either or both.
 
 **Not built.** It changes what every producer writes and what wrench does with it,
 so it needs bolt's agreement rather than wrench's decision alone.
-`clank/tasks/wrench/schemas/40-a-document-may-name-its-own-schema` carries it.
+`NEXT_STEPS.md` carries it.
 
 ## What is deliberately not done yet
 

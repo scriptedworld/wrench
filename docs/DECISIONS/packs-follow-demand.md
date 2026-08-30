@@ -53,7 +53,7 @@ Python or Rust. qwark and grim stay Go to demonstrate working with it.
 Subprocess orchestration, evidence collection, and a static binary with no
 runtime to install. It is not a provenance argument: the cleanliness of bolt's
 derivation is carried by its written derivation record, which states the
-requirements were reached from `silo/docs/ARCHITECTURE.md` and from answers with
+requirements were reached from the platform architecture and from answers with
 no earlier implementation read. A translation inherits that, because the record
 is written rather than inferred from the language. What the derivation does rest
 on is the archived tree staying sealed, and that is language-independent.
@@ -91,7 +91,7 @@ So pack demand is not hypothetical. It is on the critical path for the gate ever
 project here runs, and it is chicken-and-egg with wrench's own gate, which needs
 those same checkers.
 
-`clank/tasks/wrench/` carries what follows from that.
+`NEXT_STEPS.md` carries what follows from that.
 
 ## Retired requirement ID
 
