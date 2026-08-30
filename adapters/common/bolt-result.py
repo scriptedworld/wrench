@@ -1,1 +1,0 @@
-../../../toolbox/adapters/common/bolt-result.py

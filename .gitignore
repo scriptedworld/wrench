@@ -30,3 +30,23 @@ rust/Cargo.lock
 # coverage writes this beside the pack when the shared jig runs its tests
 .coverage
 python/.coverage
+
+# The adopted jig links. `toolbox/jigs.yaml` declares the set and `link-jigs`
+# makes them. They are ignored because a tracked symlink stores its target path
+# as content, so committing one encodes where ../toolbox happens to sit and
+# hands a clone six paths that resolve to nothing.
+#
+# Named one at a time rather than as `bolt.*.yaml`, because that glob would also
+# swallow `bolt.wrench-quality.yaml` and `bolt.wrench.definitions.yaml`, which
+# are this repository's own files and ARE tracked.
+#
+# `bin/` cannot be ignored wholesale for the same reason: it holds wrench's own
+# checkers beside two links, so the two are named.
+bolt.common-quality.yaml
+bolt.go-std-quality.yaml
+bolt.python-std-quality.yaml
+bolt.secrets.yaml
+adapters/
+config/
+bin/suppression-register.py
+bin/test-traceability.py
