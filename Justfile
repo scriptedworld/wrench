@@ -35,41 +35,51 @@
 #    DO NOT REWRITE THESE AS `@for` ONE-LINERS. That is the defect.
 # ===========================================================================
 
-# ONLY PYTHON HAS ADOPTED, SO THIS FILE CURRENTLY FAILS AND SHOULD. Two of the
-# three packs have no Justfile to delegate to:
-#
-#     python/   adopted
-#     rust/     no Justfile rendered from templates/rust-library yet
-#     go/       DOES NOT EXIST. The Go pack is at the repository root, which is
-#               where this file sits, so `go/Justfile` cannot exist until
-#               `gate/05` moves the pack. That is unscheduled and blocked on
-#               whether bolt.go is retired.
-#
-# ORDER IS THE DIFFERENCE BETWEEN THIS FILE DOING ITS JOB AND DOING NOTHING.
-# `_each` stops at the first failing pack, so with go listed first the root
-# reached nothing at all: `just test` exited 1 having run zero suites. Python
-# first means its 100 tests actually run, and the failure then names `rust`,
-# the first pack with nothing to call.
-#
-# Restore alphabetical order once all three have a Justfile, and this comment
-# goes with it.
-PACKS := "python rust go"
+PACKS := "go python rust"
 
 default:
     @just --list
 
-# _each runs one recipe name across every pack, in order, stopping at the first
-# failure and naming the pack it was in.
+# _each runs one recipe name across every pack that has a Justfile, stopping at
+# the first pack that HAS one and fails.
+#
+# AN ABSENT PACK IS AN ABSENCE, NOT A FAILURE, and conflating the two made the
+# order of PACKS decide whether any work happened at all. Measured by wrench: go
+# sorts first, wrench has no go/Justfile, so `just test` stopped there and ran
+# ZERO suites while reporting a correct exit 1. It reported honestly and did
+# nothing.
+#
+# Reordering to put an adopted pack first fixes the symptom and has to be undone
+# later, so this skips what is absent instead. Order now decides nothing.
+#
+# AND RUNNING NOTHING IS ITS OWN FAILURE. If no pack has a Justfile this exits 1
+# saying so, rather than succeeding over an empty loop. A gate that ran nothing
+# must not report green, which is the whole of
+# silo/docs/LESSONS/scanned-nothing-and-found-nothing-are-one-green/.
 _each recipe:
     #!/usr/bin/env bash
     set -euo pipefail
+    ran=0
+    skipped=()
     for p in {{ PACKS }}; do
+        if [ ! -f "$p/Justfile" ]; then
+            skipped+=("$p")
+            continue
+        fi
         printf '\n### %s: %s\n' "$p" "{{ recipe }}"
         if ! just -f "$p/Justfile" "{{ recipe }}"; then
             printf '\n%s failed in the %s pack\n' "{{ recipe }}" "$p" >&2
             exit 1
         fi
+        ran=$((ran + 1))
     done
+    if [ ${#skipped[@]} -gt 0 ]; then
+        printf '\nnot adopted, skipped: %s\n' "${skipped[*]}"
+    fi
+    if [ "$ran" -eq 0 ]; then
+        printf 'no pack has a Justfile, so %s ran nothing\n' "{{ recipe }}" >&2
+        exit 1
+    fi
 
 # everything, in every pack
 checks:
