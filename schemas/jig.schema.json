@@ -100,27 +100,27 @@
         "jig": {
           "type": "string",
           "minLength": 1,
-          "description": "Run this jig instead of a command. The child follows its own process: its own requires, its own tasks, its own filtering."
+          "description": "Retired, and described here so a runner can refuse it by name. Named the jig to run in place of a command, the child following its own requires, tasks and filtering."
         },
         "in": {
           "type": "string",
           "minLength": 1,
-          "description": "A subdirectory of the current base to run the named jig in. A written path, not a pattern, because a pattern can say which files look like Go and never that a directory is a Go module. The only thing that sets a child's base."
+          "description": "Retired with `jig`. Named a subdirectory of the current base for the child to run in, and was the only thing that set a child's base."
         },
         "config-dir": {
           "type": "string",
           "minLength": 1,
-          "description": "Where the child looks for jigs. Left out, it inherits."
+          "description": "Retired with `jig`. Named where the child looked for jigs, and was inherited when left out."
         },
         "output-dir": {
           "type": "string",
           "minLength": 1,
-          "description": "Names the child's output directory rather than placing it. Whatever it is set to, the result is a subdirectory of this task's work directory."
+          "description": "Retired with `jig`. Named the child's output directory, always a subdirectory of this task's work directory."
         },
         "definitions": {
           "type": "string",
           "minLength": 1,
-          "description": "Names the child's definitions file, as --definitions does for an invocation from the command line. Left out, it inherits, so subprojects sharing one set of adjustments name nothing and carry no copies."
+          "description": "Retired with `jig`. Named the child's definitions file, as `--definitions` does from the command line, and was inherited when left out."
         }
       },
 
@@ -151,6 +151,7 @@
         },
         {
           "title": "a jig task",
+          "$comment": "Retired, and kept so the refusal comes from the runner. bolt refuses a task carrying `jig` with kind `jig-task-retired` and a message naming the replacement: a command task whose program is bolt, with `adapter: adapters/common/bolt-result.py` reading the child's result. Removing this branch makes such a task fail `'command' is a required property`, which names neither the cause nor the fix, and the runner never reaches its own message. Measured against a jig carrying all five fields.",
           "required": ["jig"],
           "properties": {
             "command": false,

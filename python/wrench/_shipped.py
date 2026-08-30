@@ -253,33 +253,32 @@ SHIPPED: dict[str, str] = {
         '        "jig": {\n'
         '          "type": "string",\n'
         '          "minLength": 1,\n'
-        '          "description": "Run this jig instead of a command. The child follows its own process: its own r'
-        'equires, its own tasks, its own filtering."\n'
+        '          "description": "Retired, and described here so a runner can refuse it by name. Named the jig to'
+        ' run in place of a command, the child following its own requires, tasks and filtering."\n'
         "        },\n"
         '        "in": {\n'
         '          "type": "string",\n'
         '          "minLength": 1,\n'
-        '          "description": "A subdirectory of the current base to run the named jig in. A written path, not'
-        " a pattern, because a pattern can say which files look like Go and never that a directory is a Go module. Th"
-        "e only thing that sets a child's base.\"\n"
+        '          "description": "Retired with `jig`. Named a subdirectory of the current base for the child to r'
+        "un in, and was the only thing that set a child's base.\"\n"
         "        },\n"
         '        "config-dir": {\n'
         '          "type": "string",\n'
         '          "minLength": 1,\n'
-        '          "description": "Where the child looks for jigs. Left out, it inherits."\n'
+        '          "description": "Retired with `jig`. Named where the child looked for jigs, and was inherited wh'
+        'en left out."\n'
         "        },\n"
         '        "output-dir": {\n'
         '          "type": "string",\n'
         '          "minLength": 1,\n'
-        '          "description": "Names the child\'s output directory rather than placing it. Whatever it is set t'
-        "o, the result is a subdirectory of this task's work directory.\"\n"
+        '          "description": "Retired with `jig`. Named the child\'s output directory, always a subdirectory o'
+        "f this task's work directory.\"\n"
         "        },\n"
         '        "definitions": {\n'
         '          "type": "string",\n'
         '          "minLength": 1,\n'
-        '          "description": "Names the child\'s definitions file, as --definitions does for an invocation fro'
-        "m the command line. Left out, it inherits, so subprojects sharing one set of adjustments name nothing and ca"
-        'rry no copies."\n'
+        '          "description": "Retired with `jig`. Named the child\'s definitions file, as `--definitions` does'
+        ' from the command line, and was inherited when left out."\n'
         "        }\n"
         "      },\n"
         "\n"
@@ -312,6 +311,11 @@ SHIPPED: dict[str, str] = {
         "        },\n"
         "        {\n"
         '          "title": "a jig task",\n'
+        '          "$comment": "Retired, and kept so the refusal comes from the runner. bolt refuses a task carryi'
+        "ng `jig` with kind `jig-task-retired` and a message naming the replacement: a command task whose program is "
+        "bolt, with `adapter: adapters/common/bolt-result.py` reading the child's result. Removing this branch makes "
+        "such a task fail `'command' is a required property`, which names neither the cause nor the fix, and the runn"
+        'er never reaches its own message. Measured against a jig carrying all five fields.",\n'
         '          "required": ["jig"],\n'
         '          "properties": {\n'
         '            "command": false,\n'
