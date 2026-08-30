@@ -134,6 +134,47 @@ func TestTOMLRefusesAnIntegerPastInt64(t *testing.T) {
 	}
 }
 
+// COVERS: FR-4.11 | edge
+func TestNegativeZeroIsSignedInJSONAndAnIntegerElsewhere(t *testing.T) {
+	value, err := wrench.JSON.Decode([]byte("{\"n\": -0}\n"))
+	if err != nil {
+		t.Fatalf("decoding JSON: %v", err)
+	}
+	got, ok := value.(map[string]any)["n"].(float64)
+	if !ok {
+		t.Fatalf("JSON -0 came back %T, not float64", value.(map[string]any)["n"])
+	}
+	if !math.Signbit(got) {
+		t.Error("JSON -0 lost its sign")
+	}
+
+	// TOML says so outright: -0 and +0 are identical to an unprefixed zero,
+	// while -0.0 and +0.0 map according to IEEE 754. YAML has no such sentence
+	// and every implementation agrees anyway.
+	for _, format := range []struct {
+		name  string
+		codec wrench.Codec
+		doc   string
+	}{
+		{"yaml", wrench.YAML, "n: -0\n"},
+		{"toml", wrench.TOML, "n = -0\n"},
+	} {
+		decoded, err := format.codec.Decode([]byte(format.doc))
+		if err != nil {
+			t.Fatalf("%s: %v", format.name, err)
+		}
+		// int or int64: this pack's YAML decoder gives one and its JSON gives
+		// the other, which is a separate open question about spelling rather
+		// than about the value. What FR-4.11 requires is that it is not a float.
+		switch decoded.(map[string]any)["n"].(type) {
+		case int, int64:
+		default:
+			t.Errorf("%s: -0 came back %T, not an integer",
+				format.name, decoded.(map[string]any)["n"])
+		}
+	}
+}
+
 // COVERS: FR-4.10 | property
 func TestAnIntegerPastInt64WidensToAFloat(t *testing.T) {
 	// The band Go alone kept exact: go-yaml reaches for uint64 above int64, so

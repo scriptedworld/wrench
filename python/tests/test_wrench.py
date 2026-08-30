@@ -9,6 +9,7 @@ exists to catch, and neither pack is the oracle for the other.
 from __future__ import annotations
 
 import json
+import math
 import os
 import subprocess  # nosec B404 - registered in SUPPRESSIONS
 import sys
@@ -1077,6 +1078,27 @@ def test_toml_refuses_an_integer_past_int64_in_both_directions():
     with pytest.raises(wrench.EncodeError):
         wrench.TOML.encode({"n": 2**63})
     assert wrench.TOML.decode(b"n = 9223372036854775807\n") == {"n": 2**63 - 1}
+
+
+# COVERS: FR-4.11 | edge
+def test_negative_zero_is_signed_in_json_and_an_integer_elsewhere():
+    """JavaScript decides what a JSON document means, and V8 reads -0 as signed.
+
+    TOML says the opposite for its own format outright: -0 and +0 are identical
+    to an unprefixed zero, and only -0.0 and +0.0 map according to IEEE 754.
+    YAML has no such sentence and four implementations agree anyway.
+    """
+    signed = wrench.JSON.decode(b'{"n": -0}')["n"]
+    assert isinstance(signed, float)
+    assert math.copysign(1, signed) < 0
+
+    assert wrench.YAML.decode(b"n: -0")["n"] == 0
+    assert isinstance(wrench.YAML.decode(b"n: -0")["n"], int)
+    assert isinstance(wrench.TOML.decode(b"n = -0")["n"], int)
+
+    # The decimal point is the whole of the distinction, in every format.
+    assert math.copysign(1, wrench.YAML.decode(b"n: -0.0")["n"]) < 0
+    assert math.copysign(1, wrench.TOML.decode(b"n = -0.0")["n"]) < 0
 
 
 # COVERS: FR-4.10 | property

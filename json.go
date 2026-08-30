@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -96,6 +97,17 @@ func jsonNumbers(value any) (any, error) {
 // it.
 func jsonNumber(n json.Number) (any, error) {
 	text := n.String()
+	// NEGATIVE ZERO IS A VALUE IN JSON AND NOT A SPELLING OF ZERO. JavaScript is
+	// the reference for what a JSON document means, and V8 reads `-0` as a
+	// signed zero: `Object.is(JSON.parse("-0"), -0)` is true and `1/x` is
+	// -Infinity. An integer zero cannot carry the sign, so this is the one
+	// literal with no decimal point that still decodes to a float. FR-4.11.
+	//
+	// YAML and TOML keep it an integer, because each format's own reference
+	// answers for it and both call `-0` an integer.
+	if text == "-0" {
+		return math.Copysign(0, -1), nil
+	}
 	if !strings.ContainsAny(text, ".eE") {
 		if i, err := strconv.ParseInt(text, 10, 64); err == nil {
 			return i, nil

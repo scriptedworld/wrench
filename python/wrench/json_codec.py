@@ -48,14 +48,33 @@ class JSONCodec:
         reimplemented, so an integer past int64 widens to a float here on the
         same terms. json.loads produces Python's unbounded int, which is the one
         type no other pack has.
+
+        `parse_int` sees the literal text, which is the only place the sign of a
+        negative zero still exists: by the time `json.loads` has produced an
+        `int`, `-0` and `0` are the same object. FR-4.11.
         """
         with wrapping(ParseError):
-            return _normalise(json.loads(data))
+            return _normalise(json.loads(data, parse_int=_json_int))
 
     def encode(self, value: object) -> bytes:
         """A structure into canonical bytes."""
         with wrapping(EncodeError):
             return (_value(value, 0) + "\n").encode("utf-8")
+
+
+def _json_int(text: str) -> int | float:
+    """One integer literal, as the value JSON gives it.
+
+    NEGATIVE ZERO IS A VALUE IN JSON AND NOT A SPELLING OF ZERO. JavaScript is
+    the reference for what a JSON document means, and V8 reads `-0` as a signed
+    zero: `Object.is(JSON.parse("-0"), -0)` is true and `1/x` is -Infinity. An
+    integer zero cannot carry the sign, so this is the one literal with no
+    decimal point that still decodes to a float.
+
+    YAML and TOML keep it an integer, because each format's own reference
+    answers for it and both call `-0` an integer.
+    """
+    return -0.0 if text == "-0" else int(text)
 
 
 def _value(value: object, depth: int) -> str:
