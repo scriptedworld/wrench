@@ -31,10 +31,28 @@
 # 3. It quotes the path it read. A verdict with no artifact beside it cannot be
 #    checked by whoever reads the output.
 
-_verdict jig:
+# VARIADIC, BECAUSE AN ADOPTER THAT FILLS A PLACEHOLDER HAS TO PASS ITS OWN
+# DEFINITIONS AND A RECIPE CANNOT ADD AN ARGUMENT TO ANOTHER RECIPE'S COMMAND.
+#
+#     just _verdict go-std-quality --definitions go-std-quality
+#     just _verdict common-quality --definitions skid
+#     just _verdict common-quality --config-dir ..        jigs one level up
+#
+# WITHOUT IT THE FAILURE DOES NOT LOOK LIKE A MISSING FLAG. The placeholder
+# keeps its default and the jig reports a problem in the adopter's own tree:
+# qwark's `entrypoint` stayed `true`, so cover-entrypoint.sh never ran and
+# main.go read 0.0% against an 80% floor. Skid's `requirements` stayed the
+# retired single-file path, so traceability and suppressions both failed.
+# Measured on a fixture: with the flag the task passes, without it the same
+# task fails, and nothing in either message says "definitions".
+#
+# So the next adopter would go and change their coverage or requirements
+# configuration rather than suspect this file. Found by qwark and skid
+# independently, two of two adopters, different languages, same cause.
+_verdict jig *flags:
     #!/usr/bin/env bash
     set -euo pipefail
-    out=$(bolt "{{ jig }}" .)
+    out=$(bolt {{ flags }} "{{ jig }}" .)
     result=$(printf '%s\n' "$out" | tail -1)
     if [ ! -f "$result" ]; then
         echo "REFUSED: bolt wrote no result for {{ jig }}" >&2

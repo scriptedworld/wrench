@@ -17,9 +17,10 @@
 # subdirectory the result lands in the subdirectory and the verdict reads
 # correctly.
 #
-# `_verdict` in just/base.just does not pass --config-dir, so the calls below
-# are written out. If a third tree needs this, the right fix is a second
-# parameter on `_verdict` in base rather than a third copy.
+# `_verdict` in just/base.just is variadic, so the calls below pass
+# `--config-dir ..` and this file needs no copy of it. It carried one until
+# base grew the parameter, which its own header said was the right fix; qwark
+# and skid hit the same need independently and that is what made it one.
 #
 # WHAT THIS FILE DOES NOT DO. It does not run the go or rust packs, and it does
 # not run wrench's own `bolt.wrench-quality.yaml`, which gates all three
@@ -33,31 +34,13 @@
 
 # everything: quality, tests, coverage, secrets
 checks:
-    @just _verdict-here common-quality
-    @just _verdict-here python-std-quality
-    @just _verdict-here secrets
-
-# base's _verdict with --config-dir added, because the jigs live one level up
-_verdict-here jig:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    out=$(bolt "{{ jig }}" . --config-dir ..)
-    result=$(printf '%s\n' "$out" | tail -1)
-    if [ ! -f "$result" ]; then
-        echo "REFUSED: bolt wrote no result for {{ jig }}" >&2
-        printf '%s\n' "$out" >&2
-        exit 1
-    fi
-    if grep -q '"success": *true' "$result"; then
-        echo "pass  {{ jig }}  $result"
-    else
-        echo "FAIL  {{ jig }}  $result" >&2
-        exit 1
-    fi
+    @just _verdict common-quality --config-dir ..
+    @just _verdict python-std-quality --config-dir ..
+    @just _verdict secrets --config-dir ..
 
 # the secrets jig alone, from one level up
 leak-scan:
-    @just _verdict-here secrets
+    @just _verdict secrets --config-dir ..
 
 # THE SUITE RUNS FROM THE REPOSITORY ROOT so the pack finds `schemas/`, which is
 # two levels above this package and is the one copy every pack reads. wrench's
