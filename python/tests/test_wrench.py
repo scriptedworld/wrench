@@ -1063,6 +1063,43 @@ def test_toml_refuses_a_document_that_is_not_a_table():
         wrench.TOML.encode([1, 2])
 
 
+# COVERS: FR-4.7 | negative
+def test_toml_refuses_an_integer_past_int64_in_both_directions():
+    """Python is the whole of the deviation here, so the check is wrench's own.
+
+    `tomllib` and `tomlkit` both accept a value TOML says must throw, because
+    Python integers are unbounded and neither range-checks. Six parsers in Go
+    and Rust refuse it, so a document Python accepted was one no other pack
+    could read back.
+    """
+    with pytest.raises(wrench.ParseError):
+        wrench.TOML.decode(b"n = 9223372036854775808\n")
+    with pytest.raises(wrench.EncodeError):
+        wrench.TOML.encode({"n": 2**63})
+    assert wrench.TOML.decode(b"n = 9223372036854775807\n") == {"n": 2**63 - 1}
+
+
+# COVERS: FR-4.10 | property
+def test_an_integer_past_int64_widens_to_a_float():
+    """YAML and JSON widen where TOML refuses, and the loss is visible.
+
+    Two inputs one apart land on the same float, which is the plainest statement
+    of what the widening costs.
+    """
+    for codec, document in [
+        (wrench.YAML, b"n: 18446744073709551615\n"),
+        (wrench.JSON, b'{"n": 18446744073709551615}\n'),
+    ]:
+        assert isinstance(codec.decode(document)["n"], float)
+
+    near = wrench.YAML.decode(b"n: 18446744073709551615\n")["n"]
+    past = wrench.YAML.decode(b"n: 18446744073709551616\n")["n"]
+    assert near == past
+
+    exact = wrench.YAML.decode(b"n: 9223372036854775807\n")["n"]
+    assert isinstance(exact, int)
+
+
 # COVERS: FR-4.7 | regression
 def test_toml_temporal_types_decode_to_iso_strings():
     """FR-2.9 applied to the second format with native dates. Each spelling is

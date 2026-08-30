@@ -124,6 +124,40 @@ func TestTOMLRefusesADocumentThatIsNotATable(t *testing.T) {
 	}
 }
 
+// COVERS: FR-4.7 | negative
+func TestTOMLRefusesAnIntegerPastInt64(t *testing.T) {
+	if _, err := wrench.TOML.Decode([]byte("n = 9223372036854775808\n")); err == nil {
+		t.Error("decoding a value past int64 was accepted")
+	}
+	if _, err := wrench.TOML.Decode([]byte("n = 9223372036854775807\n")); err != nil {
+		t.Errorf("int64 max was refused: %v", err)
+	}
+}
+
+// COVERS: FR-4.10 | property
+func TestAnIntegerPastInt64WidensToAFloat(t *testing.T) {
+	// The band Go alone kept exact: go-yaml reaches for uint64 above int64, so
+	// (int64max, uint64max] arrived here as an exact integer while anything
+	// larger had already become a float64.
+	for _, codec := range []struct {
+		name  string
+		codec wrench.Codec
+		doc   string
+	}{
+		{"yaml", wrench.YAML, "n: 18446744073709551615\n"},
+		{"json", wrench.JSON, "{\"n\": 18446744073709551615}\n"},
+	} {
+		value, err := codec.codec.Decode([]byte(codec.doc))
+		if err != nil {
+			t.Fatalf("%s: decoding: %v", codec.name, err)
+		}
+		got := value.(map[string]any)["n"]
+		if _, ok := got.(float64); !ok {
+			t.Errorf("%s: a value past int64 came back %T, not float64", codec.name, got)
+		}
+	}
+}
+
 // COVERS: FR-4.7 | regression
 func TestTOMLTemporalTypesDecodeToISOStrings(t *testing.T) {
 	value, err := wrench.TOML.Decode([]byte("d = 2026-01-01\ndt = 2026-01-01T07:32:00Z\n"))

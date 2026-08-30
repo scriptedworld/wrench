@@ -32,7 +32,9 @@ pub const JSON: JsonCodec = JsonCodec;
 
 impl Codec for JsonCodec {
     fn decode(&self, data: &[u8]) -> Result<Value, crate::Error> {
-        serde_json::from_slice(data).map_err(crate::Error::parse)
+        let mut value: Value = serde_json::from_slice(data).map_err(crate::Error::parse)?;
+        widen_past_i64(&mut value);
+        Ok(value)
     }
 
     fn encode(&self, value: &Value) -> Result<Vec<u8>, crate::Error> {
@@ -139,5 +141,31 @@ impl Formatter for CanonicalFormatter<'_> {
         W: ?Sized + io::Write,
     {
         self.pretty.end_object_value(writer)
+    }
+}
+
+/// Widens an integer past `i64` to a float, in place. FR-4.10.
+///
+/// THE ONE BAND THIS PACK KEPT EXACT IN JSON. serde_json reaches for `u64` when
+/// a positive integer will not fit `i64`, so values in `(i64::MAX, u64::MAX]`
+/// decoded exactly here while anything larger, and anything negative past the
+/// boundary, had already become `f64`. The YAML codec never had it, because the
+/// YAML parser offers only `i64` or `f64`.
+///
+/// It is the same shape as the defect the Go pack had in its YAML codec, from
+/// the other direction: each pack kept the band its own parser had a type for,
+/// so the two disagreed about the value while agreeing about everything else.
+fn widen_past_i64(value: &mut Value) {
+    match value {
+        Value::Number(number) => {
+            if let Some(exact) = number.as_u64() {
+                if exact > i64::MAX as u64 {
+                    *value = Value::from(exact as f64);
+                }
+            }
+        }
+        Value::Array(items) => items.iter_mut().for_each(widen_past_i64),
+        Value::Object(entries) => entries.values_mut().for_each(widen_past_i64),
+        _ => {}
     }
 }

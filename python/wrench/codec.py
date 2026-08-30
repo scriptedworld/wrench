@@ -16,9 +16,12 @@ ambiguous rather than by what the value is.
 from __future__ import annotations
 
 import datetime
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import yaml
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from wrench.errors import EncodeError, ParseError, wrapping
 from wrench.float_text import canonical_float_text
@@ -94,8 +97,12 @@ def widen(value: int) -> int | float:
     return float(value)
 
 
-def _normalise(value: object) -> object:
+def _normalise(value: object, integer: Callable[[int], object] = widen) -> object:
     """What the parser produced, in the shape a JSON Schema validator expects.
+
+    `integer` decides what happens to a value outside int64. YAML and JSON widen
+    it to a float; TOML refuses, because its own spec requires an error and
+    every other implementation throws one.
 
     A mapping key that is not a string has no JSON equivalent, so it is refused
     rather than coerced: coercing invents a document nobody wrote.
@@ -115,17 +122,39 @@ def _normalise(value: object) -> object:
     if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
         return value.isoformat()
     if isinstance(value, int) and not isinstance(value, bool):
-        return widen(value)
+        return integer(value)
     if isinstance(value, dict):
         out = {}
         for key, item in value.items():
             if not isinstance(key, str):
                 raise TypeError(f"mapping key {key!r} is {type(key).__name__}, not a string")
-            out[key] = _normalise(item)
+            out[key] = _normalise(item, integer)
         return out
     if isinstance(value, (list, tuple)):
-        return [_normalise(item) for item in value]
+        return [_normalise(item, integer) for item in value]
     return value
+
+
+def within_int64(value: int) -> int:
+    """An integer TOML can carry, or a refusal.
+
+    TOML v1.0.0 requires this: arbitrary 64-bit signed integers are handled
+    losslessly, and "if an integer cannot be represented losslessly, an error
+    must be thrown". Six independent parsers were asked and all six throw,
+    three in Go and three in Rust.
+
+    PYTHON IS THE WHOLE OF THE DEVIATION, and it is the ecosystem rather than
+    one library: `tomllib` and `tomlkit` both accept the value, because Python
+    integers are unbounded and neither range-checks. So there is nothing to swap
+    to and the check belongs here.
+
+    This is the one place widening is not the answer. `widen` exists because
+    YAML and JSON leave the range open and the packs had to agree on something;
+    TOML leaves nothing open.
+    """
+    if INT64_MIN <= value <= INT64_MAX:
+        return value
+    raise ValueError(f"{value} is out of range for TOML, which carries 64-bit signed integers")
 
 
 def _at(where: str, error: ValueError) -> ValueError:

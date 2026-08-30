@@ -26,7 +26,7 @@ import datetime
 import tomllib
 from typing import TypeGuard
 
-from wrench.codec import DELETE, FIRST_PRINTABLE, _normalise
+from wrench.codec import DELETE, FIRST_PRINTABLE, INT64_MAX, INT64_MIN, _normalise, within_int64
 from wrench.errors import EncodeError, ParseError, wrapping
 from wrench.float_text import canonical_float_text
 
@@ -43,9 +43,14 @@ class TOMLCodec:
 
         `tomllib.TOMLDecodeError` does not cross this boundary; the cause is
         kept and reachable.
+
+        `within_int64` rather than the default widening. TOML requires an error
+        for an integer it cannot carry losslessly, and `tomllib` does not raise
+        one, so the range is checked here. It is a parse failure because that is
+        where the other six implementations put it.
         """
         with wrapping(ParseError):
-            return _normalise(tomllib.loads(data.decode("utf-8")))
+            return _normalise(tomllib.loads(data.decode("utf-8")), within_int64)
 
     def encode(self, value: object) -> bytes:
         """A structure into canonical bytes, keys sorted.
@@ -180,6 +185,8 @@ def _number(value: float) -> str:
     integer. FR-4.8.
     """
     if isinstance(value, int):
+        if not INT64_MIN <= value <= INT64_MAX:
+            raise ValueError(f"{value} is out of range for TOML, which carries 64-bit signed integers; no other implementation can read it back")
         return str(value)
     return canonical_float_text(value)
 

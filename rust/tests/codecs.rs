@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use serde_json::json;
 use wrench::{
     load_json_file, save_json_file, save_toml_file, save_yaml_file, Codec, Reader, Writer, JSON,
-    TOML,
+    TOML, YAML,
 };
 
 struct Stub {
@@ -125,6 +125,40 @@ fn toml_refuses_a_null() {
 fn toml_refuses_a_document_that_is_not_a_table() {
     TOML.encode(&json!([1, 2]))
         .expect_err("a top-level array was accepted");
+}
+
+// COVERS: FR-4.7 | negative
+#[test]
+fn toml_refuses_an_integer_past_int64() {
+    TOML.decode(b"n = 9223372036854775808\n")
+        .expect_err("a value past int64 was accepted");
+    TOML.decode(b"n = 9223372036854775807\n")
+        .expect("int64 max is representable and must decode");
+}
+
+// COVERS: FR-4.10 | property
+#[test]
+fn an_integer_past_int64_widens_to_a_float() {
+    // Rust was already the reference for this in YAML: its decoder falls to f64
+    // where Go reached for uint64 and Python kept an unbounded int.
+    for (name, bytes) in [
+        ("yaml", &b"n: 18446744073709551615\n"[..]),
+        ("json", &b"{\"n\": 18446744073709551615}\n"[..]),
+    ] {
+        let value = if name == "yaml" {
+            YAML.decode(bytes).expect("decode")
+        } else {
+            JSON.decode(bytes).expect("decode")
+        };
+        assert!(
+            value["n"].is_f64(),
+            "{name}: a value past int64 came back {:?}, not a float",
+            value["n"]
+        );
+    }
+
+    let exact = YAML.decode(b"n: 9223372036854775807\n").expect("decode");
+    assert!(exact["n"].is_i64(), "int64 max must stay an integer");
 }
 
 // COVERS: FR-4.7 | regression
