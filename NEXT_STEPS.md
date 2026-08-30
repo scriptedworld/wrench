@@ -78,6 +78,54 @@ and grim the mechanism; the finding is at
 user. That was an open estate question and the ruling should reach silo, since
 qwark left its Go comments alone on the opposite reading.
 
+## The Rust crate cannot be packaged, and something has to give
+
+`cargo package` builds the tarball and then fails to verify it:
+
+    Packaged 22 files, 149.2KiB
+    Verifying wrench v0.3.0
+    error: failed to run custom build command for `wrench v0.3.0`
+      reading .../rust/target/package/schemas: No such file or directory
+
+`rust/build.rs` reads `../schemas`, one level above the pack, which is the one
+copy every pack reads and is deliberate. It is also outside the crate, so the
+tarball does not carry it and the packaged crate cannot build.
+
+**Two things in the repository already assume this works.** `README.md` says the
+Rust pack declares its licence in `Cargo.toml` "so a consumer resolving either
+through a package index sees it without reading the tree", which presumes index
+distribution. And the reasoning recorded for why Rust needs no
+`shipped-schemas-are-current` gate task is about staleness only: `build.rs`
+regenerates every build so its copy cannot go stale. That is correct and does
+not reach packaging.
+
+Go and Python do not have this. Both carry the schemas as committed generated
+source, so both are self-contained by construction. Rust is the only pack whose
+schemas exist solely because of where the directory sits.
+
+**The question is whether the crate is meant to be published at all.** bolt takes
+it by path today, so nothing is broken in service. If publishing is intended,
+`build.rs` needs a copy inside the pack or the generated source committed as the
+other two do, and FR-3.2's one-copy rule has to say which. If it is not, the
+README's package-index sentence is describing something that will not happen and
+should say so.
+
+**And `just dist` leaves the pack unbuildable until it is cleaned**, which is the
+worse half. `build.rs` resolves `../schemas` from `CARGO_MANIFEST_DIR`, so during
+package verification that becomes `target/package/schemas`, and the path is
+cached in the build script's `rerun-if-changed`. An ordinary `cargo test` in
+`rust/` then panics on a path under `target/package/` that never existed:
+
+    thread 'main' panicked at build.rs:28:29:
+    reading .../rust/target/package/schemas: No such file or directory
+
+`rm -rf rust/target/package` restores it, and so does `just clean`. Measured
+here, including the recovery, so a session that runs `dist` and then a suite is
+not left guessing.
+
+Found by `just dist` in the Rust pack, which the factory's notes predicted would
+have an opinion for exactly this reason.
+
 ## The inbox
 
 Empty. Four bolt entries were resolved: three acted on, and the fourth promoted
