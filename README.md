@@ -196,6 +196,8 @@ not. TypeScript and Ruby packs are named and not built.
 
 ## Reading further
 
+    docs/runbook.md       binding a pack into your project, what each pack is
+                          built on, and where the three were forced to agree
     docs/SPEC.md          how the pieces fit, written so that a fourth pack
                           could be built from it
     docs/REQUIREMENTS/    the contract, one file per requirement
