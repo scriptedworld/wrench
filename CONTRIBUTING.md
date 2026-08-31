@@ -101,7 +101,7 @@ that one was wanted. When a check fails the options are to fix it or to ask.
 A hook refuses a commit carrying a pragma `SUPPRESSIONS` does not name. Install
 it once per checkout:
 
-    ln -sf ../../bin/githooks/pre-commit .git/hooks/pre-commit
+    ln -sf ../../bin/githooks/pre-commit .git/hooks/pre-commit.local
 
 Git consults exactly one hooks directory. If `git config --get core.hooksPath`
 prints a path, that directory is the only one git reads and a hook under

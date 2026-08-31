@@ -27,11 +27,37 @@ set -uo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 
-if ! python3 "$root/bin/no-unregistered-suppression.py"; then
+checker="$root/bin/no-unregistered-suppression.py"
+
+# THE MESSAGE BELOW ASSERTS A CAUSE, SO ESTABLISH IT FIRST. Any non-zero exit
+# would otherwise print a lecture about registering a suppression: a missing
+# python3, a checker that crashed, a partial checkout. Telling somebody to
+# register a pragma they never wrote sends them looking in the wrong place, and
+# that is this hook's fault rather than theirs.
+if [ ! -f "$checker" ]; then
+    echo "pre-commit: cannot run, $checker is missing." >&2
+    exit 1
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "pre-commit: cannot run, python3 is not on PATH." >&2
+    exit 1
+fi
+
+python3 "$checker"
+status=$?
+
+if [ "$status" -eq 1 ]; then
     echo
     echo "pre-commit: refused. Register it in SUPPRESSIONS with the question and"
     echo "the answer, or remove it. --no-verify is not the way through: it is the"
     echo "one option whose whole purpose is to suppress the check that stopped you."
+    exit 1
+fi
+
+if [ "$status" -ne 0 ]; then
+    echo "pre-commit: the checker exited $status, which is not a verdict." >&2
+    echo "That is a fault in the check rather than in your commit." >&2
     exit 1
 fi
 
