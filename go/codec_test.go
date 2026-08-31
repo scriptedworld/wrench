@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/scriptedworld/wrench"
+	"github.com/scriptedworld/wrench/go"
 )
 
 // anythingSchema accepts any structure at all, so a test can reach the encode

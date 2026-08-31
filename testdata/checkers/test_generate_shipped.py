@@ -38,6 +38,7 @@ def tree(tmp_path: Path, schemas: Mapping[str, object]) -> Path:
     (tmp_path / "bin").mkdir()
     shutil.copy(SCRIPT, tmp_path / "bin" / SCRIPT.name)
     (tmp_path / "schemas").mkdir()
+    (tmp_path / "go").mkdir()
     (tmp_path / "python" / "wrench").mkdir(parents=True)
     for name, document in schemas.items():
         (tmp_path / "schemas" / name).write_text(json.dumps(document, indent=2) + "\n")
@@ -58,7 +59,7 @@ def test_a_fresh_run_writes_both_packs(tmp_path):
 
     assert run(root).returncode == 0
 
-    go = (root / "shipped_gen.go").read_text()
+    go = (root / "go" / "shipped_gen.go").read_text()
     python = (root / "python" / "wrench" / "_shipped.py").read_text()
     assert "one.schema.json" in go
     assert "one.schema.json" in python
@@ -85,7 +86,7 @@ def test_check_catches_an_edited_schema(tmp_path):
 
     done = run(root, "--check")
     assert done.returncode == 1
-    assert "STALE  shipped_gen.go" in done.stdout
+    assert "STALE  go/shipped_gen.go" in done.stdout
     assert "STALE  python/wrench/_shipped.py" in done.stdout
 
 
@@ -100,7 +101,7 @@ def test_check_catches_a_hand_edited_generated_file(tmp_path):
     done = run(root, "--check")
     assert done.returncode == 1
     assert "STALE  python/wrench/_shipped.py" in done.stdout
-    assert "STALE  shipped_gen.go" not in done.stdout, "only the edited file is stale"
+    assert "STALE  go/shipped_gen.go" not in done.stdout, "only the edited file is stale"
 
 
 def test_check_catches_an_added_schema(tmp_path):
@@ -151,7 +152,7 @@ def test_the_generated_order_does_not_depend_on_the_directory_read(tmp_path):
     root = tree(tmp_path, schemas)
 
     run(root)
-    first = (root / "shipped_gen.go").read_text()
+    first = (root / "go" / "shipped_gen.go").read_text()
     run(root)
-    assert (root / "shipped_gen.go").read_text() == first
+    assert (root / "go" / "shipped_gen.go").read_text() == first
     assert first.index("a.schema.json") < first.index("b.schema.json")

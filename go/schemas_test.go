@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/scriptedworld/wrench"
+	"github.com/scriptedworld/wrench/go"
 )
 
 // exported is every shipped schema this pack offers by name, keyed by the $id it
@@ -27,7 +27,7 @@ var exported = map[string]wrench.Schema{
 func mustSchemaFiles(t *testing.T) []string {
 	t.Helper()
 
-	entries, err := os.ReadDir("schemas")
+	entries, err := os.ReadDir(schemaFileDir)
 	if err != nil {
 		t.Fatalf("schemas/ is not readable: %v", err)
 	}
@@ -47,7 +47,7 @@ func mustSchemaFiles(t *testing.T) []string {
 func mustDecodeSchema(t *testing.T, name string) map[string]any {
 	t.Helper()
 
-	data, err := os.ReadFile(filepath.Join("schemas", name))
+	data, err := os.ReadFile(filepath.Join(schemaFileDir, name))
 	if err != nil {
 		t.Fatalf("%s is not readable: %v", name, err)
 	}
@@ -63,7 +63,7 @@ func mustDecodeSchema(t *testing.T, name string) map[string]any {
 func declaredIDs(t *testing.T) map[string]string {
 	t.Helper()
 
-	entries, err := os.ReadDir("schemas")
+	entries, err := os.ReadDir(schemaFileDir)
 	if err != nil {
 		t.Fatalf("schemas/ is not readable: %v", err)
 	}
@@ -73,7 +73,7 @@ func declaredIDs(t *testing.T) map[string]string {
 		if !strings.HasSuffix(entry.Name(), ".schema.json") {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join("schemas", entry.Name()))
+		data, err := os.ReadFile(filepath.Join(schemaFileDir, entry.Name()))
 		if err != nil {
 			t.Fatalf("%s is not readable: %v", entry.Name(), err)
 		}
@@ -154,7 +154,7 @@ func TestTheSchemasShipAsFilesBesideTheLibrary(t *testing.T) {
 	// what lets a YAML language server be pointed at them while a jig is being
 	// written, and it is what keeps one copy rather than one per pack.
 	for _, name := range []string{"envelope.schema.json", "jig.schema.json", "manifest.schema.json", "definitions.schema.json"} {
-		path := filepath.Join("schemas", name)
+		path := filepath.Join(schemaFileDir, name)
 		data, err := os.ReadFile(path)
 		if err != nil {
 			t.Errorf("%s is not present as a file: %v", path, err)

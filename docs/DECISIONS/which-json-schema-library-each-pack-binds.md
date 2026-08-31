@@ -17,7 +17,7 @@ covering the 2020-12 dialect wrench declares.
 
 | Language | Library | 2020-12 | How that was established |
 |---|---|---|---|
-| Go | `santhosh-tekuri/jsonschema/v6` | yes | In use, `go.mod` |
+| Go | `santhosh-tekuri/jsonschema/v6` | yes | In use, `go/go.mod` |
 | Python | `jsonschema` | yes | In use, `pyproject.toml` |
 | Rust | `jsonschema`, `default-features = false` | yes | Measured, below |
 | TypeScript | `ajv` | yes | Run against wrench's schemas |

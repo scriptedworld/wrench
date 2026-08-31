@@ -1,4 +1,4 @@
-module github.com/scriptedworld/wrench
+module github.com/scriptedworld/wrench/go
 
 go 1.26
 

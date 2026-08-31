@@ -14,23 +14,18 @@ specify.
     testdata/canonical/      the shared fixture set that holds the packs level
     bin/                     the repository's own checkers
 
-    *.go                     the Go pack, at the repository root
+    go/                      the Go pack
     python/wrench/           the Python pack
     rust/src/                the Rust pack
 
-The Go pack sits at the root while the other two have a directory each. That
-asymmetry is known, and moving it is deferred work rather than an open question.
-
 ## Running the suites
 
-    go test ./...
+    (cd go && go test ./...)
     PYTHONPATH=python python3 -m pytest python/tests -q
     cargo test --manifest-path rust/Cargo.toml
 
-`just test` delegates to each pack's own Justfile and runs the Python and Rust
-suites. It does not run the Go suite: the delegator looks for `go/Justfile`, the
-Go pack is at the root, so `go` is reported as not adopted and skipped and the
-command exits 0 having compiled no Go at all. Run `go test ./...` yourself.
+`just test` delegates to each pack that has adopted its own Justfile. Run the Go
+suite from `go/` until that pack adopts one.
 
 The Python suite needs `PyYAML`, `jsonschema` and `referencing` importable. The
 pack imports them by name, so a platform package satisfies it as well as a
@@ -43,7 +38,7 @@ Every pack's suite covers the same cases, and this is what fails when one does
 not:
 
     ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
-        --suite go='*_test.go' --suite python='python/tests/*.py' \
+        --suite go='go/*_test.go' --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' .
 
 A divergence is possible and has to be declared. The scope marker on a

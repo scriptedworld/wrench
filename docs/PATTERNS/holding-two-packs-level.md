@@ -13,7 +13,7 @@ all of them implement.
 ## The check that enforces it
 
     ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
-        --suite go='*_test.go' --suite python='python/tests/*.py' .
+        --suite go='go/*_test.go' --suite python='python/tests/*.py' .
 
 **Run this before committing anything that touches a test.** It fails when a
 `COVERS:` mark exists in one suite and not another, and it compares the
@@ -41,7 +41,7 @@ the tree broken in the others.
 1. Edit the file in `schemas/`. That is the single copy; no pack keeps its own.
 2. Ask which packs exercise it, and read the answer rather than assuming:
 
-       grep -rn '<SchemaName>' *_test.go python/tests/
+       grep -rn '<SchemaName>' go/*_test.go python/tests/
 
    A pack that prints nothing does not test that schema. Its green run will not
    report your change either way, so add the test before you rely on it.
@@ -50,7 +50,7 @@ the tree broken in the others.
    and nothing will say so.
 4. Run both suites, and confirm the new tests ran rather than reading the summary:
 
-       go test -count=1 -run '<Name>' -v ./...
+       (cd go && go test -count=1 -run '<Name>' -v ./...)
        PYTHONPATH=python python3 -m pytest python/tests -q -k '<name>' -v
 
 5. `bolt` builds against this working tree through a `replace` directive, so a
@@ -97,7 +97,7 @@ than the pack.
 ## The fixture set is the oracle, and neither pack is
 
 `testdata/canonical/` holds the declared cases. Do not re-derive the emitter
-rules by reading `codec.go`: if the two ever disagree, the fixture is right and
+rules by reading `go/codec.go`: if the two ever disagree, the fixture is right and
 the pack is wrong. That is what makes agreement evidence rather than coincidence.
 
 Adding a case means adding it once and both packs picking it up, because each

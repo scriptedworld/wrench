@@ -44,5 +44,5 @@ adding a schema means remembering a second place.
 
 ## Where it is implemented
 
-`schema.go`, `compileShipped` and `readShipped`. `python/wrench/schema.py`,
+`go/schema.go`, `compileShipped` and `readShipped`. `python/wrench/schema.py`,
 `_shipped_documents` and `_shipped_registry`.

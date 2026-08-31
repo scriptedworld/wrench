@@ -5,7 +5,7 @@
 `schemas/` is the one copy. Each pack carries those bytes as source, generated
 from the directory rather than written by hand.
 
-    Go      shipped_gen.go     bin/generate-shipped.py, committed
+    Go      go/shipped_gen.go  bin/generate-shipped.py, committed
     Python  _shipped.py        bin/generate-shipped.py, committed
     Rust    shipped.rs         build.rs, regenerated every build
 

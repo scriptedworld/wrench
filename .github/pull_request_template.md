@@ -7,7 +7,7 @@ exist.
 - [ ] Every new test carries a `COVERS:` line naming a requirement and a kind.
 - [ ] `./bin/test-suite-parity.py` passes, or the divergence is declared by a
       scope marker on the requirement.
-- [ ] All three suites pass, including `go test ./...`, which `just test` does
+- [ ] All three suites pass, including `go test ./...` from `go/`, which `just test` does
       not run.
 - [ ] Behaviour that changed changed in all three packs, and in
       `testdata/canonical/` where the emitted bytes moved.

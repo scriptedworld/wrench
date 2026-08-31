@@ -277,7 +277,7 @@ before it is symmetrical with its siblings.
 | Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum |
 | Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants |
 | Reading the kind | `Step()` method | `step` property | `step()` method |
-| Schemas reach the pack by | generated `shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` |
+| Schemas reach the pack by | generated `go/shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` |
 | Validator | santhosh-tekuri/jsonschema | `jsonschema` | `jsonschema` crate |
 
 Each pack binds its language's established implementation instead of

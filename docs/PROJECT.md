@@ -48,21 +48,14 @@ something works; read this file for how the project is run.
                              in this repository moving
     adapters/ config/        adopted from toolbox, all links and none tracked
 
-    wrench.go codec.go       the Go pack, at the repository root
-    file.go schema.go        shipped_gen.go is generated from schemas/
-    errors.go yaml.go
-    json.go toml.go
-    *_test.go
+    go/                      the Go pack
+                             shipped_gen.go is generated from schemas/
 
     python/wrench/           the Python pack
     python/tests/            _shipped.py is generated from schemas/
 
     rust/src/                the Rust pack
     rust/tests/              build.rs generates its copy every build
-
-The Go pack is at the root and the other two are under their own directories.
-That asymmetry is known and the move is deferred work rather than an open
-question.
 
 ## The gate
 
@@ -101,7 +94,7 @@ the register against every source file, not only the Python pack. There is no
 
 | Pack | Serves | State |
 |---|---|---|
-| Go | bolt's Go implementation | Built, at the repository root |
+| Go | bolt's Go implementation | Built, under `go/` |
 | Python | toolbox's adapters and checkers | Built, under `python/` |
 | Rust | bolt | Built, suite level with the others |
 | TypeScript | Consumer not yet identified | Not built |
@@ -137,7 +130,7 @@ Regenerate that instead of trusting this paragraph.
 finds an undeclared one:
 
     ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
-        --suite go='*_test.go' --suite python='python/tests/*.py' \
+        --suite go='go/*_test.go' --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' .
 
 `docs/PATTERNS/holding-two-packs-level.md` is what keeps it this way. Assert the
@@ -169,6 +162,5 @@ could.
 ## What is not done
 
 `NEXT_STEPS.md` carries the open questions. In summary: the Go and Rust packs
-have no shared-standard base of their own, the Go pack is at the root instead of
-under `go/`, and the prose sweep has had no validator pass, which by its own
-design cannot be the writer.
+have no shared-standard base of their own, and the prose sweep has had no
+validator pass, which by its own design cannot be the writer.

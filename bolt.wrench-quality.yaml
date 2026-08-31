@@ -127,14 +127,14 @@ tasks:
     # empty list the success condition.
     # No quotes around the placeholder: bolt shell-quotes a substituted value,
     # so adding a pair produces '' and sh fails to parse the line.
-    command: test -z "$(gofmt -l . | grep -Ev {artefacts_regex} || true)"
+    command: test -z "$(gofmt -l go | grep -Ev {artefacts_regex} || true)"
 
   - name: go-vet
-    command: go vet ./...
+    command: cd go && go vet ./...
 
   - name: go-test
     description: the Go pack, uncached
-    command: go test -count=1 ./...
+    command: cd go && go test -count=1 ./...
 
   - name: python-test
     description: the Python pack, run from the repository root so it finds schemas/
@@ -153,10 +153,8 @@ tasks:
 
   # ---- the shared standard, per pack at its own base -----------------------
   #
-  # The Python pack is the only one with a base of its own today. The Go pack
-  # sits at the repository root, which is also python/ and rust/'s parent, so a
-  # run there would measure three packs as one. gate/05 moves it to go/ and is
-  # blocked on go:embed. Rust has no shared standard yet.
+  # The Go and Python packs each have a base of their own. Rust has no shared
+  # standard yet.
   #
   # COMPOSITION IS A COMMAND TASK PLUS AN ADAPTER. Nested `jig:` tasks are
   # retired at bolt `f3304d8`, so a jig wanting another jig run over a
@@ -255,7 +253,7 @@ tasks:
     description: every pack's suite covers the same tests
     # Compares the suites AGAINST EACH OTHER, so it stands at the root and cannot
     # become a per-language task. Adding a pack means adding a --suite here.
-    command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='*_test.go' --suite python='python/tests/*.py' --suite rust='rust/tests/*.rs' .
+    command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='go/*_test.go' --suite python='python/tests/*.py' --suite rust='rust/tests/*.rs' .
 
   # THE CHECKER ABOVE IS THE ONE THING NOTHING ELSE CHECKS. It decides whether
   # three suites agree, and until 2026-08-28 it could report `exit 0` on a real

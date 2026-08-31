@@ -96,7 +96,7 @@ checks:
 # to prevent.
 _parity:
     ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
-        --suite go='*_test.go' \
+        --suite go='go/*_test.go' \
         --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' .
 

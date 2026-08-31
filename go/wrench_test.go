@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/scriptedworld/wrench"
+	"github.com/scriptedworld/wrench/go"
 )
 
 // stubReader hands back bytes without touching a filesystem. Its existence is

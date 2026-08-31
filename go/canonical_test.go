@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/scriptedworld/wrench"
+	"github.com/scriptedworld/wrench/go"
 )
 
 // schemaFileDir is where the shipped schemas sit as files. The library embeds
 // the same directory; this is the test reading them the way a YAML language
 // server would.
-const schemaFileDir = "schemas"
+const schemaFileDir = "../schemas"
 
 var update = flag.Bool("update", false, "rewrite the canonical fixtures from what the codec emits")
 
@@ -23,7 +23,7 @@ var update = flag.Bool("update", false, "rewrite the canonical fixtures from wha
 // language-neutral on purpose: a second language pack is held level by being
 // run against these same directories, which is what stops two implementations
 // agreeing on the schema and disagreeing on the bytes.
-const fixtureRoot = "testdata/canonical"
+const fixtureRoot = "../testdata/canonical"
 
 // COVERS: FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-5.5, FR-5.6 | property
 func TestCanonicalFixtures(t *testing.T) {

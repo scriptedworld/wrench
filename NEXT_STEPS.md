@@ -35,8 +35,6 @@ the decode path, which is why the mechanism is the work rather than the rules.
 
 **A cold read of the prose sweep**, which by its own design cannot be the writer.
 
-**The Go pack under `go/`**, with the other two.
-
 **A composite jig**, whose premise the conversion to command tasks restores.
 
 **Dropping the retired jig task fields** from the jig schema. This is blocked:

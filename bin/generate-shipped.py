@@ -151,7 +151,7 @@ def python_source(entries: list[tuple[str, str]]) -> str:
 
 
 TARGETS = [
-    (ROOT / "shipped_gen.go", go_source),
+    (ROOT / "go" / "shipped_gen.go", go_source),
     (ROOT / "python" / "wrench" / "_shipped.py", python_source),
 ]
 

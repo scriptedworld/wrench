@@ -23,7 +23,7 @@ At that point the Python pack was broken three ways:
 
 **Go had no test of the manifest schema at all.**
 
-    grep -n ManifestSchema *_test.go     # printed nothing
+    grep -n ManifestSchema go/*_test.go     # printed nothing
 
 So the schema 9b3700f changed was exercised by exactly one test in the whole
 repository, and that test was in the other pack. `go test` ran, passed, and had
@@ -50,7 +50,7 @@ in one commit.** `docs/PATTERNS/holding-two-packs-level.md` is the checklist.
 
 **Before believing a green run, confirm what it read.** For a schema change:
 
-    grep -rn '<SchemaName>' *_test.go python/tests/    # who exercises it?
+    grep -rn '<SchemaName>' go/*_test.go python/tests/    # who exercises it?
 
 If that prints nothing for a pack, that pack did not test your change, and its
 green is silence rather than agreement.

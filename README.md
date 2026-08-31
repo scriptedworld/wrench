@@ -64,14 +64,14 @@ needing to know about the other. Four ship, and a caller may pass its own.
 
 ## The packs
 
-Go, at the repository root.
+Go, under `go/`.
 
-    import "github.com/scriptedworld/wrench"
+    import "github.com/scriptedworld/wrench/go"
 
     envelope, err := wrench.LoadFormattedFile(
         path, wrench.Schemas.Envelope, wrench.YAML, wrench.LocalFile)
 
-That import path is the module path `go.mod` declares, and the Go toolchain
+That import path is the module path `go/go.mod` declares, and the Go toolchain
 resolves a module path as a URL. `go get` will work once the repository is
 published at exactly that path, and not before. Until then a consumer reaches
 the pack from a checkout, through a `replace` directive or a `go.work` file.

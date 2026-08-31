@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/scriptedworld/wrench"
+	"github.com/scriptedworld/wrench/go"
 )
 
 // The expected bytes below are asserted identically in all three suites. A table
