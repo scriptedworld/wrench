@@ -40,19 +40,31 @@ Each pack has one general pair and a convenience pair per format.
 `LoadJSONFile`, `LoadTOMLFile` and their `Save` counterparts likewise.
 `LoadFormattedFile(path, schema, codec, reader)` takes the codec explicitly.
 
-**Python**
+**Python**, as skid loads its config:
 
-    import wrench
-    value = wrench.load_yaml_file(path, schema, reader)
-    wrench.save_yaml_file(value, path, schema, writer)
+    SCHEMA = wrench.compile_schema("skid config", schemas.CONFIG)
 
-`load_json_file`, `save_toml_file` and so on. `wrench.compile_schema` builds the
-schema argument.
+    try:
+        document = wrench.load_yaml_file(path, SCHEMA, wrench.LOCAL_FILE)
+    except (wrench.ParseError, wrench.ValidationError) as exc:
+        raise ValueError(f"config is present but not usable: {exc}") from exc
 
-**Rust**
+    wrench.save_yaml_file(document, path, SCHEMA, wrench.LOCAL_FILE)
 
-    let schema = wrench::compile_schema(name, text)?;
-    let value = wrench::load_yaml_file(path, schema.as_ref(), &reader)?;
+`load_json_file`, `save_toml_file` and so on. `wrench.LOCAL_FILE` is the
+ready-made reader and writer for an ordinary file.
+
+**Rust**, as bolt reads a jig:
+
+    let value = wrench::load_formatted_file(
+        path,
+        &wrench::schemas::JIG,
+        &wrench::YamlCodec,
+        &wrench::LocalFileIo,
+    )?;
+
+`wrench::schemas` carries the shipped schemas; `wrench::compile_schema` builds
+one from text.
 
 A schema says what the document may contain. The reader and writer are where
 bytes come from, which is what lets a caller test without a filesystem.
@@ -102,6 +114,33 @@ emitted raw.
 that the same document through any pack and any codec produces the same bytes.
 The suite-parity check refuses to pass over an emptiness: pointed at a glob
 matching no files it exits 2 rather than reporting success.
+
+## How this repository gates itself, if yours has several packs
+
+wrench is one repository holding three independent libraries, so the gate runs
+at two levels and the split is deliberate.
+
+**Each pack gates itself.** `just checks` runs `_each checks`, and every pack
+runs the language jig for its own language plus the common one. A pack knows
+nothing about its siblings.
+
+**The root runs what no pack can.** `bin/test-suite-parity.py` fails when one
+pack's suite covers something another's does not, and it reads all three at
+once. A pack that could run it would have to know about its siblings, which is
+what the layering exists to prevent.
+
+    just checks        each pack, then the parity check
+    just test          the suite in every pack
+    just coverage      the same, with coverage
+
+**The Justfile is where the coordination lives, not the jig.** Bolt can compose
+by running itself against a subdirectory and taking the verdict, and that is the
+right tool when the subprojects are unlike each other. Here they are three
+implementations of one contract, checked identically and then compared, so a
+recipe that fans out and one check that fans in says it more plainly.
+
+If your repository is one project, none of this applies: link the sets at the
+root and run the jigs there.
 
 ## Gate your project the same way
 
