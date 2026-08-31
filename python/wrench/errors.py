@@ -155,7 +155,7 @@ class SchemaError(Error):
     nothing can be validated against it at all and the fix is to the schema
     rather than to any document.
 
-    It is the type `clank gate/30` recorded as missing when `compile_schema` was
+    It is the type recorded as missing when `compile_schema` was
     found leaking `json.JSONDecodeError` and `jsonschema.SchemaError`.
     """
 

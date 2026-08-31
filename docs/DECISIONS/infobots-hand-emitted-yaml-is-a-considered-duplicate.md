@@ -89,7 +89,7 @@ bare. What it is not is evidence about what infobot currently emits.
 **Do not repair this by reaching into infobot.** A check needing a sibling
 repository present fails for the wrong reason. No check here resolves an infobot
 path: `grep -rn infobot` hits prose in this file and the fixture's directory
-name, and `/home/ancient/.projects/infobot` appears twice inside the fixture as
+name, and `/home/you/project` appears twice inside the fixture as
 the value of a `cwd` key, which is data in the case rather than a path anything
 opens. A fresh clone of wrench passes with infobot absent.
 

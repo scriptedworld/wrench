@@ -9,8 +9,8 @@ Asked twice, by two sessions, about two different fields. The
 answer was the same both times, so it is written here rather than re-derived a
 third time.
 
-    silo         may `metadata.statistics` enumerate the permitted metric keys
-    ~/.projects  may `reasons[].kind` carry a non-normative list of kinds in use
+    first ask     may `metadata.statistics` enumerate the permitted metric keys
+    second ask    may `reasons[].kind` carry a non-normative list of kinds in use
 
 No to both, and no to the softer form as well.
 

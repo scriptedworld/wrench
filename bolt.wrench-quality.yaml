@@ -5,13 +5,12 @@
 # WHY THIS IS WRENCH'S OWN AND NOT THE SHARED JIGS. toolbox's bolt.*-std-quality
 # files are still in the retired format: they carry `version: 1`, `id:`, `tags:`
 # and `result_command:`, none of which wrench's own jig.schema.json accepts. So
-# wrench cannot adopt them until `clank/tasks/toolbox/port-the-jigs` lands, and
-# waiting for that meant gating nothing at all.
+# wrench cannot adopt them until those jigs are ported to the current schema,
+# and waiting for that meant gating nothing at all.
 #
 # This runs a project's own checks in the meantime. It is not a substitute for
-# the shared standard, and `clank/tasks/wrench/gate/10-a-composite-jig` is still
-# the destination: four jig tasks, each language paired with common at its own
-# base. Read that before extending this.
+# the shared standard, and the destination is still four jig tasks, each
+# language paired with common at its own base. Read that before extending this.
 #
 # ORDERED CHEAPEST FIRST, so a failure surfaces before the slow checks run.
 #
@@ -101,8 +100,8 @@ tasks:
     # plus at least one implementation no pack binds, so unanimity cannot
     # quietly become unanimity among wrench's own bindings. The rest of that is
     # unwritten, so ajv is the only implementation asked today. The argument is
-    # in docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md
-    # and the remaining work is clank/tasks/wrench/schemas/50.
+    # in docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md,
+    # and asking a second independent implementation is the remaining work.
     #
     # Run through deno, which is installed and declared, so this needs no global
     # npm install and no package.json in a repository that has no JavaScript.

@@ -109,17 +109,49 @@ prints a path, that directory is the only one git reads and a hook under
 inert is to watch it fail to refuse something. Where a hook there dispatches to
 a per-repository one, install to the name it dispatches to instead.
 
-## The full gate
+## The full gate, and why it is not inside this repository
 
-The suites and the parity check are what a contributor runs. Beyond them the
-repository is gated by bolt, a companion project that reads a quality definition
-and runs the checkers it names. It is not published, so a change is gated when
-it lands rather than in your checkout.
+The suites and the parity check are what a contributor runs, and they need
+nothing but this checkout.
 
-Two things to know if you do run it. Read `success` in the `result.yaml` it
-writes and never the exit status, which is 0 whenever a run was carried out at
-all. And give it an output directory that does not already hold a run, because
-it refuses one that does.
+Beyond them, this repository is held to a **quality standard versioned in one
+place and adopted by every project that uses it**. The checkers, the adapters
+and the tool configuration live in a companion repository, `toolbox`, and a
+project adopts them as symlinks rather than as copies. One definition of what a
+passing repository looks like, changed once, and every adopter has the change.
+
+That is the same argument this project makes about file formats: several
+implementations of one standard drift, and the fix is to give the standard a
+single owner. wrench owns the format; toolbox owns the gate.
+
+**The cost is that a clone of this repository alone has no gate.** The links
+point at a sibling that is not there yet, so the runner reports a definition it
+cannot read. That is adoption not yet run, rather than a broken checkout.
+
+Clone `toolbox` beside this repository and run its linker:
+
+    git clone <toolbox> ../toolbox
+    python3 ../toolbox/bin/link-toolbox.py --yes . go python
+
+`go` and `python` are the sets wrench adopts. `go` pulls in `common`, and
+`common` pulls in `secrets`, so those two names bring twelve links. To verify an
+adoption rather than make one:
+
+    $ python3 ../toolbox/bin/link-toolbox.py --check . go python
+    all 12 link(s) present and correct
+
+`--check` writes nothing and exits 1 on any drift, so it is safe to run first,
+and `--plan` says what would happen and stops.
+
+The gate itself is `bolt`, a runner that reads a quality definition and runs the
+checkers it names:
+
+    bolt wrench-quality .
+
+Two things to know when you run it. **Read `success` in the `result.yaml` it
+writes and never the exit status**, which is 0 whenever a run was carried out at
+all, whatever the tools concluded. And give it an output directory that does not
+already hold a run, because it refuses one that does.
 
 ## Commits and prose
 

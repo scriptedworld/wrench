@@ -75,7 +75,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
-    "D103",     # open question, filed at clank/inbox/toolbox/two-docstring-thresholds
+    "D103",     # open question: two docstring thresholds disagree
     "PLR2004",  # a magic value is the point of a fixture
     "PT011",    # the exception type IS the assertion
     "PLC0415",  # a local import is how a module is reloaded under a changed env

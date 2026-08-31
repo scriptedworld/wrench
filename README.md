@@ -36,6 +36,45 @@ three suites, and a parity check that fails when a case is covered in one suite
 and missing from another. No pack is the oracle for another: if two disagree,
 the fixture is right.
 
+## How it is held to that
+
+    cd go     && go test ./...
+    cd python && python3 -m pytest
+    cd rust   && cargo test
+
+    ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
+        --suite go='go/*_test.go' \
+        --suite python='python/tests/*.py' \
+        --suite rust='rust/tests/*.rs' .
+
+Three suites and a checker that compares them **against each other**. The parity
+check fails when a case is covered in one pack and missing from another, which
+is the only thing standing between "three libraries" and "one library with three
+bindings". It stands at the root because no pack can run it: a pack that could
+would have to know about its siblings.
+
+**The contract is written down and traced to the tests.** `docs/REQUIREMENTS/`
+holds one file per requirement, and every test names the requirement it
+discharges in a comment above it:
+
+    // COVERS: FR-4.4 | negative
+
+A checker walks both directions. A test citing a requirement that does not exist
+fails; a requirement no test cites fails too, unless its row is marked as an open
+decision. So a requirement cannot quietly lose its test, and a test cannot
+quietly stop discharging anything.
+
+**A check that matches nothing is a check that passes.** The parity globs above
+are load-bearing, so they are tested by being pointed at the wrong place:
+
+    $ ./bin/test-suite-parity.py --suite go='*_test.go' ...
+    parity: suite 'go' matched no files at '*_test.go'
+    exit 2
+
+That refusal is the point. Run with the correct glob it reports 66 tests held
+level across the three suites, and a scan that found nothing must never be
+reported as a scan that found nothing wrong.
+
 ## The two calls
 
     load_formatted_file(path, schema, codec, reader)

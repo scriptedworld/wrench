@@ -12,7 +12,7 @@ this machine. There is no warning, no message, and `ls -l .git/hooks/pre-commit`
 shows exactly what a working installation shows.
 
     $ git config --show-origin --get core.hooksPath
-    file:/home/ancient/.gitconfig   /home/ancient/.git-hooks
+    file:/home/you/.gitconfig   /home/you/.git-hooks
 
 The probe that found it: a Go file carrying `//nolint:gochecknoglobals`,
 registered nowhere, which the hook existed to refuse.

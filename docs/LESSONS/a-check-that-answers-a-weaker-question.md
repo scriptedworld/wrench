@@ -5,11 +5,12 @@ success, and had not looked at the thing.**
 
 ## The collection is bolt's, and this file is not it
 
-`~/.projects/bolt/docs/LESSONS/a-check-that-answers-a-weaker-question.md` is the
-authority and grows as instances turn up. **It states its own current count and
-says that a version reporting fewer is not the one being maintained.** Read it
-there; a number repeated here would be a second copy of the thing that already
-drifted once.
+The authority is the file of the same name in **bolt**, the runner this project
+was built alongside, at `docs/LESSONS/a-check-that-answers-a-weaker-question.md`
+in that repository. It grows as instances turn up, **states its own current
+count, and says that a version reporting fewer is not the one being
+maintained.** Read it there; a number repeated here would be a second copy of
+the thing that already drifted once.
 
 That drift is this repository's other lesson happening to this one,
 `a-document-that-restates-another-becomes-the-stale-copy`, in the file least

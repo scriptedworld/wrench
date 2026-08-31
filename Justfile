@@ -54,8 +54,7 @@ default:
 #
 # AND RUNNING NOTHING IS ITS OWN FAILURE. If no pack has a Justfile this exits 1
 # saying so, rather than succeeding over an empty loop. A gate that ran nothing
-# must not report green, which is the whole of
-# silo/docs/LESSONS/scanned-nothing-and-found-nothing-are-one-green/.
+# must not report green: scanning nothing and finding nothing are one green.
 _each recipe:
     #!/usr/bin/env bash
     set -euo pipefail

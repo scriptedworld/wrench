@@ -25,8 +25,7 @@ requirements honestly, because in toolbox the checkers are the product.
 
 `testdata/` is in that checker's hardcoded `SKIP_DIRS` and is matched by no
 suite glob, so it is the one directory both checkers ignore. **That is a hiding
-place rather than a home**, and the gap is filed at
-`clank/inbox/toolbox/a-project-cannot-test-its-own-tooling/`.
+place rather than a home**, and the gap is filed upstream as an open request.
 
 Fixtures are written to `tmp_path` rather than committed, so no fixture file
 exists on disk for either checker to walk into.

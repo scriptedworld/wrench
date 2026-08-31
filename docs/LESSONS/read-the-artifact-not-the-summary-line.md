@@ -6,7 +6,7 @@ On 2026-08-27 `bolt wrench-quality .` ran for the first time and reported
 `traceability` failing. The same command had been run by hand many times that day
 and every time it was reported as passing.
 
-    python3 ~/.projects/toolbox/bin/test-traceability.py \
+    python3 ../toolbox/bin/test-traceability.py \
         --requirements REQUIREMENTS.md .
 
     33 of 34 requirements covered; 0 open and exempt      <- printed

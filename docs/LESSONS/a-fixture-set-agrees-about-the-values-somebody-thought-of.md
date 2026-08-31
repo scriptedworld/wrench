@@ -33,7 +33,7 @@ Nothing inside wrench was going to find it. The fixture set reported agreement,
 both checkers were green, and `bin/test-suite-parity.py` compares which rows are
 tested rather than what the tests assert.
 
-And the measurement that followed was itself too small. `clank parity/30`
+And the measurement that followed was itself too small. The follow-up
 measured the three YAML codecs; JSON and TOML had shipped hours later, so the
 real surface was nine emitters and two packs disagreed with themselves. Go's
 JSON wrote `1000000` for a float Python then read back as an integer, where its

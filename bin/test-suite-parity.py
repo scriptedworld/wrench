@@ -89,8 +89,7 @@ SCOPE = re.compile(
 # file per requirement and retirement is carried by a `.retired` name. The
 # heading still has to be read correctly for every adopter that has not split.
 #
-# NOTHING TESTS THIS FILE, which is how that survived. See
-# `clank/tasks/wrench/gate/40-the-checkers-have-no-tests`.
+# NOTHING TESTS THIS FILE, which is how that survived.
 HEADING = re.compile(r"^##\s+(?P<title>.+?)\s*$")
 RETIRED_HEADING = re.compile(r"^retired\b", re.IGNORECASE)
 

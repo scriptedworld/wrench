@@ -5,8 +5,8 @@ A row the checker cannot parse is not reported missing: it is simply absent, and
 the run reports a clean pass over a contract with a hole in it. Measured in
 wrench 2026-08-29, adding a well-formed file with a two-letter suffix
 `FR-4.9aa` left the output at `41 of 41` and exit 0, identical to not adding it.
-`clank/inbox/toolbox/a-two-letter-requirement-suffix-is-silently-uncounted`
-carries that, and asks for a loud refusal in the checker itself.
+That is filed upstream as an open request for a loud refusal in the checker
+itself.
 
 **This check closes the same class locally and does not depend on the grammar.**
 It compares two counts of the same set reached two different ways:

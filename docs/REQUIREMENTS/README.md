@@ -64,7 +64,7 @@ open and is now just the house shape.
 
 ## Every settled row carries a test
 
-    python3 ~/.projects/toolbox/bin/test-traceability.py \
+    python3 ../toolbox/bin/test-traceability.py \
         --requirements docs/REQUIREMENTS .
 
 **Read the exit status, not the summary.** That checker prints a count and exits

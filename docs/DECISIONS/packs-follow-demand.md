@@ -30,7 +30,7 @@ Ruby was dropped and restored, and the round trip is worth keeping: it was
 doubted because `json_schemer` sounded unsupported, and measuring showed it is
 not. **A library is never why a pack does or does not get built.**
 
-There is no Ruby anywhere in `~/.projects`, and the option is kept open anyway.
+No consumer written in Ruby exists today, and the option is kept open anyway.
 Absence is the current condition rather than a verdict.
 
 Toolbox's checkers and adapters are not fixed to Python. Any of Go, Python, Rust

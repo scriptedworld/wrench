@@ -11,8 +11,8 @@ manifest through this pack. A pack needing `pip install` first would have meant
 installing requires the installer, so it was shaped to import by name and
 survive on whatever apt supplied.
 
-Nothing in that window consumes wrench, measured in `~/.projects/dotfiles` at
-`6d00d2d`:
+Nothing in that window consumes wrench, measured against the consuming
+repository at `6d00d2d`:
 
 - Nothing in `bin/` imports `yaml` at any level, lazy or otherwise.
   `grep -rnE 'import yaml|yaml\.safe_load|yaml\.load' bin/` returns nothing.

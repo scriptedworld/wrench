@@ -1,6 +1,6 @@
 session: abcd-1234
 model: 'Opus 5 "1M" \ context'
-cwd: /home/ancient/.projects/infobot
+cwd: /home/you/project
 effort: xhigh
 context_size: 1000000
 context_used: 480000

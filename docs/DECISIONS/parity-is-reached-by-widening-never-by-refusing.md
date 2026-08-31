@@ -36,14 +36,14 @@ If yes, the limit is real. If no, it is this decision's target.
 
 ## What it settles today
 
-**Control characters, `clank parity/50`.** The three options were escape, refuse,
+**Control characters.** The three options were escape, refuse,
 or leave it per-format. Refusing is out by rule 3 and per-format is out by rule
 1, so **the answer is escape**, and it is also rule 2's good case: Go's YAML
 emitter is already correct across all 70 code points measured, and the other two
 packs already read what it writes. Teaching two hand-written emitters a table
 that can be read off a third is the whole of the work.
 
-**Integers past int64, `clank parity/40`.** Widen to float rather than refuse,
+**Integers past int64.** Widen to float rather than refuse,
 which is the answer already given and which this rule confirms.
 
 **It is also the one place the rule bites back, and that is worth stating.**
