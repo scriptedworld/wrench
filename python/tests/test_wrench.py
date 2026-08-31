@@ -1263,3 +1263,19 @@ def test_every_failure_is_wrenchs_own_type_with_its_step():
     }
     for want, call in cases.items():
         assert failing(call).step == want
+
+
+# COVERS: FR-4.7 | regression
+def test_a_non_ascii_toml_key_is_quoted_and_reads_back() -> None:
+    """A bare key is ASCII, and `str.isalnum` is not.
+
+    This pack wrote `é = 5` bare, reported success, and its own loader refused
+    the file. Go and Rust test ASCII explicitly and were right; only Python's
+    spelling was wrong. No fixture in any of the three suites held a non-ASCII
+    character, so the packs disagreed in silence.
+    """
+    for key in ("é", "日本", "Ω", "ключ"):
+        document = {key: 5}
+        assert wrench.TOML.decode(wrench.TOML.encode(document)) == document, key
+
+    assert b'"' not in wrench.TOML.encode({"ok_key-9": 1})

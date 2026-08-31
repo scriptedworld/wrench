@@ -150,10 +150,17 @@ def _is_table_array(value: object) -> TypeGuard[list[dict[str, object]]]:
 
 
 def _key(name: object) -> str:
-    """A key, bare where TOML allows it and quoted where it does not."""
+    """A key, bare where TOML allows it and quoted where it does not.
+
+    ASCII, NOT `str.isalnum`. TOML 1.0 bare keys are A-Za-z0-9_- and nothing
+    else, while `isalnum` is Unicode-aware and answers true for 142,877 code
+    points TOML forbids. Writing one bare produced a file this pack's own
+    loader refuses, reported as a successful save. The Go and Rust packs both
+    test ASCII explicitly; this spelling was the odd one out.
+    """
     if not isinstance(name, str):
         raise TypeError(f"mapping key {name!r} is {type(name).__name__}, not a string")
-    if name and all(c.isalnum() or c in "_-" for c in name):
+    if name and all(("a" <= c <= "z") or ("A" <= c <= "Z") or ("0" <= c <= "9") or c in "_-" for c in name):
         return name
     return _string(name)
 
