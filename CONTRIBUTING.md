@@ -130,7 +130,7 @@ cannot read. That is adoption not yet run, rather than a broken checkout.
 
 Clone `toolbox` beside this repository and run its linker:
 
-    git clone <toolbox> ../toolbox
+    git clone https://github.com/scriptedworld/toolbox.git ../toolbox
     python3 ../toolbox/bin/link-toolbox.py --yes . go python
 
 `go` and `python` are the sets wrench adopts. `go` pulls in `common`, and
