@@ -32,6 +32,45 @@ dependencies = [
     "referencing",
 ]
 
+# The tools the gate runs against this pack, declared here rather than left to
+# whatever is on PATH. `mypy` alone cannot resolve `yaml`, `jsonschema` or
+# `referencing` — measured 2026-09-04, six errors from `consumer-types`, none of
+# them about wrench's code — and a `uv tool` installation of pytest cannot import
+# the pack it is testing. Both are the same fault: a tool installed apart from
+# the thing it is pointed at.
+# WHAT COVERAGE IS ABOUT. Without this it measures the suite as well as the
+# pack, and a test file's own branches are not a guarantee anyone wants: the
+# autouse fixture in `tests/test_references.py` reported 50% of branches taken
+# and the number meant nothing. toolbox scopes its own the same way.
+#
+# `branch = true` because the Python jig gates branches as well as lines, which
+# it can and the Go and Rust jigs cannot. The flag is also named on the jig's
+# command line, so an adopter without this file still gets branch data; here it
+# makes a bare `coverage run` locally agree with what the gate does.
+[tool.coverage.run]
+branch = true
+source = ["wrench"]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "coverage",
+    "mypy",
+    "types-PyYAML",
+    "types-jsonschema",
+    # `bin/check-consumer-types.py` builds the pack and installs it into a
+    # throwaway environment, because mypy honours `py.typed` for an installed
+    # distribution and not for a source tree. It shells out to
+    # `sys.executable -m pip`, and a uv-created environment carries no pip.
+    #
+    # setuptools for the same reason one step further in: this pack declares
+    # `setuptools.build_meta` as its build backend, and pip cannot import a
+    # backend the environment does not have. uv installs neither by default,
+    # which is right for a runtime and wrong for the environment that builds it.
+    "pip",
+    "setuptools",
+]
+
 [tool.setuptools]
 packages = ["wrench"]
 

@@ -564,8 +564,8 @@ def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
 
 # COVERS: FR-3.10 | negative
 def test_the_environment_cannot_restore_external_references(tmp_path):
-    """This asserted the opposite until 2026-09-03, when the escape hatch was
-    removed. It is kept, inverted, because the variable was documented and
+    """Asserted the opposite until 2026-09-03, when the escape hatch was
+    removed. Kept, inverted, because the variable was documented and
     somebody may still set it: a refusal that quietly became permissive because
     an old name was still honoured is the failure worth pinning.
 

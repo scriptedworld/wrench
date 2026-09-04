@@ -26,7 +26,12 @@
 
 version: 1.0.0
 
-requires: [go, gofmt, python3, jq, deno, bolt, mypy]
+# `uv` runs the Python tasks, because the pack's tools are declared in
+# `python/pyproject.toml` rather than installed globally. `cargo` and `rustfmt`
+# were invoked by `rust-test` and `rust-format` and named nowhere, which is the
+# failure `requires` exists to prevent: a run that gets several tasks in before
+# discovering a missing tool cannot start.
+requires: [go, gofmt, python3, jq, deno, bolt, mypy, uv, cargo, rustfmt]
 
 definitions:
   # A DIRECTORY, one file per requirement, nested by category. Both checkers
@@ -135,9 +140,13 @@ tasks:
     description: the Go pack, uncached
     command: cd go && go test -count=1 ./...
 
+  # `uv run --project python` FOR THE ENVIRONMENT, cwd stays the repository root
+  # FOR THE SCHEMAS. The pack's dependencies and its test tools are declared in
+  # `python/pyproject.toml`, and a bare `python3 -m pytest` resolves neither:
+  # measured 2026-09-04, `No module named pytest`, and the task had never run.
   - name: python-test
     description: the Python pack, run from the repository root so it finds schemas/
-    command: PYTHONPATH=python python3 -m pytest python/tests -q
+    command: PYTHONPATH=python uv run --project python python -m pytest python/tests -q
 
   - name: rust-test
     description: the Rust pack, which bolt builds against
@@ -265,7 +274,11 @@ tasks:
     # Two halves, because either alone passes in that state. The checker's own
     # docstring carries why the consumer half has to run against an install
     # rather than against the source tree.
-    command: python3 {config_dir}/bin/check-consumer-types.py
+    #
+    # Through `uv run --project python` so the `mypy` this invokes is the pack's,
+    # with `types-PyYAML`, `types-jsonschema` and `referencing` resolvable. A
+    # PATH mypy reports six errors about libraries rather than about wrench.
+    command: uv run --project python python3 {config_dir}/bin/check-consumer-types.py
 
   - name: shipped-schemas-are-current
     description: the Go and Python packs carry byte for byte what schemas/ holds
@@ -306,6 +319,9 @@ tasks:
   # suite glob, so it is the one directory both checkers ignore.
   #
   # Run explicitly by path because that is not a directory pytest would find.
+  # `--no-project` because these tests import the standard library and nothing
+  # else — they drive the checkers as subprocesses — so the pack's environment
+  # would be the wrong one and the root has no project of its own.
   - name: checker-tests
     description: wrench's own parity checker does what it claims
-    command: python3 -m pytest testdata/checkers -q
+    command: uv run --no-project --with pytest python -m pytest testdata/checkers -q

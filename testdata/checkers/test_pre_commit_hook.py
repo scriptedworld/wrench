@@ -52,12 +52,20 @@ CHECKER = REPO / "bin" / "no-unregistered-suppression.py"
 
 # An empty register, not wrench's own. The checker reports a registered pragma
 # that the source does not carry, so copying the real file into a tree that does
-# not carry its two entries makes every commit here fail as a phantom rather
-# than for the reason under test.
-EMPTY_REGISTER = """Register.
+# not carry an entry for a pragma the tools themselves hold makes every commit
+# here fail as a phantom rather than for the reason under test.
+PROBE_REGISTER = """Register.
 
-Nothing is suppressed in this throwaway tree, which is what makes an
-unregistered pragma the only thing the hook can be refusing.
+Nothing in the probe's own source is suppressed, which is what makes an
+unregistered pragma there the only thing the hook can be refusing.
+
+    bin/suppression-register.py    # pylint: disable=duplicate-code
+
+The checker scans everything in the tree it is pointed at, and the tree carries
+toolbox's two checkers so the hook can run them. One of them acquired that mark
+on 2026-09-04, when toolbox registered the duplication between its own scripts.
+Without this row the probe fails on a pragma that is not the probe's, and every
+test here refuses for the wrong reason.
 """
 
 # The checker shells out to this, which is a symlink into toolbox. Copied
@@ -104,7 +112,7 @@ def repository(tmp_path: Path, *, source: str, install_hook: bool) -> Path:
 
     shutil.copy(CHECKER, root / "bin" / CHECKER.name)
     shutil.copy(SCANNER, root / "bin" / SCANNER.name)
-    (root / "SUPPRESSIONS").write_text(EMPTY_REGISTER)
+    (root / "SUPPRESSIONS").write_text(PROBE_REGISTER)
     (root / "probe.go").write_text(source)
 
     git(root, "init", "-q", "-b", "main")

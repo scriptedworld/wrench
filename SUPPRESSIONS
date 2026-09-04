@@ -74,3 +74,28 @@ previously matched gosec's `G\d+` and not bandit's `B\d+`, so it passed
 vacuously here. wrench symlinks the checker, so the upgrade took effect with no
 change in this repository and the gate failed on the two rows above being
 spelled for a reader rather than for the checker.
+
+## SLF001, the guard that no public entry point can reach
+
+**Asked 2026-09-04. Answered: allowed, one line.**
+
+    python/tests/test_json_canonical_refusals.py    # noqa: SLF001
+
+`_Shipped.validate` raises when the name it was built with is not in the shipped
+set. Nothing public can produce that: the four shipped instances are module
+constants built from the generated set, so the name and the set agree by
+construction. It is a guard against the set and the constants coming apart,
+which is a programming error rather than an input.
+
+**The question.** A guard nothing exercises is a guard whose message nobody has
+read, and this one names the name precisely because "no shipped schema" with no
+subject tells a reader nothing. Reaching the private class is the only way to
+see it fire. The alternative was leaving `wrench/schema.py` at 77.8% of branches
+against the 80% the gate began enforcing on 2026-09-04, which would have been a
+coverage failure settled by not looking — hard rule 5's case exactly.
+
+**One line, and it is line-scoped.** A second private access anywhere in this
+suite is reported and is covered by nothing here.
+
+**What would retire this entry**: `_Shipped` gaining a public constructor, which
+nothing wants, or the guard becoming unreachable and being deleted with its test.

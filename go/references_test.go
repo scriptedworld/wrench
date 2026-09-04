@@ -109,12 +109,12 @@ func TestEveryRefusedFormGivesTheSameSentence(t *testing.T) {
 	seedReachableSchema(t)
 
 	for what, ref := range map[string]string{
-		"an http url":          "http://example.invalid/x.schema.json",
-		"an https url":         "https://example.invalid/x.schema.json",
-		"a file url":           "file://" + reachablePath,
-		"an absolute path":     reachablePath,
-		"a relative path":      "sibling.schema.json",
-		"an unshipped wrench":  "https://scriptedworld.github.io/wrench/not-shipped.schema.json",
+		"an http url":         "http://example.invalid/x.schema.json",
+		"an https url":        "https://example.invalid/x.schema.json",
+		"a file url":          "file://" + reachablePath,
+		"an absolute path":    reachablePath,
+		"a relative path":     "sibling.schema.json",
+		"an unshipped wrench": "https://scriptedworld.github.io/wrench/not-shipped.schema.json",
 	} {
 		body := `{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"` + ref + `"}`
 		got, detail := outcome(t, "https://example.invalid/s.schema.json", body, `{"anything":1}`)

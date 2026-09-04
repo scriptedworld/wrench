@@ -44,6 +44,7 @@ SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schemas"
 # `wrench.schemas.JIG` rather than `wrench.JIG_SCHEMA`. Same objects, so the two
 # names cannot drift; the older ones are kept while consumers move.
 
+
 def unresolved(uri: str) -> str:
     """The one sentence every pack gives for a reference it will not follow.
 
@@ -54,10 +55,7 @@ def unresolved(uri: str) -> str:
     `https://elsewhere.invalid/tmp/x.schema.json`, and quoting what was written
     would send a reader looking for the wrong thing.
     """
-    return (
-        f"cannot resolve {uri}: a schema may reference the shipped schemas "
-        f"and its own fragments, and nothing else"
-    )
+    return f"cannot resolve {uri}: a schema may reference the shipped schemas and its own fragments, and nothing else"
 
 
 @functools.cache
@@ -147,7 +145,6 @@ class Schema:
             # does not know which file it came from. `load_formatted_file` fills
             # the path in with `at()` rather than wrapping a second time.
             raise ValidationError(None, f"{self.name}{at}: {error.message}")
-
 
     def _reference_in(self, cause: BaseException) -> str:
         """The reference a resolution failure was about, resolved against this

@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -22,16 +24,19 @@ REFUSAL = "a schema may reference the shipped schemas and its own fragments, and
 # A schema that really is on disk, so "it was not read" is a measurement rather
 # than the absence of a target. It requires a property no instance here carries,
 # so a document validated against it would fail loudly.
-REACHABLE = "/tmp/wrench-reachable.schema.json"
+#
+# The path is derived rather than written as `/tmp/...`, which is what S108 asks
+# for and is right here for a second reason: it has to be somewhere a `$ref`
+# could plausibly reach, and the platform's own temporary directory is that
+# wherever the suite runs.
+REACHABLE = str(Path(tempfile.gettempdir()) / "wrench-reachable.schema.json")
 
-PERMISSIVE = json.dumps(
-    {"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object"}
-)
+PERMISSIVE = json.dumps({"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object"})
 
 
 @pytest.fixture(autouse=True)
 def _seed_reachable_schema():
-    with open(REACHABLE, "w") as handle:
+    with Path(REACHABLE).open("w", encoding="utf-8") as handle:
         json.dump(
             {
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -161,9 +166,7 @@ def test_a_refusal_names_the_resolved_reference():
 def test_every_refused_form_gives_the_same_sentence(what, ref):
     """One sentence for every shape a reference can take, so a consumer matching
     on the failure does not need a list of the ways it can be spelled."""
-    body = json.dumps(
-        {"$schema": "https://json-schema.org/draft/2020-12/schema", "$ref": ref}
-    )
+    body = json.dumps({"$schema": "https://json-schema.org/draft/2020-12/schema", "$ref": ref})
     got, detail = outcome("https://example.invalid/s.schema.json", body, {"anything": 1})
 
     assert got == "schema", f"{what} resolved rather than being refused"

@@ -57,9 +57,15 @@ fn a_keyword_in_an_instance_is_data() {
 
     let cases: [(&str, Value); 5] = [
         ("a $ref at a file that exists", json!({ "$ref": file_ref })),
-        ("a $ref at an http url", json!({"$ref": "http://example.invalid/x.schema.json"})),
+        (
+            "a $ref at an http url",
+            json!({"$ref": "http://example.invalid/x.schema.json"}),
+        ),
         ("an $id", json!({"$id": "https://example.invalid/other"})),
-        ("a $schema", json!({"$schema": "https://json-schema.org/draft/2020-12/schema"})),
+        (
+            "a $schema",
+            json!({"$schema": "https://json-schema.org/draft/2020-12/schema"}),
+        ),
         (
             "a document that is a schema",
             json!({
@@ -71,8 +77,15 @@ fn a_keyword_in_an_instance_is_data() {
     ];
 
     for (what, instance) in cases {
-        let (got, detail) = outcome("https://example.invalid/s.schema.json", PERMISSIVE, &instance);
-        assert_eq!(got, "accepted", "{what} in an instance was interpreted: {detail}");
+        let (got, detail) = outcome(
+            "https://example.invalid/s.schema.json",
+            PERMISSIVE,
+            &instance,
+        );
+        assert_eq!(
+            got, "accepted",
+            "{what} in an instance was interpreted: {detail}"
+        );
     }
 }
 
@@ -83,18 +96,30 @@ fn a_reference_within_the_document_resolves() {
     // an accepted document says nothing, because a $ref that silently
     // contributed no constraint would accept it too.
     let cases = [
-        ("a pointer into $defs", r##"{"$schema":"https://json-schema.org/draft/2020-12/schema","$defs":{"tight":{"type":"string","minLength":3}},"type":"object","properties":{"a":{"$ref":"#/$defs/tight"}}}"##),
-        ("an $anchor", r##"{"$schema":"https://json-schema.org/draft/2020-12/schema","$defs":{"t":{"$anchor":"tight","type":"string","minLength":3}},"type":"object","properties":{"a":{"$ref":"#tight"}}}"##),
+        (
+            "a pointer into $defs",
+            r##"{"$schema":"https://json-schema.org/draft/2020-12/schema","$defs":{"tight":{"type":"string","minLength":3}},"type":"object","properties":{"a":{"$ref":"#/$defs/tight"}}}"##,
+        ),
+        (
+            "an $anchor",
+            r##"{"$schema":"https://json-schema.org/draft/2020-12/schema","$defs":{"t":{"$anchor":"tight","type":"string","minLength":3}},"type":"object","properties":{"a":{"$ref":"#tight"}}}"##,
+        ),
     ];
 
     for (what, body) in cases {
         let name = "https://example.invalid/s.schema.json";
 
         let (got, detail) = outcome(name, body, &json!({"a": "abc"}));
-        assert_eq!(got, "accepted", "{what} refused a document it should take: {detail}");
+        assert_eq!(
+            got, "accepted",
+            "{what} refused a document it should take: {detail}"
+        );
 
         let (got, _) = outcome(name, body, &json!({"a": "x"}));
-        assert_eq!(got, "validate", "{what} did not constrain, so the reference resolved to nothing");
+        assert_eq!(
+            got, "validate",
+            "{what} did not constrain, so the reference resolved to nothing"
+        );
     }
 }
 
@@ -111,12 +136,18 @@ fn a_refusal_names_the_resolved_reference() {
     let body = r#"{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://elsewhere.invalid/root.schema.json","$ref":"sibling.schema.json"}"#;
     let (got, detail) = outcome("mine.schema.json", body, &json!({"anything": 1}));
 
-    assert_eq!(got, "schema", "a reference outside the shipped set resolved");
+    assert_eq!(
+        got, "schema",
+        "a reference outside the shipped set resolved"
+    );
     assert!(
         detail.contains("https://elsewhere.invalid/sibling.schema.json"),
         "the refusal does not name the resolved reference: {detail}"
     );
-    assert!(detail.contains(REFUSAL), "the refusal is not the shared sentence: {detail}");
+    assert!(
+        detail.contains(REFUSAL),
+        "the refusal is not the shared sentence: {detail}"
+    );
 }
 
 // COVERS: FR-3.10d | negative
@@ -133,17 +164,27 @@ fn every_refused_form_gives_the_same_sentence() {
         ("a file url", file_ref.as_str()),
         ("an absolute path", REACHABLE),
         ("a relative path", "sibling.schema.json"),
-        ("an unshipped wrench", "https://scriptedworld.github.io/wrench/not-shipped.schema.json"),
+        (
+            "an unshipped wrench",
+            "https://scriptedworld.github.io/wrench/not-shipped.schema.json",
+        ),
     ];
 
     for (what, reference) in cases {
         let body = format!(
             r#"{{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"{reference}"}}"#
         );
-        let (got, detail) = outcome("https://example.invalid/s.schema.json", &body, &json!({"anything": 1}));
+        let (got, detail) = outcome(
+            "https://example.invalid/s.schema.json",
+            &body,
+            &json!({"anything": 1}),
+        );
 
         assert_eq!(got, "schema", "{what} resolved rather than being refused");
-        assert!(detail.contains(REFUSAL), "{what} was refused in different words: {detail}");
+        assert!(
+            detail.contains(REFUSAL),
+            "{what} was refused in different words: {detail}"
+        );
     }
 }
 
@@ -173,7 +214,11 @@ fn no_environment_variable_opens_a_reference() {
         // Removed after each case rather than at the end, so a leftover cannot
         // be what the next one measures.
         unsafe { std::env::set_var(name, "1") };
-        let (got, _) = outcome("https://example.invalid/s.schema.json", &body, &json!({"anything": 1}));
+        let (got, _) = outcome(
+            "https://example.invalid/s.schema.json",
+            &body,
+            &json!({"anything": 1}),
+        );
         unsafe { std::env::remove_var(name) };
 
         assert_eq!(got, "schema", "{name}=1 opened a reference");
