@@ -4,6 +4,23 @@ Open questions and the context behind them.
 
 ## Open, and each is specified enough to start
 
+**The Go pack has no tags, so every consumer gets a pseudo-version.** `git tag`
+lists nothing, and Go takes its versions from tags, so
+`go get github.com/scriptedworld/wrench/go@latest` resolves to a commit stamp:
+infobot carries `v0.0.0-20260904181338-f34be142d905` today. The Rust and Python
+packs both moved to 0.4.0 on 2026-09-04 for the reference change, and the Go pack
+could not move with them because it has no number to move.
+
+Two questions and neither is answered. **Whether to tag at all**: a pseudo-version
+is honest about there being no release, and `an-unbumped-version-is-a-change-nobody-receives`
+argues the other way, that a consumer of a surface change should be able to see
+one. **And at what number**: `go/v0.4.0` matches the sibling packs and claims a
+history of four minor versions the tags do not have, while `go/v0.1.0` is the
+conventional start and puts the three packs on different numbers for the same
+surface, which is the thing the shared version was for.
+
+Tag form is `go/vX.Y.Z`, because the module lives in a subdirectory.
+
 **The three packs disagree about non-ASCII, and one writes files it cannot
 read.** Measured 2026-09-04, encoding `{"v": <char>}` through each pack and
 decoding its own output:
