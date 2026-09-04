@@ -562,15 +562,21 @@ def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
             schema.validate({"d": "anything"})
 
 
-# COVERS: FR-3.10 | edge
-def test_the_environment_can_restore_external_references(tmp_path):
-    """An escape hatch nobody exercises is one that may not work. This asserts
-    the hatch opens, not that opening it is a good idea.
+# COVERS: FR-3.10 | negative
+def test_the_environment_cannot_restore_external_references(tmp_path):
+    """This asserted the opposite until 2026-09-03, when the escape hatch was
+    removed. It is kept, inverted, because the variable was documented and
+    somebody may still set it: a refusal that quietly became permissive because
+    an old name was still honoured is the failure worth pinning.
+
+    Measured before removal, and the reason it went: one variable meant three
+    different things. Setting it let this pack fetch over HTTP and read files,
+    let Go read files only, and did nothing at all in Rust.
 
     os.environ directly rather than monkeypatch: this arranges an input, and
     reaching for a patching fixture to do it blurs the line with mocking the
     code under test, which is not allowed here without asking."""
-    from wrench.schema import ALLOW_EXTERNAL_REFS
+    retired = "WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS"
 
     local = tmp_path / "local.schema.json"
     local.write_text('{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}')
@@ -579,18 +585,22 @@ def test_the_environment_can_restore_external_references(tmp_path):
     _refuses(
         wrench.compile_schema("mine.schema.json", document),
         {"d": "anything"},
-        "a file reference with the variable unset",
+        "a file reference with no variable set",
     )
 
-    previous = os.environ.get(ALLOW_EXTERNAL_REFS)
-    os.environ[ALLOW_EXTERNAL_REFS] = "1"
+    previous = os.environ.get(retired)
+    os.environ[retired] = "1"
     try:
-        wrench.compile_schema("mine.schema.json", document).validate({"d": "anything"})
+        _refuses(
+            wrench.compile_schema("mine.schema.json", document),
+            {"d": "anything"},
+            "a file reference with the retired variable set",
+        )
     finally:
         if previous is None:
-            del os.environ[ALLOW_EXTERNAL_REFS]
+            del os.environ[retired]
         else:
-            os.environ[ALLOW_EXTERNAL_REFS] = previous
+            os.environ[retired] = previous
 
 
 # COVERS: FR-3.10 | edge

@@ -14,7 +14,7 @@ paths assume the sibling layout; use absolute ones if your checkout differs.
 
 **Go**
 
-    require github.com/scriptedworld/wrench/go v0.3.0
+    require github.com/scriptedworld/wrench/go v0.4.0
     replace github.com/scriptedworld/wrench/go => ../wrench/go
 
 **Python**
@@ -26,7 +26,7 @@ paths assume the sibling layout; use absolute ones if your checkout differs.
 **Rust**
 
     [dependencies]
-    wrench = { version = "0.3.0", path = "../wrench/rust" }
+    wrench = { version = "0.4.0", path = "../wrench/rust" }
 
 ## Use it
 

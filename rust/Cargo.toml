@@ -1,6 +1,6 @@
 [package]
 name = "wrench"
-version = "0.3.0"
+version = "0.4.0"
 
 # EDITION 2021 IS HELD RATHER THAN INHERITED. Edition 2024 builds under the
 # 1.97 floor declared below, so nothing about the toolchain keeps this at 2021

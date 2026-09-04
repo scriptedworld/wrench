@@ -62,15 +62,34 @@ From the crate's own metadata:
 
 So the default build resolves `$ref`s over HTTP and from the filesystem, and
 links a whole HTTP client and TLS stack to do it. A plain `jsonschema = "0.52"`
-would violate FR-3.10 and put a network stack inside every consumer of the pack.
+would put a network stack inside every consumer of the pack, which is reason
+enough on its own.
 
-**Turned off, the Rust pack gets FR-3.10 at compile time**, which is stronger
-than Go and Python manage. Those two refuse external references at runtime, with
-an environment variable that can turn the refusal off. Rust does not link the
-code that would do the fetching, so there is nothing to turn on.
+**It is not, however, what discharges FR-3.10, and this file said it was.**
 
-That difference is worth stating rather than smoothing over: the packs reach the
-same guarantee by different means, and one of them cannot be talked out of it.
+The claim was that turning the features off gets FR-3.10 at compile time, which
+is stronger than a runtime refusal, so the Rust pack could not be talked out of
+it. The first half is wrong: **Cargo unifies features across the whole
+dependency graph**. Any other crate in a consumer's build that enables
+`jsonschema/resolve-http` enables it for wrench too, and nothing here would
+notice. A guarantee that any dependency can switch off is not a compile-time
+guarantee; it is an accident of what else happens to be in the build.
+
+**What discharges it is a retriever that refuses**, installed unconditionally in
+`rust/src/schema.rs`, whichever features are on. The crate ships an equivalent
+`OfflineRetriever` and it is not used, because it is private to jsonschema and
+its message is the crate's rather than wrench's, which FR-2.11 does not allow to
+cross the boundary.
+
+`default-features = false` stays. Keeping `reqwest` and a TLS stack out of a
+build that does not want them is worth the line — it is just a dependency
+decision rather than a security one.
+
+**The three packs now refuse by three mechanisms and reach the same place**: Go
+installs a loader, Python compiles against a registry with nothing else in it,
+Rust installs a retriever. None of them has an escape hatch. The asymmetry this
+file used to describe — one pack stronger than the other two — was resolved by
+making the other two structural, not by weakening Rust.
 
 ## So the CLI fallback is not needed
 

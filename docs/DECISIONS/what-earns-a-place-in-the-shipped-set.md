@@ -6,7 +6,7 @@ Answering meant reconstructing a criterion that had never been
 written down, which is the sort of thing that should not live in one session's
 head.
 
-## The test, in two parts
+## The test, in three parts
 
 **1. The file crosses a boundary between two components.** It has a producer and
 a consumer, and they are different things. That is what makes its form a contract
@@ -17,9 +17,44 @@ owns.
 document somebody could plausibly write. A schema that cannot fail is
 documentation wearing a checker's clothes.
 
-Both, not either. A file crossing a boundary whose every invariant is
+**3. The form is the ecosystem's vocabulary rather than two tools' private
+arrangement.** bolt, wrench and toolbox share a language, and a schema in the
+shipped set is a word in it. A file whose producer and consumer both sit outside
+that language crosses a boundary without crossing this one.
+
+**bolt is a generic runner, and the set inherits that.** It runs declared command
+lines over a file set for anybody; the envelope is a workflow standard it uses
+because a fixed shape is an easier thing for scripts to adjudicate than free
+output. So a document tied to one vendor's agent product is out of scope by
+construction, however well-formed it is and however many components read it.
+
+All three, not any. A file crossing a boundary whose every invariant is
 unexpressible gains nothing from a schema; a refusable file that never leaves one
-component is that component's business.
+component is that component's business; and a refusable file two peripheral tools
+exchange is theirs.
+
+### Why the third part is here
+
+It was reconstructed the same way the first two were, by getting the answer
+wrong. A status line's context figures pass parts 1 and 2 cleanly: infobot
+writes the file, `bin/board` reads it, and a schema over it refuses a window
+reported half, since the four context keys are derived together and a size
+without its used count means nothing. It was added to the shipped set on exactly
+that reasoning and taken back out, because the only thing that reads it is an
+operator keeping an eye on context consumption across a handful of agents. That
+is a convenience between two tools, not something bolt, wrench or toolbox needs
+to agree about — and its subject is a Claude Code session, which a generic runner
+has no business having a word for.
+
+**Parts 1 and 2 are satisfied by almost any file two programs share**, so a test
+carrying only those two grows the set by whatever happens to have a reader. The
+question is not whether a file has a consumer. It is whether this ecosystem
+would be missing a word without it.
+
+**Such a schema still belongs somewhere**, and that somewhere is the tool that
+owns the file, handed to `compile_schema`. Validation on the way out is
+FR-2.4 and does not require shipping: a producer gets its file checked before
+anything reads it, and the shipped set stays the ecosystem's own vocabulary.
 
 ## The four, against it
 

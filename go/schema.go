@@ -3,7 +3,6 @@ package wrench
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync"
 
@@ -80,34 +79,32 @@ func CompileSchema(name string, document io.Reader) (Schema, error) {
 	return &readySchema{compiled: compiled}, nil
 }
 
-// AllowExternalRefs names the environment variable that lets a schema reference
-// something outside the shipped set. Unset, which is the ordinary case, a $ref
-// resolves only against the shipped schemas and the document's own fragments.
-//
-// THE UNSAFE BEHAVIOUR IS THE ONE YOU ASK FOR. Set to "1" it restores whatever
-// the underlying implementation would do, which includes reading files.
-//
-// IT IS ON BORROWED TIME AND SHOULD NOT BE BUILT ON. The Python pack's binding
-// emits a DeprecationWarning when this is set, saying that automatically
-// retrieving remote references is a security vulnerability, is discouraged by
-// the JSON Schema specifications, and will shortly become an error. So the
-// escape hatch exists to unblock a caller today rather than as a supported mode,
-// and it will close whether or not wrench decides to close it.
-const AllowExternalRefs = "WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS"
-
 // localOnly refuses every reference the compiler was not already given.
 //
-// Measured 2026-08-27, before this existed: a $ref of "file:///tmp/x.schema.json"
-// or of a bare absolute path loaded that file off disk, so a schema's meaning
-// depended on files outside it and a consumer could reference a local copy of a
-// shipped schema instead of the shipped one, which is the drift FR-3.2 exists to
-// prevent. Nothing was fetched over the network, then or now.
+// Measured 2026-08-27: a $ref of "file:///tmp/x.schema.json" or of a bare
+// absolute path loaded that file off disk, so a schema's meaning depended on
+// files outside it and a consumer could reference a local copy of a shipped
+// schema instead of the shipped one, which is the drift FR-3.2 exists to
+// prevent.
+//
+// THE MESSAGE IS THE SAME SENTENCE IN EVERY PACK, because a consumer reading a
+// refusal should not be able to tell which language produced it. The three
+// bindings refuse by three different mechanisms — this loader, an absent
+// registry entry, and a crate feature that was never compiled — and each was
+// wording it in its own vocabulary.
 type localOnly struct{}
 
 func (localOnly) Load(url string) (any, error) {
-	return nil, fmt.Errorf(
-		"refusing to resolve %s: a schema may reference the shipped schemas and its own fragments, "+
-			"and nothing else unless %s=1", url, AllowExternalRefs)
+	return nil, fmt.Errorf("%s", unresolved(url))
+}
+
+// unresolved is the one sentence every pack gives for a reference it will not
+// follow. It names the reference as RESOLVED rather than as written, because a
+// relative $ref resolves against the document's $id and the two can look
+// nothing alike.
+func unresolved(url string) string {
+	return "cannot resolve " + url +
+		": a schema may reference the shipped schemas and its own fragments, and nothing else"
 }
 
 // newCompiler returns a compiler with every shipped schema registered by its own
@@ -115,9 +112,7 @@ func (localOnly) Load(url string) (any, error) {
 // refused unless the environment says otherwise.
 func newCompiler() (*jsonschema.Compiler, error) {
 	compiler := jsonschema.NewCompiler()
-	if os.Getenv(AllowExternalRefs) != "1" {
-		compiler.UseLoader(localOnly{})
-	}
+	compiler.UseLoader(localOnly{})
 
 	for _, entry := range shippedSchemas {
 		document, declared, err := readShipped(entry)
@@ -153,11 +148,11 @@ func compile(name string, document io.Reader) (*jsonschema.Schema, error) {
 		return nil, fmt.Errorf("wrench: adding schema %s: %w", name, err)
 	}
 
-	compiled, err := compiler.Compile(name)
-	if err != nil {
-		return nil, fmt.Errorf("wrench: compiling schema %s: %w", name, err)
-	}
-	return compiled, nil
+	// Returned bare. CompileSchema wraps this in a SchemaError whose message is
+	// already "compiling <name>", so a prefix here rendered it twice:
+	// "wrench: compiling mine.json: wrench: compiling schema mine.json: ...".
+	// compileShipped keeps its own, because the lazy path wraps with no name.
+	return compiler.Compile(name)
 }
 
 // shippedIDs is the set of $ids the shipped schemas declare, read from what the

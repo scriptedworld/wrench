@@ -192,6 +192,44 @@ tasks:
     description: every test cites what it discharges, and every settled requirement has one
     command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} .
 
+  # ONE TASK PER PACK, AND THE ROOT TASK ABOVE DOES NOT REPLACE THEM. The root
+  # run asks whether an id is cited ANYWHERE under it, so a row covered in Go
+  # alone passes it, and a pack silently holding none of a requirement is
+  # invisible. `suite-parity` catches that by comparing the suites to each
+  # other, which leaves its own gap: three packs that all miss the same row
+  # agree, and agreeing is what it checks.
+  #
+  # A scoped run closes both. Each pack is held to the requirements themselves
+  # rather than to the union of its siblings or to its siblings' agreement, and
+  # the envelope carries a verdict per pack instead of one that could have come
+  # from any of them.
+  #
+  # `--scope` holds a tree to the rows naming it plus the rows naming no tree,
+  # so the three lowercase markers under `reaching-the-library/` are this run's
+  # business in Python and nobody else's. It reads the row half of the same
+  # clause `test-suite-parity.py` reads for kinds; neither holds a second copy
+  # of which rows are exempt.
+  # THE NAME AND THE PATH ARE TWO ARGUMENTS, not one written twice. `--scope go`
+  # says which rows this run is held to; `--dir ./go` says which tree to read.
+  # They match here because wrench's packs sit in directories named after its
+  # suites, which is this repository's layout rather than a rule: a pack under
+  # `packs/go/` would read `--scope go --dir packs/go`.
+  #
+  # Named rather than positional for that reason. `--scope go go` is correct and
+  # reads as one word repeated, which is a question every reader has to answer
+  # once. The positional still works and the root task above still uses it.
+  - name: traceability-go
+    description: the Go pack covers every requirement it is expected to
+    command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} --scope go --dir ./go
+
+  - name: traceability-python
+    description: the Python pack covers every requirement it is expected to
+    command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} --scope python --dir ./python
+
+  - name: traceability-rust
+    description: the Rust pack covers every requirement it is expected to
+    command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} --scope rust --dir ./rust
+
   # A requirement the traceability checker cannot PARSE is absent from its
   # denominator rather than reported missing, so the run passes cleanly over a
   # contract with a hole in it. Measured 2026-08-29: a well-formed file with a

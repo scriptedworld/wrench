@@ -21,9 +21,9 @@ from __future__ import annotations
 
 import functools
 import json
-import os
 from pathlib import Path
 from typing import Any
+from urllib.parse import urljoin
 
 import jsonschema
 import jsonschema.exceptions
@@ -44,37 +44,20 @@ SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schemas"
 # `wrench.schemas.JIG` rather than `wrench.JIG_SCHEMA`. Same objects, so the two
 # names cannot drift; the older ones are kept while consumers move.
 
-# The environment variable that lets a schema reference something outside the
-# shipped set. Unset, which is the ordinary case, a $ref resolves only against
-# the shipped schemas and the document's own fragments.
-#
-# THE UNSAFE BEHAVIOUR IS THE ONE YOU ASK FOR. Set to "1" it restores whatever
-# the underlying implementation would do, which includes reading files.
-#
-# Measured 2026-08-27, before this existed: a $ref of
-# "file:///tmp/x.schema.json" loaded that file off disk, so a schema's meaning
-# depended on files outside it and a consumer could reference a local copy of a
-# shipped schema instead of the shipped one. Nothing was fetched over the
-# network, then or now, in either pack.
-#
-# THE ESCAPE HATCH IS ON BORROWED TIME AND SHOULD NOT BE BUILT ON. Setting it
-# makes jsonschema emit:
-#
-#     DeprecationWarning: Automatically retrieving remote references can be a
-#     security vulnerability and is discouraged by the JSON Schema
-#     specifications. Relying on this behavior is deprecated and will shortly
-#     become an error.
-#
-# So the library wrench binds already considers this a vulnerability and is
-# removing it. The variable exists to unblock a caller who needs it today, not
-# to be a supported mode, and it will stop working whether or not wrench changes.
-ALLOW_EXTERNAL_REFS = "WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS"
+def unresolved(uri: str) -> str:
+    """The one sentence every pack gives for a reference it will not follow.
 
-
-def _external_refs_allowed() -> bool:
-    """Read on every compile rather than cached, so a test can set it and a long
-    running process picks it up. It is one environment lookup."""
-    return os.environ.get(ALLOW_EXTERNAL_REFS) == "1"
+    It names the reference as RESOLVED rather than as written, because a relative
+    `$ref` resolves against the document's `$id` and the two can look nothing
+    alike. Measured 2026-09-03: `/tmp/x.schema.json` under an `$id` of
+    `https://elsewhere.invalid/root.json` resolves to
+    `https://elsewhere.invalid/tmp/x.schema.json`, and quoting what was written
+    would send a reader looking for the wrong thing.
+    """
+    return (
+        f"cannot resolve {uri}: a schema may reference the shipped schemas "
+        f"and its own fragments, and nothing else"
+    )
 
 
 @functools.cache
@@ -154,13 +137,8 @@ class Schema:
         # the way the Go pack wraps everything into its own.
         try:
             error = jsonschema.exceptions.best_match(validator.iter_errors(value))
-        except Exception as unresolved:
-            raise SchemaError(
-                self.name,
-                f"cannot resolve a reference: {unresolved}. "
-                f"A schema may reference the shipped schemas and its own fragments, "
-                f"and nothing else unless {ALLOW_EXTERNAL_REFS}=1",
-            ) from unresolved
+        except Exception as cause:
+            raise SchemaError(self.name, unresolved(self._reference_in(cause))) from cause
 
         if error is not None:
             where = "/".join(str(part) for part in error.absolute_path)
@@ -169,6 +147,33 @@ class Schema:
             # does not know which file it came from. `load_formatted_file` fills
             # the path in with `at()` rather than wrapping a second time.
             raise ValidationError(None, f"{self.name}{at}: {error.message}")
+
+
+    def _reference_in(self, cause: BaseException) -> str:
+        """The reference a resolution failure was about, resolved against this
+        schema's base so every pack names the same thing.
+
+        `referencing.exceptions.Unresolvable` carries it on `ref` AS WRITTEN,
+        where the Go loader and the Rust retriever are both handed it already
+        resolved. Measured 2026-09-03: a `$ref` of `sibling.schema.json` under
+        an `$id` of `https://elsewhere.invalid/root.json` reached this pack as
+        `sibling.schema.json` and the other two as
+        `https://elsewhere.invalid/sibling.schema.json`. Resolving it here is
+        what makes one sentence in three packs a sentence about one thing.
+
+        `str(cause)` is the fallback rather than the first choice: the repr of
+        an exception prepends its own class name, which put
+        `cannot resolve Unresolvable: ...` into the message the first time this
+        was written.
+        """
+        reference = getattr(cause, "ref", None)
+        if reference is None:
+            return str(cause)
+        # The document's own $id is the base wherever it declares one, measured
+        # to win over the compile name in every pack. The name is the base only
+        # for a schema that declares no $id.
+        base = self._document.get("$id") or self.name
+        return urljoin(str(base), str(reference))
 
 
 class _Shipped(Schema):
@@ -213,7 +218,9 @@ def compile_schema(name: str, document: str | dict[str, Any]) -> Schema:
     adapter extending the envelope schema references it rather than copying it,
     and a copy is the drift FR-3.2 exists to prevent.
 
-    It may reference NOTHING ELSE. See ALLOW_EXTERNAL_REFS.
+    It may reference NOTHING ELSE, and there is no way to ask for more. The
+    registry is always supplied, so `jsonschema`'s own retrieval is never
+    reachable: a reference it does not hold raises rather than being fetched.
     """
     # Neither `json.JSONDecodeError` nor `jsonschema.SchemaError` crosses this
     # boundary. A caller should not have to know which JSON parser or which
@@ -233,8 +240,7 @@ def compile_schema(name: str, document: str | dict[str, Any]) -> Schema:
     except Exception as err:
         raise SchemaError(name, err) from err
 
-    registry = None if _external_refs_allowed() else _shipped_registry()
-    return Schema(name, parsed, registry)
+    return Schema(name, parsed, _shipped_registry())
 
 
 ENVELOPE_SCHEMA = _Shipped("https://scriptedworld.github.io/wrench/envelope.schema.json")

@@ -4,6 +4,49 @@ Open questions and the context behind them.
 
 ## Open, and each is specified enough to start
 
+**The three packs disagree about non-ASCII, and one writes files it cannot
+read.** Measured 2026-09-04, encoding `{"v": <char>}` through each pack and
+decoding its own output:
+
+    character              Go         Python     Rust
+    U+0085, U+FEFF         escaped    escaped    escaped
+    U+200B, U+202E         raw        raw        raw
+    U+FDD0, U+E000         raw        raw        raw
+    cafe (U+00E9)          raw        raw        raw
+    U+FFFE, U+FFFF         ESCAPED    RAW        RAW
+    U+1FFFE                ESCAPED    RAW        RAW
+    U+1F600 (an emoji)     ESCAPED    RAW        RAW
+
+Two separate faults, and the second is the one to fix first.
+
+**Python breaks the round trip on U+FFFE and U+FFFF.** It emits them raw and its
+own reader refuses them: PyYAML's emitter allows what its `check_printable`
+rejects, so `YAML.decode(YAML.encode(v))` raises `ParseError`. That is FR-4.2
+failing outright — the pack produces a document it cannot read. Rust emits the
+same bytes and reads them back, because yaml-rust2 is the more permissive reader,
+so the fixture set would not catch it even if a fixture existed.
+
+**Go escapes where the other two do not**, on the noncharacters and on every
+astral-plane character. An emoji in any value therefore produces different bytes
+from the Go pack than from the other two. That is not an exotic input: a `model`
+name or a commit subject can carry one.
+
+**Nothing detected either, and the reason is structural.** FR-5.5 holds the packs
+level by shared cases, and **every one of the twelve fixtures in
+`testdata/canonical/` is pure ASCII**. The fixture set cannot disagree about a
+character it does not contain. `rust/tests/wrench.rs` says in its own header that
+"implementations agreeing on the schema and disagreeing on the bytes is the
+failure a shared fixture set exists to catch"; this is that failure, sitting in
+the gap the set does not cover.
+
+**Deciding it is a change to the canonical form and belongs to a person.** The
+round-trip bug has one right answer: a pack must not emit what it will not read.
+The parity question does not — escaping everything non-ASCII gives ASCII-safe
+output and unreadable emoji, emitting raw gives readable output and needs the
+non-printable set escaped by name. Whichever is chosen, it changes the bytes of
+a published form, so it is FR-1.11o for infobot and a pack version bump here, and
+it wants a fixture per case before any of it moves.
+
 **A document names its own schema, cross-checked rather than trusted.** This is
 the largest of them and it changes the error contract in three packs. A caller
 and a document disagreeing about what a file is fits none of the seven kinds: it
@@ -37,8 +80,19 @@ the decode path, which is why the mechanism is the work rather than the rules.
 
 **A composite jig**, whose premise the conversion to command tasks restores.
 
-**Dropping the retired jig task fields** from the jig schema. This is blocked:
-removing them would make the runner refuse the jig that runs wrench's own gate.
+**Dropping the retired jig task fields** from the jig schema. **Declined, and
+the reason recorded here was the wrong one.** It said the removal would make the
+runner refuse the jig that runs wrench's own gate. It would not: no jig in the
+estate carries a `jig:` task, `bolt.wrench-quality.yaml` included, which already
+uses the command-task-plus-adapter form and says so at its line 158. Measured
+2026-09-04 across all six jigs.
+
+The branch stays for a reason that has not expired, and it is in the schema's own
+`$comment`: bolt refuses a task carrying `jig` with kind `jig-task-retired` and a
+message naming the replacement. Remove the branch and such a task fails
+`'command' is a required property`, which names neither the cause nor the fix,
+and the runner never reaches its own message. That is worth keeping for jigs
+outside this estate, which is the only place an old one can still come from.
 
 ## The Rust crate cannot be packaged, and something has to give
 

@@ -423,10 +423,17 @@ func TestASchemaMayReferenceNothingOutsideTheShippedSet(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.10 | edge
-func TestTheEnvironmentCanRestoreExternalReferences(t *testing.T) {
-	// An escape hatch nobody exercises is one that may not work. This asserts
-	// the hatch opens, not that opening it is a good idea.
+// COVERS: FR-3.10 | negative
+func TestTheEnvironmentCannotRestoreExternalReferences(t *testing.T) {
+	// This asserted the opposite until 2026-09-03, when the escape hatch was
+	// removed. It is kept, inverted, because the variable was documented and
+	// somebody may still set it: a refusal that quietly became permissive
+	// because an old name was still honoured is the failure worth pinning.
+	//
+	// Measured before removal: one variable meant three different things.
+	// Setting it let Python fetch over HTTP and read files, let Go read files
+	// only, and did nothing at all in Rust, whose bound crate never linked the
+	// resolving code.
 	local := filepath.Join(t.TempDir(), "local.schema.json")
 	if err := os.WriteFile(local, []byte(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}`), 0o644); err != nil {
 		t.Fatalf("seeding: %v", err)
@@ -434,12 +441,12 @@ func TestTheEnvironmentCanRestoreExternalReferences(t *testing.T) {
 	document := consumerSchema("file://" + local)
 
 	if _, err := wrench.CompileSchema("mine.schema.json", strings.NewReader(document)); err == nil {
-		t.Fatal("a file reference resolved with the variable unset")
+		t.Fatal("a file reference resolved with no variable set")
 	}
 
-	t.Setenv(wrench.AllowExternalRefs, "1")
-	if _, err := wrench.CompileSchema("mine.schema.json", strings.NewReader(document)); err != nil {
-		t.Errorf("%s=1 did not restore external references: %v", wrench.AllowExternalRefs, err)
+	t.Setenv("WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS", "1")
+	if _, err := wrench.CompileSchema("mine.schema.json", strings.NewReader(document)); err == nil {
+		t.Error("the retired variable still opens external references")
 	}
 }
 

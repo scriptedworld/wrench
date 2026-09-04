@@ -239,14 +239,37 @@ A relative filename resolves against whatever directory the process started in,
 which puts a local absolute path into a message that travels inside an envelope.
 
 **A `$ref` resolves from the shipped set and the document's own fragments, and
-from nowhere else** (FR-3.10). Not the network, not the disk. A caller may not
-redefine a shipped `$id` either, because a document deciding what the envelope
-schema means defeats the reason a schema ships at all.
-`WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS=1` restores the bound implementation's own
-behaviour and is on borrowed time, the Python binding having already called that
-behaviour a vulnerability and begun removing it. The Rust pack cannot offer the
-escape hatch, because it declares `jsonschema` with `default-features = false`
-and the resolving code is not built.
+from nowhere else** (FR-3.10). Not the network, not the disk, and with no way to
+ask for more. A caller may not redefine a shipped `$id` either, because a
+document deciding what the envelope schema means defeats the reason a schema
+ships at all.
+
+There are three tiers and they are the whole of it (FR-3.10a):
+
+    within the document    #/$defs/… and #anchor          resolve
+    the shipped set        by the $id a schema declares   resolve
+    anything else                                         refused
+
+**The tier is decided by the resolved reference, never by its text** (FR-3.10b).
+A relative `$ref` resolves against the document's `$id`, so the same string is a
+different reference in a different document, and where a document declares no
+`$id` the compile name is the base instead. Measured in all three packs.
+
+**A keyword in an instance is data** (FR-3.10c). `$ref`, `$id` and `$schema` are
+keywords in a schema and ordinary keys in the document being validated. Nothing
+interprets them there, including a `file://` reference whose target exists.
+
+**The refusal reads the same in every pack** (FR-3.10d): `cannot resolve <the
+resolved reference>: a schema may reference the shipped schemas and its own
+fragments, and nothing else`, as a `schema` error. The three refuse by three
+mechanisms — a loader, a registry with nothing else in it, and a retriever — and
+a consumer cannot tell which language produced the message.
+
+`WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS` was an escape hatch and is retired. It meant
+three different things: it let Python fetch over HTTP and read files, let Go read
+files only, and did nothing at all in Rust. `SECURITY.md` carries what was
+measured and why Rust's `default-features = false` was never the guarantee it
+read as.
 
 **A document may declare its format version** as a semver string at the top
 level, optional (FR-3.9). Absent claims nothing, which is every document written
