@@ -1,0 +1,90 @@
+{
+  "ascii": "plain words, and punctuation: ;:'\"[]{}#&*!|>%@`",
+  "bom_feff": "before\ufeffafter",
+  "bool_false": false,
+  "bool_true": true,
+  "control_bell": "before\u0007after",
+  "control_cr": "before\rafter",
+  "control_del": "before\u007fafter",
+  "control_esc": "before\u001bafter",
+  "control_nul": "before\u0000after",
+  "control_tab": "before\tafter",
+  "date_as_string": "2026-09-07",
+  "empty_map": {},
+  "empty_seq": [],
+  "empty_string": "",
+  "float_big": 1e+20,
+  "float_negative": -2.5,
+  "float_pi": 3.141592653589793,
+  "float_simple": 0.1,
+  "float_small": 1e-07,
+  "float_whole": 1.0,
+  "int_int32_max": 2147483647,
+  "int_int64_max": 9223372036854775807,
+  "int_int64_min": -9223372036854775808,
+  "int_negative": -17,
+  "int_small": 42,
+  "int_zero": 0,
+  "keys_needing_order": {
+    "10": 4,
+    "2": 5,
+    "Mango": 3,
+    "apple": 2,
+    "zebra": 1
+  },
+  "leading_zero": "007",
+  "line_sep_2028": "before\u2028after",
+  "map_nested": {
+    "level_one": {
+      "level_two": {
+        "level_three": "bottom"
+      }
+    }
+  },
+  "multiline_blank_between": "before\n\nafter",
+  "multiline_indented": "outer\n  indented two\n    indented four",
+  "multiline_lf": "first line\nsecond line\nthird line",
+  "multiline_trailing": "ends with a newline\n",
+  "nbsp_00a0": "before\u00a0after",
+  "next_line_0085": "before\u0085after",
+  "nulled": null,
+  "para_sep_2029": "before\u2029after",
+  "seq_of_maps": [
+    {
+      "y": "x",
+      "z": [
+        1,
+        2
+      ]
+    },
+    {
+      "deep": {
+        "deeper": [
+          "a",
+          null,
+          3.5
+        ]
+      }
+    }
+  ],
+  "seq_of_scalars": [
+    1,
+    "two",
+    3.5,
+    true,
+    null
+  ],
+  "sexagesimal_looking": "12:30:45",
+  "unicode_cjk": "\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8",
+  "unicode_combining": "e\u0301 vs \u00e9",
+  "unicode_emoji": "\ud83d\udd27 wrench \ud83d\udee0",
+  "unicode_latin": "caf\u00e9 na\u00efve \u00d8",
+  "version_string": "1.20",
+  "yaml11_no": "no",
+  "yaml11_null_word": "null",
+  "yaml11_off": "off",
+  "yaml11_on": "on",
+  "yaml11_tilde": "~",
+  "yaml11_yes": "yes",
+  "zwsp_200b": "before\u200bafter"
+}

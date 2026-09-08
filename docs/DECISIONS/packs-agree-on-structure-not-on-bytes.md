@@ -92,15 +92,30 @@ production.
 
 ## Choosing a library
 
-Not every maintained library is acceptable, and the test is not popularity.
+**The acceptance check is a round trip over the control-character fixture, RUN
+WITH THE ADAPTERS APPLIED.** The second half of that sentence is the whole of
+it, and this document said something weaker and wrong until 2026-09-08.
 
-    goccy/go-yaml     writes CR raw, and reads its own file back as LF
-    yaml-rust2        writes BEL, ESC, DEL, U+0085, U+2028, U+2029 raw
-    PyYAML            writes U+0085 raw, which folds to a space on read
+It listed three libraries as losing data through their own emitters. They do
+not. They lose it when the emitter is left to choose a scalar style, because a
+single-quoted YAML scalar has no escape syntax at all: a control character in
+one is written raw and reads back as a space. Quoting is adapter two, and with
+it applied the same emitter escapes the same character correctly. Measured over
+73 code points, and directly:
 
-Each loses data through its own emitter. **The acceptance check for a library is
-a round trip over the control-character fixture**, and it rejected three
-libraries in three languages on the day it was written.
+    style left to the emitter    n: 'a<U+0085>  b'    reads back WRONG
+    quoting adapter applied      "n": "a\Nb"          reads back CORRECT
+
+So the earlier finding measured bare library calls, which is not how any pack
+uses a library, and it condemned libraries for a fault in the harness. The
+libraries are not named here any more because they were never the variable.
+
+**What the check is actually for**: the adapters are four decisions, and a
+library that escapes correctly under one style may not under another. Run the
+fixture through the codec as the pack will call it, and a library that still
+loses a code point is unfit. Run it bare and the answer is about nothing.
+
+`docs/PATTERNS/adopting-a-library-for-a-codec.md` carries the procedure.
 
 ## Rows this changes
 

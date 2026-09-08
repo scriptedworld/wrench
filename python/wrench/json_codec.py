@@ -17,10 +17,15 @@ was correct about everything else and offers no supported hook for how a number
 is spelled: with `indent` set the pure-Python encoder runs, and it formats every
 float with `float.__repr__` taken as a default argument, which a subclass cannot
 override and which no parameter reaches. `repr` chooses an exponent on a
-threshold of its own, so it disagrees with this pack's YAML and TOML codecs and
-with the other two packs. FR-4.8 states one spelling and
-`docs/DECISIONS/a-codec-emits-by-hand-when-libraries-disagree.md` says what to
-do when a library will not write it: emit by hand.
+threshold of its own, so it disagrees with this pack's YAML codec and with the
+other packs. FR-4.8 states one spelling.
+
+**The walk is a float adapter wearing a walk's clothes**, and the Ruby pack
+shows the smaller version: it hands the library a pre-spelled fragment through
+`to_json` and keeps every other decision. Python has no equivalent seam, which
+is why this one is shaped as it is, and it is the reason to keep looking for
+one. `docs/DECISIONS/packs-agree-on-structure-not-on-bytes.md` is the rule it
+answers to now.
 
 String escaping still goes through `json.dumps`, which is the part of the
 library that is right, so this walk owns layout and numbers and nothing else.

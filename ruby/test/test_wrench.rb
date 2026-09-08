@@ -12,12 +12,15 @@ require "wrench"
 # so a test can substitute one without a filesystem, and where a file is wanted
 # the test writes a real one into a temporary directory.
 class TestWrench < Minitest::Test
-  TREE = JSON.parse(
-    File.read(File.expand_path("../../.ephemera/parity-tree.json", __dir__))
-  ).freeze
-  """The shared parity tree, the same file every pack is measured against, so a
-  divergence here is a divergence from the other packs rather than from a
-  fixture only this pack has."""
+  # The shared parity tree, the same 53 keys every pack is measured against, so
+  # a divergence here is a divergence from the other packs rather than from a
+  # fixture only this pack has.
+  #
+  # A COPY, BESIDE THE SUITE, AND NOT THE ONE IN .ephemera. It was read from
+  # there first, and `.gitignore` holds that directory out, so `git archive HEAD`
+  # carried this file and not the tree it loads: the suite passed here and could
+  # not run in a clone. A test fixture is part of the pack.
+  TREE = JSON.parse(File.read(File.join(__dir__, "parity-tree.json"))).freeze
 
   ANY = Wrench.compile_schema("anything", {}).freeze
 

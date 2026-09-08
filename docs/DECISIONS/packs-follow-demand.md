@@ -33,7 +33,7 @@ what a pack is now.
 
 `packs-agree-on-structure-not-on-bytes` retired the emitters. A pack is its
 language's libraries, the four adapters, the error family and the two calls: the
-Ruby pack is 535 lines including its suite. The calls, the seams and the error
+Ruby pack is 535 lines of library and 186 of suite. The calls, the seams and the error
 kinds are fixed by the contract and do not move, so the only thing that reaches
 a pack afterwards is a new or changed schema.
 
