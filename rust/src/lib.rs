@@ -59,7 +59,6 @@ pub mod json_codec;
 pub mod localfile;
 pub mod schema;
 pub mod schemas;
-pub mod toml_codec;
 
 pub use codec::{Codec, YamlCodec, YAML};
 pub use errors::{Error, Result};
@@ -69,7 +68,6 @@ pub use schema::{
     compile_schema, shipped_ids, Schema, DEFINITIONS_SCHEMA, ENVELOPE_SCHEMA, JIG_SCHEMA,
     MANIFEST_SCHEMA,
 };
-pub use toml_codec::{TomlCodec, TOML};
 
 use serde_json::Value;
 
@@ -155,22 +153,4 @@ pub fn save_json_file(
     writer: &dyn Writer,
 ) -> Result<()> {
     save_formatted_file(value, path, schema, &JSON, writer)
-}
-
-/// Load a TOML file, validated against `schema`. A native date, time or
-/// datetime decodes to its ISO 8601 string, which is what FR-2.9 requires.
-pub fn load_toml_file(path: &str, schema: &dyn Schema, reader: &dyn Reader) -> Result<Value> {
-    load_formatted_file(path, schema, &TOML, reader)
-}
-
-/// Save a structure as canonical TOML, validated against `schema`. Refuses a
-/// structure containing null, which TOML cannot spell, and one that is not a
-/// table, which TOML has no way to be.
-pub fn save_toml_file(
-    value: &Value,
-    path: &str,
-    schema: &dyn Schema,
-    writer: &dyn Writer,
-) -> Result<()> {
-    save_formatted_file(value, path, schema, &TOML, writer)
 }

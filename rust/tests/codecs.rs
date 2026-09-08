@@ -1,5 +1,5 @@
-//! The other two codecs, asserted against the same tables as the Go and Python
-//! suites.
+//! The JSON codec, and the tables both codecs share, asserted against the same
+//! tables as the Go and Python suites.
 //!
 //! A table that differs between packs is packs that differ, which is the whole
 //! argument of `docs/PATTERNS/holding-two-packs-level.md`.
@@ -7,10 +7,7 @@
 use std::cell::RefCell;
 
 use serde_json::json;
-use wrench::{
-    load_json_file, save_json_file, save_toml_file, save_yaml_file, Codec, Reader, Writer, JSON,
-    TOML, YAML,
-};
+use wrench::{load_json_file, save_json_file, save_yaml_file, Codec, Reader, Writer, JSON, YAML};
 
 struct Stub {
     data: Vec<u8>,
@@ -46,8 +43,6 @@ impl Writer for Stub {
 const CANONICAL_JSON: &str =
     "{\n  \"a\": {\n    \"y\": \"x\",\n    \"z\": [\n      1,\n      2\n    ]\n  },\n  \"b\": 1,\n  \"d\": true\n}\n";
 
-const CANONICAL_TOML: &str = "b = 1\nd = true\n\n[a]\ny = \"x\"\nz = [1, 2]\n";
-
 fn three_formats() -> serde_json::Value {
     json!({"b": 1, "a": {"z": [1, 2], "y": "x"}, "d": true})
 }
@@ -68,74 +63,6 @@ fn json_canonical_form() {
     );
 }
 
-// COVERS: FR-2.7, FR-4.7 | property
-#[test]
-fn toml_canonical_form() {
-    let encoded = TOML.encode(&three_formats()).expect("encode");
-    assert_eq!(String::from_utf8(encoded).unwrap(), CANONICAL_TOML);
-
-    let value = TOML.decode(CANONICAL_TOML.as_bytes()).expect("decode");
-    let again = TOML.encode(&value).expect("re-encode");
-    assert_eq!(
-        String::from_utf8(again).unwrap(),
-        CANONICAL_TOML,
-        "not a fixed point"
-    );
-}
-
-// COVERS: FR-4.7 | edge
-#[test]
-fn toml_writes_an_array_of_tables_as_repeated_sections() {
-    // The most ordinary shape in a hand-written config, and the one TOML has no
-    // inline spelling for. Found by the skid session round-tripping a real
-    // config while FR-4.7 was still being written: the emitter sent every array
-    // down the inline path, so [[x]] had no route at all.
-    let value = json!({
-        "name": "x",
-        "substitution": [
-            {"kind": "literal", "pattern": "kokoro"},
-            {"kind": "regex", "pattern": "skid"},
-        ],
-    });
-    let want = "name = \"x\"\n\n[[substitution]]\nkind = \"literal\"\npattern = \"kokoro\"\n\
-                \n[[substitution]]\nkind = \"regex\"\npattern = \"skid\"\n";
-
-    let encoded = TOML.encode(&value).expect("encode");
-    assert_eq!(String::from_utf8(encoded).unwrap(), want);
-
-    // An empty array is not a table array, whatever it would have held.
-    let empty = TOML.encode(&json!({"a": []})).expect("encode empty");
-    assert_eq!(String::from_utf8(empty).unwrap(), "a = []\n");
-}
-
-// COVERS: FR-4.7 | negative
-#[test]
-fn toml_refuses_a_null() {
-    let err = TOML
-        .encode(&json!({"a": {"b": null}}))
-        .expect_err("a null was accepted");
-    assert!(
-        err.to_string().contains("a.b"),
-        "the error does not say where: {err}"
-    );
-}
-
-// COVERS: FR-4.7 | edge
-#[test]
-fn toml_refuses_a_document_that_is_not_a_table() {
-    TOML.encode(&json!([1, 2]))
-        .expect_err("a top-level array was accepted");
-}
-
-// COVERS: FR-4.7 | negative
-#[test]
-fn toml_refuses_an_integer_past_int64() {
-    TOML.decode(b"n = 9223372036854775808\n")
-        .expect_err("a value past int64 was accepted");
-    TOML.decode(b"n = 9223372036854775807\n")
-        .expect("int64 max is representable and must decode");
-}
-
 // COVERS: FR-4.11 | edge
 #[test]
 fn negative_zero_is_signed_in_json_and_an_integer_elsewhere() {
@@ -149,21 +76,15 @@ fn negative_zero_is_signed_in_json_and_an_integer_elsewhere() {
         "JSON -0 lost its sign"
     );
 
-    // TOML says the opposite for its own format outright: -0 and +0 are
-    // identical to an unprefixed zero, and only -0.0 and +0.0 map according to
-    // IEEE 754. YAML has no such sentence and every implementation agrees.
-    for (name, bytes) in [("yaml", &b"n: -0\n"[..]), ("toml", &b"n = -0\n"[..])] {
-        let value = if name == "yaml" {
-            YAML.decode(bytes).expect("decode")
-        } else {
-            TOML.decode(bytes).expect("decode")
-        };
-        assert!(
-            value["n"].is_i64(),
-            "{name}: -0 came back {:?}, not an integer",
-            value["n"]
-        );
-    }
+    // YAML says the opposite. Its type repository resolves an integer by a
+    // pattern `-0` matches, and gives a canonical form in which zero has no
+    // signed variant, so the sign is a spelling rather than a value.
+    let yaml = YAML.decode(b"n: -0\n").expect("decode");
+    assert!(
+        yaml["n"].is_i64(),
+        "yaml: -0 came back {:?}, not an integer",
+        yaml["n"]
+    );
 }
 
 // COVERS: FR-4.10 | property
@@ -191,23 +112,6 @@ fn an_integer_past_int64_widens_to_a_float() {
     assert!(exact["n"].is_i64(), "int64 max must stay an integer");
 }
 
-// COVERS: FR-4.7 | regression
-#[test]
-fn toml_temporal_types_decode_to_iso_strings() {
-    let value = TOML
-        .decode(b"d = 2026-01-01\ndt = 2026-01-01T07:32:00Z\n")
-        .expect("decode");
-    assert_eq!(value["d"], json!("2026-01-01"));
-    assert!(
-        value["dt"]
-            .as_str()
-            .unwrap()
-            .starts_with("2026-01-01T07:32:00"),
-        "an offset datetime became {}",
-        value["dt"]
-    );
-}
-
 // COVERS: FR-2.10 | positive
 #[test]
 fn a_wrapper_per_format_supplies_the_codec() {
@@ -227,19 +131,6 @@ fn a_wrapper_per_format_supplies_the_codec() {
     let reader = Stub::new(br#"{"success": true}"#);
     let value = load_json_file("out.json", &wrench::ENVELOPE_SCHEMA, &reader).expect("load json");
     assert_eq!(value["success"], json!(true));
-
-    let toml_writer = Stub::new(b"");
-    save_toml_file(
-        &json!({"success": true}),
-        "out.toml",
-        &wrench::ENVELOPE_SCHEMA,
-        &toml_writer,
-    )
-    .expect("save toml");
-    assert_eq!(
-        toml_writer.written.borrow().clone().unwrap(),
-        b"success = true\n".to_vec()
-    );
 
     let yaml_writer = Stub::new(b"");
     save_yaml_file(
@@ -299,7 +190,6 @@ fn a_float_has_one_spelling_in_every_codec() {
     let codecs: Vec<(&dyn Codec, &str, &str)> = vec![
         (&wrench::YAML, "\"n\": ", "\n"),
         (&JSON, "{\n  \"n\": ", "\n}\n"),
-        (&TOML, "n = ", "\n"),
     ];
 
     for (codec, prefix, suffix) in codecs {
@@ -316,19 +206,19 @@ fn a_float_has_one_spelling_in_every_codec() {
 
 /// The escape spellings below are asserted identically in all three suites. A
 /// table that differs between packs is packs that differ.
-fn canonical_escapes() -> Vec<(u32, &'static str, &'static str)> {
+fn canonical_escapes() -> Vec<(u32, &'static str)> {
     vec![
-        (0x00, "\\0", "\\u0000"),
-        (0x07, "\\a", "\\u0007"),
-        (0x08, "\\b", "\\b"),
-        (0x09, "\\t", "\\t"),
-        (0x0B, "\\v", "\\u000B"),
-        (0x1B, "\\e", "\\u001B"),
-        (0x7F, "\\x7F", "\\u007F"),
-        (0x85, "\\N", "\u{85}"),
-        (0x9F, "\\x9F", "\u{9f}"),
-        (0x2028, "\\L", "\u{2028}"),
-        (0x2029, "\\P", "\u{2029}"),
+        (0x00, "\\0"),
+        (0x07, "\\a"),
+        (0x08, "\\b"),
+        (0x09, "\\t"),
+        (0x0B, "\\v"),
+        (0x1B, "\\e"),
+        (0x7F, "\\x7F"),
+        (0x85, "\\N"),
+        (0x9F, "\\x9F"),
+        (0x2028, "\\L"),
+        (0x2029, "\\P"),
     ]
 }
 
@@ -338,7 +228,7 @@ fn a_control_character_is_escaped_in_every_codec() {
     // A raw control character is refused by a strict YAML reader, accepted by a
     // lenient one, and folded to a space by one implementing the YAML 1.1
     // line-break set, so a file carrying one has no single meaning.
-    for (point, in_yaml, in_toml) in canonical_escapes() {
+    for (point, in_yaml) in canonical_escapes() {
         let ch = char::from_u32(point).expect("valid scalar");
         let text = format!("a{ch}b");
         let value = json!({ "n": text });
@@ -348,13 +238,6 @@ fn a_control_character_is_escaped_in_every_codec() {
             String::from_utf8(encoded.clone()).unwrap(),
             format!("\"n\": \"a{in_yaml}b\"\n"),
             "yaml U+{point:04X}"
-        );
-
-        let toml_bytes = TOML.encode(&value).unwrap();
-        assert_eq!(
-            String::from_utf8(toml_bytes).unwrap(),
-            format!("n = \"a{in_toml}b\"\n"),
-            "toml U+{point:04X}"
         );
 
         // Reading it back is the half that was broken.

@@ -1,4 +1,4 @@
-//! The one spelling of a float, shared by all three of this pack's codecs.
+//! The one spelling of a float, shared by both of this pack's codecs.
 //!
 //! FR-4.8. Positional decimal, never an exponent. The digits are the shortest
 //! decimal string that reads back as the same `f64`, placed with the decimal
@@ -16,9 +16,9 @@
 //! range, 311 for the largest finite double.
 //!
 //! **This pack was already right and is the reason the rule is spelled this
-//! way.** `Display` for `f64` is positional and shortest-round-trip, so the two
-//! hand-written codecs here needed no change; what moved is that all three now
-//! ask one function rather than three places agreeing by coincidence.
+//! way.** `Display` for `f64` is positional and shortest-round-trip, so the
+//! hand-written YAML codec here needed no change; what moved is that both
+//! codecs now ask one function rather than each spelling it for itself.
 //!
 //! NaN and the infinities cannot reach here: `serde_json::Number` refuses to
 //! hold them, so the value type rejects them before a codec is asked.

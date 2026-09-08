@@ -43,7 +43,7 @@ impl Codec for JsonCodec {
         // output is right except how it spells a float, so the formatter is
         // wrapped rather than the whole serializer being hand-written: `ryu`
         // switches to an exponent at 1e16, which disagrees with this pack's own
-        // YAML and TOML codecs and with the other two packs. FR-4.8.
+        // YAML codec and with the other two packs. FR-4.8.
         let mut out = Vec::new();
         let formatter = CanonicalFormatter {
             pretty: PrettyFormatter::new(),
