@@ -129,10 +129,50 @@ def _section(item: object, path: list[str]) -> list[str]:
 
     header = ".".join(_key(part) for part in path)
     out: list[str] = []
-    for entry in item:
+    for index, entry in enumerate(item):
+        _refuse_nested_table(entry, path, index)
         out.append(f"\n[[{header}]]\n")
         out.extend(_table(entry, []))
     return out
+
+
+def _refuse_nested_table(entry: dict[str, object], path: list[str], index: int) -> None:
+    """Refuse an entry this codec would write as a document it cannot read back.
+
+    THE DEFECT THIS GUARDS, measured 2026-09-07 in all three packs. The
+    recursion below passes an EMPTY path, so a sub-table of an array-of-tables
+    entry is written with a root-relative header:
+
+        [[a]]
+
+        [b]
+        c = 1
+
+    TOML binds a header at the document root unless it is qualified, so
+    `{"a": [{"b": {"c": 1}}]}` decodes back as `{"a": [{}], "b": {"c": 1}}`.
+    The entry is emptied and its contents reappear at the top level. Nothing
+    inside a pack could see it: all three packs emit the same bytes and agree
+    on the same wrong document.
+
+    REFUSED RATHER THAN CORRECTED, and the choice is deliberate. FR-4.1 says a
+    value with no canonical form is refused rather than guessed at, and this
+    codec has no correct spelling for the shape: writing `[a.b]` would fix the
+    header and change the bytes of every existing file carrying one. TOML is
+    retired by FR-2.7, so the codec's remaining job is to stop corrupting
+    documents, not to grow a new output for a format on its way out.
+
+    A caller meeting this should move the file to YAML, which spells the shape
+    without qualification.
+    """
+    for name, value in sorted(entry.items()):
+        nested = isinstance(value, dict) or _is_table_array(value)
+        if nested:
+            where = ".".join([*path, f"[{index}]", str(name)])
+            raise ValueError(
+                f"cannot write a table inside an array of tables at {where}: "
+                "the header would bind at the document root and the entry "
+                "would read back empty"
+            )
 
 
 def _is_table_array(value: object) -> TypeGuard[list[dict[str, object]]]:
