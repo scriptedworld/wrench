@@ -4,6 +4,31 @@ Open questions and the context behind them.
 
 ## Open, and each is specified enough to start
 
+**The Ruby pack is built and nothing holds it to anything.** Four gaps, and the
+first two are the ones that make the rest reachable:
+
+- **Its suite reads a file no clone has.** `ruby/test/test_wrench.rb` loads
+  `.ephemera/parity-tree.json`, and `.ephemera/` is gitignored, so `git archive
+  HEAD` carries the suite and not the tree it needs. The shared parity tree
+  belongs beside the other fixtures if every pack is to be measured against it.
+- **No task runs it.** `PACKS` in the `Justfile` is `go python rust`, and
+  `bolt.wrench-quality.yaml` has no Ruby task, so `just test` and the gate both
+  pass without compiling a line of it.
+- **The parity check reports 55 divergences** when `--suite
+  ruby='ruby/test/*.rb'` is added: 16 `COVERS:` marks against the 67 the other
+  three hold level. Those are tests to write, not scope markers to add.
+- **It exposes no `Schemas`.** FR-5.7 says every pack exposes the same set, and
+  this one carries none: a caller compiles what it hands over. Go and Python
+  reach the set through a generated file and Rust through `build.rs`, so the
+  question is which of the two shapes Ruby takes.
+
+**The fixture set still compares bytes.** FR-5.5 now asks that any pack's output
+decode to the same value in every other pack, and `testdata/canonical/` asks
+each pack to reproduce one golden file. Three packs meet the stricter test and
+the fourth is not in it. Re-basing the set on structures is what the contract
+change leaves undone, and it is the mechanism that would hold four packs level
+rather than three.
+
 **The Go pack has no tags, so every consumer gets a pseudo-version.** `git tag`
 lists nothing, and Go takes its versions from tags, so
 `go get github.com/scriptedworld/wrench/go@latest` resolves to a commit stamp:
@@ -21,48 +46,45 @@ surface, which is the thing the shared version was for.
 
 Tag form is `go/vX.Y.Z`, because the module lives in a subdirectory.
 
-**The three packs disagree about non-ASCII, and one writes files it cannot
-read.** Measured 2026-09-04, encoding `{"v": <char>}` through each pack and
-decoding its own output:
+**The Python pack writes two characters it then refuses to read.** Encoding
+`{"v": <char>}` through each pack and decoding its own output:
 
-    character              Go         Python     Rust
-    U+0085, U+FEFF         escaped    escaped    escaped
-    U+200B, U+202E         raw        raw        raw
-    U+FDD0, U+E000         raw        raw        raw
-    cafe (U+00E9)          raw        raw        raw
-    U+FFFE, U+FFFF         ESCAPED    RAW        RAW
-    U+1FFFE                ESCAPED    RAW        RAW
-    U+1F600 (an emoji)     ESCAPED    RAW        RAW
+    character              Go         Python     Rust       Ruby
+    U+0085, U+FEFF         escaped    escaped    escaped    escaped
+    U+200B, U+00E9         raw        raw        raw        raw
+    U+FFFE, U+FFFF         escaped    RAW        raw        escaped
+    U+1FFFE                escaped    raw        raw        escaped
+    U+1F600 (an emoji)     escaped    raw        raw        escaped
 
-Two separate faults, and the second is the one to fix first.
+Every cell round trips within its own pack except the two in capitals, where
+`YAML.decode(YAML.encode(v))` raises `ParseError`. That is FR-4.2 failing
+outright, and it is the whole of the defect. Rust emits the same bytes and reads
+them back, yaml-rust2 being the more permissive reader, so no comparison between
+packs would find it either.
 
-**Python breaks the round trip on U+FFFE and U+FFFF.** It emits them raw and its
-own reader refuses them: PyYAML's emitter allows what its `check_printable`
-rejects, so `YAML.decode(YAML.encode(v))` raises `ParseError`. That is FR-4.2
-failing outright — the pack produces a document it cannot read. Rust emits the
-same bytes and reads them back, because yaml-rust2 is the more permissive reader,
-so the fixture set would not catch it even if a fixture existed.
+**The pack's own emitter is what does it.** It writes the character as its raw
+three bytes inside the quotes, where an escape is what the reader accepts, so
+the encode side and the decode side of one pack disagree about the same
+document. Handing emission to a library that escapes it closes this, which is
+where `packs-agree-on-structure-not-on-bytes` was already pointing.
 
-**Go escapes where the other two do not**, on the noncharacters and on every
-astral-plane character. An emoji in any value therefore produces different bytes
-from the Go pack than from the other two. That is not an exotic input: a `model`
-name or a commit subject can carry one.
+**The escaping divergence in the rest of the table is no longer a defect.**
+FR-5.5 holds the packs to structure rather than to bytes, and an escaped emoji
+and a raw one decode to the same character. What it costs is diff noise when two
+packs rewrite one file, which is the cost
+`packs-agree-on-structure-not-on-bytes` accepted.
 
-**Nothing detected either, and the reason is structural.** FR-5.5 holds the packs
-level by shared cases, and **every one of the twelve fixtures in
-`testdata/canonical/` is pure ASCII**. The fixture set cannot disagree about a
-character it does not contain. `rust/tests/wrench.rs` says in its own header that
-"implementations agreeing on the schema and disagreeing on the bytes is the
-failure a shared fixture set exists to catch"; this is that failure, sitting in
-the gap the set does not cover.
+**Nothing detected the round-trip fault, and the reason is structural.** Every
+one of the twelve fixtures in `testdata/canonical/` is pure ASCII, and a fixture
+set cannot disagree about a character it does not contain. The fix is a fixture
+per case, and it is worth writing before the emitters move, not after.
 
-**Deciding it is a change to the canonical form and belongs to a person.** The
-round-trip bug has one right answer: a pack must not emit what it will not read.
-The parity question does not — escaping everything non-ASCII gives ASCII-safe
-output and unreadable emoji, emitting raw gives readable output and needs the
-non-printable set escaped by name. Whichever is chosen, it changes the bytes of
-a published form, so it is FR-1.11o for infobot and a pack version bump here, and
-it wants a fixture per case before any of it moves.
+**Fixing it changes the bytes the Python pack writes, and one consumer pins
+them.** infobot's FR-1.11p asserts the exact bytes of wrench's output against
+the pack that produces them, and its FR-1.11o requires a change to that form to
+be announced before it lands. Packs no longer having to match each other does
+not release a pack from the reader it already has, so this needs a version bump
+here and a word to infobot first.
 
 **A document names its own schema, cross-checked rather than trusted.** This is
 the largest of them and it changes the error contract in three packs. A caller
@@ -88,10 +110,10 @@ and none has been asked.
 
 **Numbers agree on range and type**, mechanism first. The rules are settled and
 the agreement mechanism is not. FR-4.10 carries the range rule and FR-4.11
-carries `-0`, both landed. Go's YAML still gives an `int` where its JSON and
-TOML give an `int64`, measured 2026-08-30, and that is a decode defect a fixture
-set feeding YAML only cannot catch. Every divergence found so far has been on
-the decode path, which is why the mechanism is the work rather than the rules.
+carries `-0`, both landed. Go's YAML still gives an `int` where its JSON gives
+an `int64`, and that is a decode defect a fixture set feeding YAML only cannot
+catch. Every divergence found so far has been on the decode path, which is why
+the mechanism is the work rather than the rules.
 
 **A cold read of the prose sweep**, which by its own design cannot be the writer.
 
