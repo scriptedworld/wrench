@@ -1,7 +1,7 @@
 # Runbook
 
-Binding wrench into a Go, Python or Rust project, what each pack is built on,
-and where their output was forced to agree.
+Binding wrench into a Go, Python, Rust or Ruby project, what each pack is built
+on, and where their output has to agree.
 
 Setting the repositories up for the first time is covered once, in
 `bolt/docs/runbook.md`: cloning the three as siblings and linking the shared
@@ -28,6 +28,10 @@ paths assume the sibling layout; use absolute ones if your checkout differs.
     [dependencies]
     wrench = { version = "0.4.0", path = "../wrench/rust" }
 
+**Ruby**
+
+    gem "wrench", path: "../wrench/ruby"
+
 ## Use it
 
 Each pack has one general pair and a convenience pair per format.
@@ -37,7 +41,7 @@ Each pack has one general pair and a convenience pair per format.
     value, err := wrench.LoadYAMLFile(path, schema, reader)
     err := wrench.SaveYAMLFile(value, path, schema, writer)
 
-`LoadJSONFile`, `LoadTOMLFile` and their `Save` counterparts likewise.
+`LoadJSONFile` and their `Save` counterparts likewise.
 `LoadFormattedFile(path, schema, codec, reader)` takes the codec explicitly.
 
 **Python**, as skid loads its config:
@@ -51,7 +55,7 @@ Each pack has one general pair and a convenience pair per format.
 
     wrench.save_yaml_file(document, path, SCHEMA, wrench.LOCAL_FILE)
 
-`load_json_file`, `save_toml_file` and so on. `wrench.LOCAL_FILE` is the
+`load_json_file`, `save_json_file` and so on. `wrench.LOCAL_FILE` is the
 ready-made reader and writer for an ordinary file.
 
 **Rust**, as bolt reads a jig:
@@ -66,6 +70,15 @@ ready-made reader and writer for an ordinary file.
 `wrench::schemas` carries the shipped schemas; `wrench::compile_schema` builds
 one from text.
 
+**Ruby**
+
+    schema = Wrench.compile_schema("envelope", JSON.parse(File.read(schema_file)))
+    value = Wrench.load_formatted_file(path, schema, Wrench::YAML, Wrench::LOCAL_FILE)
+
+This pack carries no schemas of its own, so a caller reads the file it wants out
+of `schemas/` and compiles it. `Wrench.load_yaml_file` and the other three
+wrappers are there as in every pack.
+
 A schema says what the document may contain. The reader and writer are where
 bytes come from, which is what lets a caller test without a filesystem.
 
@@ -74,21 +87,26 @@ bytes come from, which is what lets a caller test without a filesystem.
 The packs are not ports of each other. Each binds its own parsers and its own
 JSON Schema validator, and each was written from the same contract.
 
-| | Go | Python | Rust |
-|---|---|---|---|
-| schema | `santhosh-tekuri/jsonschema/v6` | `jsonschema` + `referencing` | `jsonschema` 0.52 |
-| YAML | `go.yaml.in/yaml/v3` | `PyYAML` | `yaml-rust2` |
-| JSON | `encoding/json` | `json` | `serde_json` |
-| TOML | `BurntSushi/toml` | `tomllib` | `toml` |
+| | Go | Python | Rust | Ruby |
+|---|---|---|---|---|
+| schema | `santhosh-tekuri/jsonschema/v6` | `jsonschema` + `referencing` | `jsonschema` 0.52 | `json_schemer` |
+| YAML | `go.yaml.in/yaml/v3` | `PyYAML` | `yaml-rust2` | Psych |
+| JSON | `encoding/json` | `json` | `serde_json` | `json` |
 
-Nine parser implementations across three languages. **None of them agrees with
-the others about how to spell an ordinary value**, and none raises an error
+Twelve independent implementations across four languages. **None of them agrees
+with the others about how to spell an ordinary value**, and none raises an error
 about it.
 
-## Where the output was unified
+TOML was a fourth row and is retired: no maintained library in any of these
+languages emits the canonical form wrench asked for, and the hand-written
+emitters that stood in for one wrote a document they could not read back. If you
+have TOML to read, read it with your language's own library and validate the
+structure through wrench.
+
+## Where the packs have to agree
 
 Left alone, each engine writes what its own author preferred. These were
-wrench's own three packs, and every test passed:
+wrench's own packs, and every test passed:
 
 | value | Go | Python | Rust |
 |---|---|---|---|
@@ -106,36 +124,49 @@ consumer parsing with a naive numeric pattern reads correctly, which is how the
 defect was found: `1e+06` matched by `[0-9.]+` yields `1`. The cost is bounded
 at 326 characters for a subnormal.
 
-**Control characters** are escaped in each format's own spelling rather than
-emitted raw.
+**Control characters** are escaped rather than emitted raw.
+
+**Keys, quoting and null** are the other three. Keys are sorted, every string
+and every key is quoted so nothing changes type on the way back, and a null is
+written as the word rather than as an empty value.
+
+**Layout is not part of it.** Two packs may indent a list differently or wrap a
+long line in different places. What they are held to is that any pack's output
+decodes to the same value in every other pack, because no canonical form exists
+that all four languages' YAML libraries can emit.
 
 **What holds it true is not intent.** A shared fixture set in
-`testdata/canonical/` is read by all three packs, and the property under test is
-that the same document through any pack and any codec produces the same bytes.
-The suite-parity check refuses to pass over an emptiness: pointed at a glob
-matching no files it exits 2 rather than reporting success.
+`testdata/canonical/` is read by the Go, Python and Rust packs, and the
+suite-parity check refuses to pass over an emptiness: pointed at a glob matching
+no files it exits 2 rather than reporting success. The Ruby pack is in neither
+yet, so treat its output as measured rather than as gated.
 
 ## How this repository gates itself, if yours has several packs
 
-wrench is one repository holding three independent libraries, so the gate runs
-at two levels and the split is deliberate.
+wrench is one repository holding four independent libraries, so the gate runs at
+two levels and the split is deliberate.
 
 **Each pack gates itself.** `just checks` runs `_each checks`, and every pack
 runs the language jig for its own language plus the common one. A pack knows
 nothing about its siblings.
 
 **The root runs what no pack can.** `bin/test-suite-parity.py` fails when one
-pack's suite covers something another's does not, and it reads all three at
-once. A pack that could run it would have to know about its siblings, which is
-what the layering exists to prevent.
+pack's suite covers something another's does not, and it reads them all at once.
+A pack that could run it would have to know about its siblings, which is what
+the layering exists to prevent.
 
     just checks        each pack, then the parity check
     just test          the suite in every pack
     just coverage      the same, with coverage
 
+**A pack the recipes do not name is a pack that silently passes.** `PACKS` in
+the `Justfile` is `go python rust`, so every recipe above runs nothing Ruby and
+exits 0 having done so. Whatever fans out in your own repository, make the list
+it fans over fail loudly when a directory is missing from it.
+
 **The Justfile is where the coordination lives, not the jig.** Bolt can compose
 by running itself against a subdirectory and taking the verdict, and that is the
-right tool when the subprojects are unlike each other. Here they are three
+right tool when the subprojects are unlike each other. Here they are several
 implementations of one contract, checked identically and then compared, so a
 recipe that fans out and one check that fans in says it more plainly.
 

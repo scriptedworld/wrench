@@ -57,6 +57,9 @@ something works; read this file for how the project is run.
     rust/src/                the Rust pack
     rust/tests/              build.rs generates its copy every build
 
+    ruby/lib/wrench/         the Ruby pack
+    ruby/test/               it carries no copy of the schemas at all
+
 ## The gate
 
     bolt wrench-quality .
@@ -97,11 +100,16 @@ the register against every source file, not only the Python pack. There is no
 | Go | bolt's Go implementation | Built, under `go/` |
 | Python | toolbox's adapters and checkers | Built, under `python/` |
 | Rust | bolt | Built, suite level with the others |
-| TypeScript | Consumer not yet identified | Not built |
-| Ruby | Consumer not yet identified | Not built |
+| Ruby | the estate's Ruby tooling as it is written | Built, under `ruby/`, and outside the gate |
+| TypeScript | the estate's TypeScript tooling as it is written | Being built |
 
-`packs-follow-demand` says what decides when a pack gets written, and it is a
-consumer, not a library.
+`packs-follow-demand` says what decides when a pack gets written, and it is no
+longer a waiting consumer: the emitters that made a pack expensive are gone, so
+the test is whether the estate writes tools in that language.
+
+The Ruby pack is the least finished of the four. It exposes no `Schemas`, so
+FR-5.7 is undischarged there; no jig task runs its suite; and the parity check
+reports 55 divergences when its suite is added to the command.
 
 Bump the pack version in the same commit as a change to its surface. A resolver
 serves an unchanged version number out of its cache, so a consumer receives none
@@ -113,6 +121,12 @@ consumer noticed receiving none of it.
 The shared fixture set in `testdata/canonical/`, plus the same tables asserted
 in every suite. No pack is the oracle for another: if they disagree, the fixture
 is right.
+
+What they are held to is that any pack's output decodes to the same value in
+every other pack, not that they write the same bytes. The fixture set has not
+caught up with that: it still compares each pack's output against a golden file,
+which is stricter than the contract and which the Ruby pack sits outside
+entirely. `packs-agree-on-structure-not-on-bytes` carries the argument.
 
 A fixture set proves agreement only over the values it holds, and a gap in it
 looks exactly like agreement. That is the standing caution rather than a closed

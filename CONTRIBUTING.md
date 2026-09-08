@@ -1,11 +1,11 @@
 # Contributing
 
-wrench owns one definition of what a structured file may contain, and three
-libraries that hold to it. A change is accepted when the three still agree, so
-most of what follows is about keeping them level.
+wrench owns one definition of what a structured file may contain, and four
+libraries that hold to it. A change is accepted when they still agree, so most
+of what follows is about keeping them level.
 
 Read `docs/SPEC.md` first if the question is how something works. It is written
-so that a fourth pack could be built from it, and it names what it does not
+so that another pack could be built from it, and it names what it does not
 specify.
 
 ## Layout
@@ -17,20 +17,28 @@ specify.
     go/                      the Go pack
     python/wrench/           the Python pack
     rust/src/                the Rust pack
+    ruby/lib/wrench/         the Ruby pack
 
 ## Running the suites
 
     (cd go && go test ./...)
     PYTHONPATH=python python3 -m pytest python/tests -q
     cargo test --manifest-path rust/Cargo.toml
+    (cd ruby && ruby -Ilib -Itest test/test_wrench.rb)
 
 `just test` delegates to each pack that has adopted its own Justfile. Run the Go
-suite from `go/` until that pack adopts one.
+suite from `go/` until that pack adopts one, and the Ruby suite by hand: `PACKS`
+in the `Justfile` names go, python and rust, so `just test` compiles nothing
+Ruby and reports nothing about it.
 
 The Python suite needs `PyYAML`, `jsonschema` and `referencing` importable. The
 pack imports them by name, so a platform package satisfies it as well as a
 resolver does, and it runs from a source checkout with no install having
 happened.
+
+The Ruby suite needs `json_schemer` and `minitest`. Psych and `json` are
+standard library and the pack declares neither, because they are the emitters
+and the pack adds only the adapters on top of them.
 
 ## The parity check
 
@@ -49,6 +57,12 @@ list.
 Adding a scope marker to silence a parity failure is the one wrong use of it. A
 marker is for a row a pack cannot discharge; a row merely untested in one pack
 is the finding.
+
+**The Ruby pack is not in that command.** Adding `--suite
+ruby='ruby/test/*.rb'` reports 55 divergences and exits 1, because the pack is
+new and its suite covers 16 rows against the 67 the other three hold level.
+Neither a scope marker nor a deletion is the answer there: the tests are missing
+and have to be written.
 
 ## Every test names its requirement
 
@@ -71,9 +85,21 @@ pointing at it are repointed or removed in the same change.
 
 ## Changing what a pack emits
 
-A change to what one pack emits is a change to all three, and to the fixture set
-in `testdata/canonical/`. If two packs disagree, the fixture is right; no pack
-is the oracle for another.
+A change to what one pack emits is a change to every pack, and to the fixture
+set in `testdata/canonical/`. If two packs disagree, the fixture is right; no
+pack is the oracle for another.
+
+What has to agree is the value, not the bytes. Any pack's output must decode to
+the same thing in every other pack, and a difference in indentation or line
+wrapping is not a defect. What is a defect is a difference a reader can see: a
+key that was a string coming back as a number, a float spelled with an exponent,
+a null that reads as the empty string. Those four properties are the adapters
+`docs/SPEC.md` lists, and they are what a change here has to preserve.
+
+Emit through the language's library with those adapters on top. A hand-written
+emitter is what byte-identity used to force, it is where the defects turned up,
+and two packs still carry one. `packs-agree-on-structure-not-on-bytes` is the
+argument and `adopting-a-library-for-a-codec` is the procedure.
 
 Parity is reached by widening. Where the packs differ, the one that handles more
 is right and the others learn from it, and agreement bought by accepting less
@@ -85,7 +111,9 @@ generated file that is committed:
     ./bin/generate-shipped.py            write the generated files
     ./bin/generate-shipped.py --check    exit 1 if any is stale, and say which
 
-Rust needs neither, `rust/build.rs` regenerating its copy on every build.
+Rust needs neither, `rust/build.rs` regenerating its copy on every build. Ruby
+carries no copy and reaches no schema of its own, so a schema change does not
+reach that pack at all.
 
 Bump the pack version in the same commit as a change to its surface. A resolver
 serves an unchanged version number out of its cache, so a consumer receives none

@@ -9,7 +9,7 @@ they fit and what each one promises.
 An `FR-` citation names a requirement in that tree. A decision is named by its
 slug and a task by its group and ordinal, both findable where they live.
 
-The test it is written to pass: a fourth pack should be implementable from this
+The test it is written to pass: another pack should be implementable from this
 file plus the schemas and the fixture set, without reading an existing pack.
 Where that is not yet true the gap is named in "What this does not specify".
 
@@ -22,8 +22,9 @@ boolean and null. A map key is a string.
 A format with a type JSON does not have is reconciled in the decoder. Two rules
 settle every case:
 
-- Where the spelling is lossless, coerce. A YAML timestamp and a TOML date,
-  time or datetime all decode to their ISO 8601 string (FR-2.9, FR-4.7).
+- Where the spelling is lossless, coerce. A YAML timestamp decodes to its ISO
+  8601 string (FR-2.9), the value being carried whole by the text it was
+  written as.
 - Where it is not, refuse. A mapping key that is not a string is refused rather
   than stringified, because the coercion is not reversible.
 
@@ -38,9 +39,9 @@ every pack, visibly, because FR-4.8 gives a whole float a trailing `.0`. The
 decision is `parity-is-reached-by-widening-never-by-refusing`.
 
 Today the packs disagree. Python is exact everywhere, its integers being
-unbounded; Go is exact in YAML and wrong in JSON; Rust is the reverse; TOML
-refuses in two packs. A pack being written now should implement the widening and
-expect the existing three to follow. Task `parity/40` holds the measurements.
+unbounded; Go is exact in YAML and wrong in JSON; Rust is the reverse. A pack
+being written now should implement the widening and expect the existing ones to
+follow. Task `parity/40` holds the measurements.
 
 ## The two calls
 
@@ -100,14 +101,18 @@ contents or the new ones.
 
 ## The wrappers
 
-Three codecs ship, YAML, JSON and TOML (FR-2.7), each with a pair of wrappers
-that supply the codec and add nothing else (FR-2.10):
+Two codecs ship, YAML and JSON (FR-2.7), each with a pair of wrappers that
+supply the codec and add nothing else (FR-2.10):
 
     load_yaml_file / save_yaml_file
     load_json_file / save_json_file
-    load_toml_file / save_toml_file
 
 Validation stays in the core call, so the seam is unchanged in both directions.
+
+TOML was the third and is retired. No maintained library in any of the four
+languages emits its canonical form, and the hand-written emitters that stood in
+for one wrote a document they could not read back. FR-2.7 carries the defect and
+the three source lines it came from.
 
 **The codec is named, never inferred from the suffix.** Choosing a parser by
 filename makes behaviour depend on what a file is called, and renaming a file
@@ -153,15 +158,55 @@ consumer unwraps once to reach the cause.
 ## Canonical form
 
 Canonical form belongs to the save call (FR-4.3), so a caller cannot emit
-something valid but written another way. Each codec has one, and every pack
-writes the same bytes for the same structure. The fixture set is what holds that
-true (FR-5.5, FR-5.6).
+something valid but written another way. Each codec has one output for one
+structure, and that output is no longer promised to be a sibling pack's.
 
-Common to all three: map keys are sorted, and a float is positional decimal and
-never an exponent (FR-4.8). The float rule is the shortest decimal string that
-reads back as the same double, with the point where it belongs; a whole number
-keeps a trailing `.0`, a negative zero keeps its sign, and NaN and the
+**The packs agree on structure, not on bytes** (FR-5.5). Any pack's output must
+decode to the same value in every other pack, and a difference in whitespace is
+not a defect. Byte-identity was the older promise and cannot be kept alongside
+library emission: no canonical form exists that all four languages' YAML
+libraries can produce, libyaml writing block sequences indentless and
+hard-coding it while Go's `yaml.v3` indents them and offers only `SetIndent`.
+`packs-agree-on-structure-not-on-bytes` carries the measurement and what the
+change costs.
+
+Common to both codecs: map keys are sorted, and a float is positional decimal
+and never an exponent (FR-4.8). The float rule is the shortest decimal string
+that reads back as the same double, with the point where it belongs; a whole
+number keeps a trailing `.0`, a negative zero keeps its sign, and NaN and the
 infinities are refused.
+
+### The four adapters, which are what a pack implements
+
+A library is taken with adapters and never bare. These four preserve meaning,
+which is the half that still has to agree once bytes do not:
+
+    sort the keys                a mapping has no order of its own, so sorting
+                                 is what makes two runs over one structure agree
+    quote every string and key   `no`, `1.20`, `null` and `10` stay the strings
+                                 they were. The key is the sharp one: to a YAML
+                                 1.1 reader an unquoted `10:` is an integer key
+    positional floats            FR-4.8, and `1e+20` read by `[0-9.]+` yields 1,
+                                 which is a defect found in the wild
+    null written as the word     an empty value and a missing one should not
+                                 look the same to a reader
+
+None of them writes a character of text. A pack that drops one produces a file
+that reads back as something else, which is why they are the contract and the
+layout is not.
+
+An emitter in the libyaml family takes two settings beside them, both settings
+rather than code: the line width off, so a long scalar is never wrapped, and
+unicode passed through rather than escaped. libyaml spells them `set_width(-1)`
+and `set_unicode(true)`, and Psych takes `line_width` on the dump. Go's
+`yaml.v3` offers neither and needs neither: `SetIndent` is the whole of its
+emitter API, its own width and unicode functions being unexported, and it wrote
+a 9,689-character scalar on one line.
+
+**The quoting adapter is what makes escaping possible at all**, so it is not
+independent of the others. A single-quoted YAML scalar has no escapes, so a
+control character in one is written raw and read back as something else.
+Quote every string and the emitter escapes what it must.
 
 **YAML** (FR-4.1, FR-4.4). Block style, one key to a line. A scalar is quoted
 exactly when it is meant to be a string, so `no`, `1.20` and `null` come back as
@@ -180,26 +225,21 @@ layout would put two formatters in one repository. The agreement is one
 direction only: `deno fmt` does not sort keys and will collapse a short object
 onto one line, so it is a formatter and not a canonical form.
 
-**TOML** (FR-4.7). A table's scalars first and sorted, then its sections sorted,
-with no indentation. Scalars precede sections for correctness and not for
-layout, because TOML binds a bare key to the most recent header, so a scalar
-written after a section lands inside it.
-
-An array whose every item is a table is repeated `[[path]]` sections, TOML
-having no inline form for one. Every other array is inline on one line,
-including an empty one. A null is refused, TOML being unable to spell one, and a
-top-level value that is not a table is refused for the same reason.
-
 **Control characters** are escaped and never written raw (FR-4.9), using the
-escape table of the format being written. YAML's table and TOML's are different
-from each other, and each pack writes them by hand so that all three agree byte
-for byte. JSON's escaping comes from the bound library, that being the part of
-the library the packs found correct. No value is refused for carrying a control
-character.
+escape table of the format being written. That table is a property of the
+format, so a pack takes it from its library where the library has it right.
+`packs-agree-on-structure-not-on-bytes` measured libyaml's YAML table as
+matching wrench's byte for byte, and JSON's escaping comes from the bound
+library, that being the part of the library every pack found correct. No value
+is refused for carrying a control character.
+
+The packs do not all agree on which non-ASCII characters they escape, and under
+structural agreement that is no longer a defect by itself. What is a defect is a
+pack that cannot read its own output, and one still cannot: `NEXT_STEPS.md`
+carries the measurement.
 
 **A value with no canonical form is refused rather than guessed at** (FR-4.1).
-That single rule is where the TOML refusals above come from, and it is what a
-new codec inherits before it decides anything of its own.
+A new codec inherits that rule before it decides anything of its own.
 
 ## The schemas
 
@@ -261,8 +301,8 @@ interprets them there, including a `file://` reference whose target exists.
 
 **The refusal reads the same in every pack** (FR-3.10d): `cannot resolve <the
 resolved reference>: a schema may reference the shipped schemas and its own
-fragments, and nothing else`, as a `schema` error. The three refuse by three
-mechanisms — a loader, a registry with nothing else in it, and a retriever — and
+fragments, and nothing else`, as a `schema` error. Three packs refuse by three
+mechanisms (a loader, a registry with nothing else in it, and a retriever), and
 a consumer cannot tell which language produced the message.
 
 `WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS` was an escape hatch and is retired. It meant
@@ -294,23 +334,32 @@ The calls are the same and the spelling is each language's own, by
 `each-pack-spells-the-calls-its-own-way`. A pack is idiomatic in its language
 before it is symmetrical with its siblings.
 
-| | Go | Python | Rust |
-|---|---|---|---|
-| Core calls | `LoadFormattedFile` | `load_formatted_file` | `load_formatted_file` |
-| Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum |
-| Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants |
-| Reading the kind | `Step()` method | `step` property | `step()` method |
-| Schemas reach the pack by | generated `go/shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` |
-| Validator | santhosh-tekuri/jsonschema | `jsonschema` | `jsonschema` crate |
+| | Go | Python | Rust | Ruby |
+|---|---|---|---|---|
+| Core calls | `LoadFormattedFile` | `load_formatted_file` | `load_formatted_file` | `load_formatted_file` |
+| Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum | `Error < StandardError` |
+| Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants | the exception classes, plus `STEPS` |
+| Reading the kind | `Step()` method | `step` property | `step()` method | `step` method, on the instance or the class |
+| YAML emission | `yaml.v3` nodes | by hand | by hand | Psych nodes |
+| JSON emission | `encoding/json`, floats respelled first | walked by hand for floats | `serde_json` with a float formatter | `JSON.pretty_generate`, floats respelled first |
+| Schemas reach the pack by | generated `go/shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` | nothing yet |
+| Validator | santhosh-tekuri/jsonschema | `jsonschema` | `jsonschema` crate | `json_schemer` |
 
 Each pack binds its language's established implementation instead of
 implementing JSON Schema itself (FR-5.2). Which one, and why, is
 `which-json-schema-library-each-pack-binds`.
 
+The two hand-written YAML emitters are what
+`packs-agree-on-structure-not-on-bytes` retired the requirement for, and they
+are still in place. A pack written now emits through its library with the four
+adapters; the older two are the shape being replaced, not the shape to copy.
+
 **Every pack exposes the same set of schemas** (FR-5.7), and each checks itself
 against the directory rather than against another pack. A schema present in one
 pack and absent from another is a divergence in the contract, so agreement
-follows from each pack answering to the one authority.
+follows from each pack answering to the one authority. The Ruby pack does not
+carry the shipped set at all yet: it compiles a schema a caller hands it and has
+no `Schemas`, so it is the one pack a consumer cannot name `ENVELOPE` through.
 
 ## How the packs are held level
 
@@ -330,11 +379,21 @@ Adding a scope marker to silence a parity failure is the one wrong use of it:
 the marker is for a row a pack cannot discharge, and a row merely untested in
 one pack is the finding.
 
-The known limit of the fixture mechanism, recorded so it is not rediscovered:
-`testdata/canonical/` feeds `input.yaml` only, so JSON and TOML decode is
-exercised against a single hand-written constant copied into three suites. A gap
-in that set looks exactly like agreement. task `parity/40` holds
-the measurement and the mechanism that closes it.
+**The fixture set still compares bytes, and the contract no longer does.** Each
+of the twelve cases holds an `input.yaml` and a `canonical.yaml`, and the Go,
+Python and Rust suites assert their output equals that golden file. That is a
+stricter test than FR-5.5 now asks for, and those three packs pass it; the Ruby
+pack does not read the set at all. Re-basing it on structures, so a case is a
+value every pack must produce and decode rather than bytes every pack must
+reproduce, is open work in `NEXT_STEPS.md`.
+
+The known limits of the mechanism, recorded so they are not rediscovered.
+`testdata/canonical/` feeds `input.yaml` only, so JSON decode is exercised
+against a single hand-written constant copied into each suite. Every fixture is
+pure ASCII, so the set cannot disagree about a character it does not contain.
+No fixture holds a string long enough to reach an emitter's line width, so the
+set says nothing about folding. A gap in it looks exactly like agreement. Task
+`parity/40` holds the measurement and the mechanism that closes it.
 
 ## Reaching the library
 
@@ -375,5 +434,6 @@ its JSON gives an `int64`, and `-0` in JSON reads as `-0.0` in Rust and `0` in
 the other two. All three are decode defects and none is caught by a fixture set
 that feeds YAML only.
 
-**A fourth pack's packaging.** How a pack is published, versioned and installed
-is that language's own question, and only Python's has been answered.
+**How a pack is published.** Versioning and installation are each language's own
+question, and only Python's has been answered. The Ruby pack carries a gemspec
+and nothing has been published from it.

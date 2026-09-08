@@ -8,14 +8,15 @@ reader, its own emitter, and its own idea of what a valid document is. They
 drift, and every one of them believes it conforms. wrench exists so there is one
 place that owns the answer.
 
-A pack is the library for one language. Three ship, in Go, Python and Rust, and
-they are not ports of each other: each binds its own JSON Schema validator and
-its own parsers, and each is written from the same written contract. What makes
-them one library instead of three is a property that is tested, not intended.
+A pack is the library for one language. Four ship, in Go, Python, Rust and Ruby,
+and they are not ports of each other: each binds its own JSON Schema validator
+and its own parsers, and each is written from the same written contract. What
+makes them one library instead of four is a property that is tested, not
+intended.
 
 ## The guarantee
 
-The same document, through any pack and any codec, produces the same bytes.
+A document written by any pack decodes to the same value in every other pack.
 
 Standard libraries disagree about how to spell ordinary values, quietly, in
 ways that survive every test until a consumer notices:
@@ -25,33 +26,44 @@ ways that survive every test until a consumer notices:
 | `1000000.0` | `1e+06` | `1000000.0` | `1000000.0` |
 | `1e21` | `1e+21` | `1e+21` | `1000000000000000000000.0` |
 
-Those were wrench's own three packs, and no error was raised anywhere.
+Those were wrench's own packs, and no error was raised anywhere.
 
 Every pack now writes a float in positional decimal, never an exponent, with the
-shortest digits that read back identically, and escapes a control character in
-the format's own spelling rather than emitting it raw.
+shortest digits that read back identically, sorts map keys, quotes a string and
+a key so neither changes type on the way back, and escapes a control character
+rather than emitting it raw.
 
-What holds it true is a shared fixture set in `testdata/canonical/`, read by all
-three suites, and a parity check that fails when a case is covered in one suite
-and missing from another. No pack is the oracle for another: if two disagree,
-the fixture is right.
+Layout is not part of the promise. Two packs may indent a list differently or
+wrap a long line in different places, because no canonical form exists that all
+four languages' YAML libraries can emit, and the emitters written by hand to
+force one are where the defects turned up.
+`docs/DECISIONS/packs-agree-on-structure-not-on-bytes.md` has the measurement.
+
+What holds it true is a shared fixture set in `testdata/canonical/` and a parity
+check that fails when a case is covered in one suite and missing from another.
+No pack is the oracle for another: if two disagree, the fixture is right.
 
 ## How it is held to that
 
     cd go     && go test ./...
     cd python && python3 -m pytest
     cd rust   && cargo test
+    cd ruby   && ruby -Ilib -Itest test/test_wrench.rb
 
     ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
         --suite go='go/*_test.go' \
         --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' .
 
-Three suites and a checker that compares them **against each other**. The parity
-check fails when a case is covered in one pack and missing from another, which
-is the only thing standing between "three libraries" and "one library with three
-bindings". It stands at the root because no pack can run it: a pack that could
-would have to know about its siblings.
+A suite per pack, and a checker that compares them **against each other**. The
+parity check fails when a case is covered in one pack and missing from another,
+which is the only thing standing between "four libraries" and "one library with
+four bindings". It stands at the root because no pack can run it: a pack that
+could would have to know about its siblings.
+
+**Ruby is not in that command yet, and adding it reports 55 divergences.** Its
+suite carries 16 `COVERS:` marks against the 67 the other three hold level, and
+no part of the gate runs it. `NEXT_STEPS.md` carries what is missing.
 
 **The contract is written down and traced to the tests.** `docs/REQUIREMENTS/`
 holds one file per requirement, and every test names the requirement it
@@ -71,9 +83,9 @@ are load-bearing, so they are tested by being pointed at the wrong place:
     parity: suite 'go' matched no files at '*_test.go'
     exit 2
 
-That refusal is the point. Run with the correct glob it reports 66 tests held
-level across the three suites, and a scan that found nothing must never be
-reported as a scan that found nothing wrong.
+That refusal is the point. Run with the correct globs it reports 67 tests held
+level across three suites, and a scan that found nothing must never be reported
+as a scan that found nothing wrong.
 
 ## The two calls
 
@@ -87,15 +99,18 @@ The codec and the IO are separate arguments, which puts the filesystem outside
 the call: a test substitutes a reader and exercises every validation path
 against no disk at all.
 
-Three codecs ship, each with a pair of wrappers that supplies it and adds
-nothing else:
+Two codecs ship, each with a pair of wrappers that supplies it and adds nothing
+else:
 
     load_yaml_file  save_yaml_file
     load_json_file  save_json_file
-    load_toml_file  save_toml_file
 
 The codec is named and never guessed from the file extension, because choosing a
 parser by filename makes behaviour depend on what a file is called.
+
+TOML was a third and is retired. No maintained library in any of these languages
+emits the canonical form wrench asked for, and the emitters written instead
+produced a document they could not read back.
 
 A schema is an ordinary JSON Schema file, validated against the decoded
 structure, so a YAML document is held to a JSON Schema without either format
@@ -127,8 +142,19 @@ Rust, under `rust/`.
 
     let envelope = load_formatted_file(path, &schemas::ENVELOPE, &YAML, &LOCAL_FILE)?;
 
+Ruby, under `ruby/`, and it is the newest and the least finished.
+
+    require "wrench"
+
+    schema = Wrench.compile_schema("envelope", JSON.parse(File.read(schema_file)))
+    envelope = Wrench.load_formatted_file(path, schema, Wrench::YAML, Wrench::LOCAL_FILE)
+
+It has no `Schemas`, so a caller compiles the schema it wants from
+`schemas/` rather than naming one the pack carries. That is the gap to close
+before it is usable the way the other three are.
+
 What comes back is that language's natural shape for JSON (`map[string]any`,
-`dict`, `serde_json::Value`), so nothing converts between validating and
+`dict`, `serde_json::Value`, `Hash`), so nothing converts between validating and
 returning.
 
 `uv pip install python/` installs the Python pack, and any install form works
@@ -149,9 +175,9 @@ library underneath raised, and it names which step failed: `read`, `parse`,
 word without naming a type, and `docs/SPEC.md` says what raises each one.
 
 Nothing escapes the family, so one catch reaches every failure wrench can
-produce: `wrench.Error` in Python and Rust, and the `Error` interface in Go. The
-cause is always preserved, so a caller who wants the underlying error can reach
-it.
+produce: `wrench.Error` in Python and Rust, `Wrench::Error` in Ruby, and the
+`Error` interface in Go. The cause is always preserved, so a caller who wants
+the underlying error can reach it.
 
 One trap, for Python callers. These derive from `Exception` and deliberately not
 from `ValueError`, because a validation failure can be a wrong type, which
@@ -166,12 +192,12 @@ specific one such as `wrench.ValidationError`.
 
 ## What it will not do
 
-Every save writes canonical form. Keys are sorted, layout is fixed, and comments
-do not survive a load. That is what the guarantee costs, and it makes wrench the
-wrong writer for a file a person edits: a config with comments and a deliberate
-entry order goes in and comes out reordered and stripped. Use a
-round-trip-preserving editor there, such as `tomlkit` in Python, and wrench for
-the read half, where a config file is usually unchecked anyway.
+Every save writes canonical form. Keys are sorted, quoting is decided for you,
+and comments do not survive a load. That is what the guarantee costs, and it
+makes wrench the wrong writer for a file a person edits: a config with comments
+and a deliberate entry order goes in and comes out reordered and stripped. Use a
+round-trip-preserving editor there, such as `ruamel.yaml` in Python, and wrench
+for the read half, where a config file is usually unchecked anyway.
 
 Machine-written files are what canonical form is for: envelopes, manifests,
 queue entries. Nobody has typed a note into one and the ordering carries no
@@ -190,15 +216,19 @@ checkout today. The Rust crate cannot be packaged for one at all until
 
 The packs disagree about which type a number comes back as inside the widened
 range, and about `-0`. The range rule is settled and the agreement mechanism is
-not. TypeScript and Ruby packs are named and not built.
+not. The Python pack writes two characters it then refuses to read.
+
+The Ruby pack is new: it has no shipped schemas, no place in the gate and no
+entry in the parity check. A TypeScript pack is being built and nothing here
+describes it yet.
 
 `NEXT_STEPS.md` has the rest, with the measurements behind each.
 
 ## Reading further
 
     docs/runbook.md       binding a pack into your project, what each pack is
-                          built on, and where the three were forced to agree
-    docs/SPEC.md          how the pieces fit, written so that a fourth pack
+                          built on, and where they were forced to agree
+    docs/SPEC.md          how the pieces fit, written so that another pack
                           could be built from it
     docs/REQUIREMENTS/    the contract, one file per requirement
     docs/DECISIONS/       why the project is shaped as it is
@@ -207,6 +237,7 @@ not. TypeScript and Ruby packs are named and not built.
 
 ## Licence
 
-Apache-2.0. `LICENSE` carries the terms and `NOTICE` the attribution. The Python
-and Rust packs declare it in `pyproject.toml` and `Cargo.toml`; a Go module has
-no licence field, so for the Go pack the `LICENSE` file is the declaration.
+Apache-2.0. `LICENSE` carries the terms and `NOTICE` the attribution. The
+Python, Rust and Ruby packs declare it in `pyproject.toml`, `Cargo.toml` and
+`wrench.gemspec`; a Go module has no licence field, so for the Go pack the
+`LICENSE` file is the declaration.
