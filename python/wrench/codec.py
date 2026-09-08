@@ -8,25 +8,33 @@ strings they were and a boolean stays a boolean. Keys are sorted because a
 mapping has no order of its own, and sorting is what makes two runs over the
 same structure produce the same bytes.
 
-The emitter is written here rather than handed to PyYAML because PyYAML quotes
-only what it must, which is the opposite rule: it decides by what would be
-ambiguous rather than by what the value is.
+**ruamel EMITS, AND THIS DECIDES FOUR THINGS.** The document is handed to
+ruamel with the style named on each scalar, and ruamel turns it into text:
+layout, indentation, escaping and line breaks are all its, and its escape table
+is already the one this pack wants, `\\0 \\a \\b \\t \\n \\v \\f \\r \\e \\N \\L
+\\P`, uppercase `\\x7F` and `\\uFEFF`.
+
+The four are the adapters `packs-agree-on-structure-not-on-bytes` names, and
+they preserve MEANING rather than layout: sort the keys, quote every string and
+key, spell floats positionally, write null as the word. An emitter that walked
+the structure producing text stood here until 2026-09-08 and is the thing that
+decision retired.
 """
 
 from __future__ import annotations
 
 import datetime
+import io
 from typing import TYPE_CHECKING, Any, Protocol
 
-import yaml
+from ruamel.yaml import YAML as _RuamelYAML
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString as _Quoted
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 from wrench.errors import EncodeError, ParseError, wrapping
 from wrench.float_text import canonical_float_text
-
-INDENT = 2
 
 
 class Codec(Protocol):
@@ -56,21 +64,128 @@ class YAMLCodec:
     def decode(self, data: bytes) -> object:
         """Bytes into maps, lists and scalars.
 
-        PyYAML's own exception types do not cross this boundary: a consumer
-        should not have to know which YAML library wrench binds in order to
-        catch a parse failure. The cause is kept and reachable.
+        The library's own exception types do not cross this boundary: a
+        consumer should not have to know which YAML library wrench binds in
+        order to catch a parse failure. The cause is kept and reachable.
         """
         with wrapping(ParseError):
-            return _normalise(yaml.safe_load(data))
+            return _normalise(_reader().load(data.decode("utf-8")))
 
     def encode(self, value: object) -> bytes:
-        """A structure into canonical bytes."""
+        """A structure into canonical bytes.
+
+        The four adapters are applied to the structure, then ruamel writes it.
+        Nothing here produces a character of YAML.
+        """
         with wrapping(EncodeError):
-            return _canonical(value).encode("utf-8")
+            stream = io.StringIO()
+            _writer().dump(_prepared(value), stream)
+            return stream.getvalue().encode("utf-8")
 
 
 YAML = YAMLCodec()
 
+
+def _reader() -> _RuamelYAML:
+    """A parser that builds plain maps, lists and scalars.
+
+    `typ="safe"` refuses arbitrary tags, which is the property a library reading
+    files from elsewhere needs, and returns builtins rather than ruamel's
+    round-trip types so `_normalise` sees what every other pack's parser sees.
+    """
+    return _RuamelYAML(typ="safe")
+
+
+def _writer() -> _RuamelYAML:
+    """ruamel, set up to emit. Layout and escaping stay its; the adapters own
+    ordering, quoting, float spelling and how a null is spelled.
+
+    `width` is set past any real document because the default folds a long
+    scalar across lines. That is legal YAML and reads back the same, but it puts
+    a line break where the value had none and makes a diff noisy.
+    """
+    writer = _RuamelYAML()
+    writer.default_flow_style = False
+    writer.indent(mapping=INDENT, sequence=INDENT * 2, offset=INDENT)
+    writer.width = 1 << 30
+    writer.allow_unicode = True
+    writer.representer.add_representer(float, _represent_float)
+    writer.representer.add_representer(type(None), _represent_none)
+    return writer
+
+
+def _prepared(value: object) -> object:
+    """Adapters one and two: sort the keys, and quote every string AND key.
+
+    Quoting is what keeps `no`, `1.20` and `null` strings when they are read
+    back. It covers keys because an unquoted `10:` is an integer key to a YAML
+    1.1 reader, and a library left to choose spells it `'10'`, which is a third
+    answer again.
+
+    A key that is not a string is refused rather than written. Python's dict
+    takes any hashable, and a bare `1:` would emit a document this codec's own
+    decoder then refuses under FR-1.2.
+    """
+    if isinstance(value, dict):
+        out = {}
+        for key in sorted(value):
+            if not isinstance(key, str):
+                raise ValueError(f"cannot write a {type(key).__name__} key in canonical form")
+            # The location is added on the way out, so a refusal names the key
+            # or index it happened at rather than only the type. A schema over a
+            # large document says nothing useful without one.
+            try:
+                out[_Quoted(key)] = _prepared(value[key])
+            except ValueError as err:
+                raise _at(f'at key "{key}"', err) from err
+        return out
+    if isinstance(value, list):
+        prepared = []
+        for index, item in enumerate(value):
+            try:
+                prepared.append(_prepared(item))
+            except ValueError as err:
+                raise _at(f"at index {index}", err) from err
+        return prepared
+    if isinstance(value, str):
+        return _Quoted(value)
+    if isinstance(value, float) and (value != value or value in (float("inf"), float("-inf"))):
+        raise ValueError(f"cannot write {value} in canonical form")
+    if not isinstance(value, (bool, int, float, type(None))):
+        raise ValueError(f"cannot write {type(value).__name__} in canonical form")
+    return value
+
+
+def _represent_float(representer: Any, data: float) -> Any:
+    """Adapter three: FR-4.8's positional decimal, never an exponent.
+
+    Registered rather than emitted by hand, so ruamel still places the scalar in
+    the document and this owns only its digits.
+    """
+    return representer.represent_scalar("tag:yaml.org,2002:float", canonical_float_text(data))
+
+
+def _represent_none(representer: Any, _data: object) -> Any:
+    """Adapter four: a null is the word rather than an empty.
+
+    ruamel writes nothing after the colon by default, which reads back as None
+    and is therefore spelling rather than meaning. It matters because a reader
+    cannot tell an empty value from a missing one, and the other packs write the
+    word.
+    """
+    return representer.represent_scalar("tag:yaml.org,2002:null", "null")
+
+
+def _at(where: str, error: ValueError) -> ValueError:
+    """The same refusal, carrying where in the document it happened.
+
+    Prepended rather than appended, and only once per level, so a nested
+    failure reads outermost first: `at key "a": at index 2: cannot write ...`.
+    """
+    return ValueError(f"{where}: {error}")
+
+
+INDENT = 2
 
 INT64_MIN = -(2**63)
 INT64_MAX = 2**63 - 1
@@ -157,181 +272,6 @@ def within_int64(value: int) -> int:
     raise ValueError(f"{value} is out of range for TOML, which carries 64-bit signed integers")
 
 
-def _at(where: str, error: ValueError) -> ValueError:
-    """Prefix a failure with where in the structure it happened.
-
-    A value with no canonical form is refused, and the caller needs to find it.
-    Descending wraps each level, so the message reads `at key "a": at index 0:
-    cannot write ...` and names the whole path rather than only the leaf. The Go
-    pack words it identically, because a message that differs by pack is one
-    consumers cannot be told to look for.
-    """
-    return ValueError(f"{where}: {error}")
-
-
-def _canonical(value: object, depth: int = 0) -> str:
-    """Emit one value in canonical form, indented for its depth.
-
-    Written by hand rather than handed to a YAML library, because no emitter
-    produces these bytes: block style throughout, keys sorted and quoted, and a
-    scalar quoted exactly when it is a string. `testdata/canonical/` is what
-    defines them, and all three packs are held to the same files.
-    """
-    pad = " " * (INDENT * depth)
-
-    if isinstance(value, dict):
-        return _mapping(value, depth, pad)
-    if isinstance(value, list):
-        return _sequence(value, depth, pad)
-    return pad + _inline(value) + "\n"
-
-
-def _spans_lines(value: object) -> bool:
-    """Whether a value is written as an indented block rather than inline.
-
-    A populated collection is; an empty one is not, because `{}` and `[]` are
-    the canonical spelling for those and a block would be empty.
-    """
-    return isinstance(value, (dict, list)) and bool(value)
-
-
-def _mapping(value: dict[str, object], depth: int, pad: str) -> str:
-    """A mapping, one key to a line and keys sorted.
-
-    Sorted because two producers emitting the same structure must emit the same
-    bytes, and insertion order is not a property of the structure.
-    """
-    if not value:
-        return pad + "{}\n"
-
-    out = []
-    for key in sorted(value):
-        item = value[key]
-        try:
-            # A non-string key is refused rather than written. Python's dict
-            # takes any hashable, and `_scalar` would render 1 as a bare `1:`,
-            # which this codec's own decoder then refuses under FR-1.2: the
-            # encoder would be writing a document it cannot read back. Go and
-            # Rust cannot reach this, because their map keys are strings by type.
-            written = _key(key)
-            if _spans_lines(item):
-                out.append(f"{pad}{written}:\n{_canonical(item, depth + 1)}")
-            else:
-                out.append(f"{pad}{written}: {_inline(item)}\n")
-        except ValueError as err:
-            raise _at(f"at key {_scalar(key)}", err) from err
-    return "".join(out)
-
-
-def _key(name: object) -> str:
-    """A mapping key, which JSON Schema and every pack can only spell as a
-    string, quoted so its type survives the round trip."""
-    if not isinstance(name, str):
-        raise ValueError(f"cannot write a {type(name).__name__} key in canonical form")
-    return _scalar(name)
-
-
-def _sequence(value: list[object], depth: int, pad: str) -> str:
-    """A sequence, one entry to a dash, in the order it was given."""
-    if not value:
-        return pad + "[]\n"
-
-    out = []
-    for index, item in enumerate(value):
-        try:
-            out.append(_entry(item, depth, pad))
-        except ValueError as err:
-            raise _at(f"at index {index}", err) from err
-    return "".join(out)
-
-
-def _entry(item: object, depth: int, pad: str) -> str:
-    """One sequence entry.
-
-    The dash takes the place of the first line's indent, and the rest of the
-    block keeps the indent it was rendered with, so a nested mapping under a
-    dash lines up with the key beside it rather than with the dash.
-    """
-    if not _spans_lines(item):
-        return f"{pad}- {_inline(item)}\n"
-
-    nested = _canonical(item, depth + 1)
-    first, _, rest = nested.partition("\n")
-    out = f"{pad}- {first.strip()}\n"
-    if rest:
-        out += rest if rest.endswith("\n") else rest + "\n"
-    return out
-
-
-def _inline(value: object) -> str:
-    """The one-line spelling of a value that has no children to indent.
-
-    Only an empty collection and a scalar reach here. A populated one is written
-    across lines by `_canonical`, because block style is the whole point.
-    """
-    if isinstance(value, dict):
-        return "{}"
-    if isinstance(value, list):
-        return "[]"
-    return _scalar(value)
-
-
-# YAML'S OWN ESCAPE TABLE, matching what the Go pack emits byte for byte.
-#
-# FR-4.9. A raw control character in a quoted scalar is refused by a strict YAML
-# reader and folded to a space by a lenient one, so a file carrying one is read
-# differently depending on the reader. Escaping is the only answer that keeps
-# every value writable, which
-# `docs/DECISIONS/parity-is-reached-by-widening-never-by-refusing.md` requires.
-#
-# U+0085, U+2028 and U+2029 are here because YAML 1.1 makes all three line breaks
-# and 1.2 does not, so which of them fold depends on the reader's version rather
-# than on the character.
-_YAML_NAMED = {
-    0x00: r"\0",
-    0x07: r"\a",
-    0x08: r"\b",
-    0x09: r"\t",
-    0x0A: r"\n",
-    0x0B: r"\v",
-    0x0C: r"\f",
-    0x0D: r"\r",
-    0x1B: r"\e",
-    0x22: r"\"",
-    0x5C: "\\\\",
-    0x85: r"\N",
-    0x2028: r"\L",
-    0x2029: r"\P",
-    0xFEFF: "\\uFEFF",
-}
-
-
-FIRST_PRINTABLE = 0x20
-DELETE = 0x7F
-C1_FIRST = 0x80
-C1_LAST = 0x9F
-
-
-def _escape(value: str) -> str:
-    r"""A string, escaped the way YAML spells escapes.
-
-    Anything with a name gets it; the rest of C0, DEL and C1 get `\xNN` with
-    uppercase hex, which is what the Go pack writes. Everything else is written
-    as itself, including U+00A0 and U+200B, which no reader alters.
-    """
-    out = []
-    for char in value:
-        point = ord(char)
-        named = _YAML_NAMED.get(point)
-        if named is not None:
-            out.append(named)
-        elif point < FIRST_PRINTABLE or point == DELETE or C1_FIRST <= point <= C1_LAST:
-            out.append(f"\\x{point:02X}")
-        else:
-            out.append(char)
-    return "".join(out)
-
-
 def _bare_scalar(value: object) -> str | None:
     """The scalars YAML and JSON spell identically, or None for anything else.
 
@@ -349,18 +289,3 @@ def _bare_scalar(value: object) -> str | None:
     if isinstance(value, float):
         return canonical_float_text(value)
     return None
-
-
-def _scalar(value: object) -> str:
-    """One scalar, spelled so its type survives being read back.
-
-    A string is always quoted and everything else never is, which is what stops
-    `no`, `1.20` and `null` returning as a boolean, a float and a nothing. A
-    whole float keeps its decimal point for the same reason.
-    """
-    bare = _bare_scalar(value)
-    if bare is not None:
-        return bare
-    if isinstance(value, str):
-        return f'"{_escape(value)}"'
-    raise ValueError(f"cannot write {type(value).__name__} in canonical form")

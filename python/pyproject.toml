@@ -27,7 +27,14 @@ license-files = ["LICENSE", "NOTICE"]
 # is jsonschema's own dependency from 4.18 on, and Debian's python3-jsonschema
 # pulls python3-referencing, so it is named rather than assumed.
 dependencies = [
-    "PyYAML",
+    # ruamel rather than PyYAML, swapped 2026-09-08. It is the one Python YAML
+    # library whose emitter takes the scalar style per node, which is the
+    # quoting adapter, and quoting is what keeps `no`, `1.20` and `10` the
+    # strings and keys they were. That hook is what let the 192-line
+    # hand-written emitter go: with it, the library's output is byte-identical
+    # to what the emitter produced, and the shared fixtures did not move.
+    # It ships its own type information, so no stub package is declared.
+    "ruamel.yaml>=0.18",
     "jsonschema",
     "referencing",
 ]
@@ -56,7 +63,6 @@ dev = [
     "pytest",
     "coverage",
     "mypy",
-    "types-PyYAML",
     "types-jsonschema",
     # `bin/check-consumer-types.py` builds the pack and installs it into a
     # throwaway environment, because mypy honours `py.typed` for an installed

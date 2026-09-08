@@ -771,15 +771,35 @@ def test_the_pack_is_importable_without_an_install():
 
 
 # COVERS: FR-6.2 | positive
-def test_yaml_support_is_whatever_the_platform_supplies():
-    """It imports `yaml` by name rather than vendoring one, so Debian's
-    python3-yaml satisfies it and so does a pip-installed PyYAML."""
-    import yaml
+def test_yaml_support_is_a_library_rather_than_a_vendored_copy():
+    """The pack binds an installed library by name and vendors nothing.
+
+    It named PyYAML until 2026-09-08 and asserted the import line. Both changed
+    together: ruamel is the binding now, because it is the one Python library
+    whose emitter takes the scalar style, which is the quoting adapter and the
+    reason the hand-written emitter could go.
+    """
+    from ruamel.yaml import YAML as Ruamel
 
     source = (ROOT / "python" / "wrench" / "codec.py").read_text()
-    assert "import yaml" in source
+    assert "from ruamel.yaml import" in source
     assert not (ROOT / "python" / "wrench" / "yaml").exists(), "a vendored copy"
-    assert yaml.safe_load("a: 1") == {"a": 1}
+    assert Ruamel(typ="safe").load("a: 1") == {"a": 1}
+
+
+# COVERS: FR-4.3 | property
+def test_nothing_in_the_codec_writes_yaml_by_hand():
+    """The emitter is the library's. This is the property that retired 192
+    lines, and it is asserted because it is the kind of thing that creeps back
+    one special case at a time.
+
+    A codec that built text would need to join or concatenate it. Reading the
+    source is the check that survives someone re-adding a helper, where a
+    behavioural test would still pass on hand-written bytes.
+    """
+    source = (ROOT / "python" / "wrench" / "codec.py").read_text()
+    for banned in ('"".join(', "out.append(", "+ pad +", 'f"{pad}'):
+        assert banned not in source, f"{banned} suggests an emitter is back"
 
 
 # ---- rows the Go pack held alone --------------------------------------------
