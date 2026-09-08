@@ -182,8 +182,8 @@ func quoted(value string) *yaml.Node {
 }
 
 // floatNode writes a float in the spelling canonicalFloatText defines, which is
-// the same one the JSON and TOML codecs write and the same one the other two
-// packs write. FR-4.8.
+// the same one the JSON codec writes and the same one the other two packs
+// write. FR-4.8.
 func floatNode(v float64) (*yaml.Node, error) {
 	text, err := canonicalFloatText(v)
 	if err != nil {

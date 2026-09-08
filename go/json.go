@@ -103,8 +103,8 @@ func jsonNumber(n json.Number) (any, error) {
 	// -Infinity. An integer zero cannot carry the sign, so this is the one
 	// literal with no decimal point that still decodes to a float. FR-4.11.
 	//
-	// YAML and TOML keep it an integer, because each format's own reference
-	// answers for it and both call `-0` an integer.
+	// YAML keeps it an integer, because that format's own reference answers
+	// for it and calls `-0` an integer.
 	if text == "-0" {
 		return math.Copysign(0, -1), nil
 	}
@@ -126,8 +126,8 @@ func jsonNumber(n json.Number) (any, error) {
 // way ECMAScript does, which drops a whole float's decimal point entirely
 // (1000000.0 becomes 1000000, read back as an integer by any pack whose JSON
 // parser distinguishes the two) and switches to an exponent at 1e21. Neither
-// matches what this pack's YAML and TOML codecs write, so the number formatter
-// is the one part of encoding/json wrench cannot use. FR-4.8.
+// matches what this pack's YAML codec writes, so the number formatter is the
+// one part of encoding/json wrench cannot use. FR-4.8.
 func (jsonCodec) Encode(value any) ([]byte, error) {
 	var out bytes.Buffer
 	encoder := json.NewEncoder(&out)

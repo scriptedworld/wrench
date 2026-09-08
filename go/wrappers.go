@@ -29,17 +29,3 @@ func LoadJSONFile(path string, schema Schema, reader Reader) (any, error) {
 func SaveJSONFile(value any, path string, schema Schema, writer Writer) error {
 	return SaveFormattedFile(value, path, schema, JSON, writer)
 }
-
-// LoadTOMLFile reads a TOML file and validates it against schema. A native
-// date, time or datetime decodes to its ISO 8601 string, which is what FR-2.9
-// requires of every decoder.
-func LoadTOMLFile(path string, schema Schema, reader Reader) (any, error) {
-	return LoadFormattedFile(path, schema, TOML, reader)
-}
-
-// SaveTOMLFile validates a structure and writes it as canonical TOML. It
-// refuses a structure containing null, which TOML cannot spell, and one that is
-// not a table, which TOML has no way to be.
-func SaveTOMLFile(value any, path string, schema Schema, writer Writer) error {
-	return SaveFormattedFile(value, path, schema, TOML, writer)
-}

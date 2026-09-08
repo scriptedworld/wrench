@@ -23,8 +23,6 @@ func threeFormats() map[string]any {
 
 const canonicalJSON = "{\n  \"a\": {\n    \"y\": \"x\",\n    \"z\": [\n      1,\n      2\n    ]\n  },\n  \"b\": 1,\n  \"d\": true\n}\n"
 
-const canonicalTOML = "b = 1\nd = true\n\n[a]\ny = \"x\"\nz = [1, 2]\n"
-
 // COVERS: FR-2.7, FR-4.6 | property
 func TestJSONCanonicalForm(t *testing.T) {
 	encoded, err := wrench.JSON.Encode(threeFormats())
@@ -49,91 +47,6 @@ func TestJSONCanonicalForm(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.7, FR-4.7 | property
-func TestTOMLCanonicalForm(t *testing.T) {
-	encoded, err := wrench.TOML.Encode(threeFormats())
-	if err != nil {
-		t.Fatalf("encode: %v", err)
-	}
-	if string(encoded) != canonicalTOML {
-		t.Errorf("canonical TOML:\ngot:\n%s\nwant:\n%s", encoded, canonicalTOML)
-	}
-
-	value, err := wrench.TOML.Decode([]byte(canonicalTOML))
-	if err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	again, err := wrench.TOML.Encode(value)
-	if err != nil {
-		t.Fatalf("re-encode: %v", err)
-	}
-	if string(again) != canonicalTOML {
-		t.Errorf("not a fixed point:\n%s", again)
-	}
-}
-
-// COVERS: FR-4.7 | edge
-func TestTOMLWritesAnArrayOfTablesAsRepeatedSections(t *testing.T) {
-	// The most ordinary shape in a hand-written config, and the one TOML has no
-	// inline spelling for. Found by the skid session round-tripping a real
-	// config while FR-4.7 was still being written: the emitter sent every array
-	// down the inline path, so [[x]] had no route at all.
-	value := map[string]any{
-		"name": "x",
-		"substitution": []any{
-			map[string]any{"kind": "literal", "pattern": "kokoro"},
-			map[string]any{"kind": "regex", "pattern": "skid"},
-		},
-	}
-	want := "name = \"x\"\n\n[[substitution]]\nkind = \"literal\"\npattern = \"kokoro\"\n" +
-		"\n[[substitution]]\nkind = \"regex\"\npattern = \"skid\"\n"
-
-	encoded, err := wrench.TOML.Encode(value)
-	if err != nil {
-		t.Fatalf("encode: %v", err)
-	}
-	if string(encoded) != want {
-		t.Errorf("array of tables:\ngot:\n%s\nwant:\n%s", encoded, want)
-	}
-
-	// An empty array is not a table array, whatever it would have held.
-	empty, err := wrench.TOML.Encode(map[string]any{"a": []any{}})
-	if err != nil {
-		t.Fatalf("encode empty: %v", err)
-	}
-	if string(empty) != "a = []\n" {
-		t.Errorf("an empty array wrote %q", empty)
-	}
-}
-
-// COVERS: FR-4.7 | negative
-func TestTOMLRefusesANull(t *testing.T) {
-	_, err := wrench.TOML.Encode(map[string]any{"a": map[string]any{"b": nil}})
-	if err == nil {
-		t.Fatal("a null was accepted")
-	}
-	if !strings.Contains(err.Error(), "a.b") {
-		t.Errorf("the error does not say where: %v", err)
-	}
-}
-
-// COVERS: FR-4.7 | edge
-func TestTOMLRefusesADocumentThatIsNotATable(t *testing.T) {
-	if _, err := wrench.TOML.Encode([]any{1, 2}); err == nil {
-		t.Fatal("a top-level array was accepted")
-	}
-}
-
-// COVERS: FR-4.7 | negative
-func TestTOMLRefusesAnIntegerPastInt64(t *testing.T) {
-	if _, err := wrench.TOML.Decode([]byte("n = 9223372036854775808\n")); err == nil {
-		t.Error("decoding a value past int64 was accepted")
-	}
-	if _, err := wrench.TOML.Decode([]byte("n = 9223372036854775807\n")); err != nil {
-		t.Errorf("int64 max was refused: %v", err)
-	}
-}
-
 // COVERS: FR-4.11 | edge
 func TestNegativeZeroIsSignedInJSONAndAnIntegerElsewhere(t *testing.T) {
 	value, err := wrench.JSON.Decode([]byte("{\"n\": -0}\n"))
@@ -148,16 +61,14 @@ func TestNegativeZeroIsSignedInJSONAndAnIntegerElsewhere(t *testing.T) {
 		t.Error("JSON -0 lost its sign")
 	}
 
-	// TOML says so outright: -0 and +0 are identical to an unprefixed zero,
-	// while -0.0 and +0.0 map according to IEEE 754. YAML has no such sentence
-	// and every implementation agrees anyway.
+	// YAML's specification has no sentence about the sign of zero and every
+	// implementation reads `-0` as an integer anyway.
 	for _, format := range []struct {
 		name  string
 		codec wrench.Codec
 		doc   string
 	}{
 		{"yaml", wrench.YAML, "n: -0\n"},
-		{"toml", wrench.TOML, "n = -0\n"},
 	} {
 		decoded, err := format.codec.Decode([]byte(format.doc))
 		if err != nil {
@@ -199,21 +110,6 @@ func TestAnIntegerPastInt64WidensToAFloat(t *testing.T) {
 	}
 }
 
-// COVERS: FR-4.7 | regression
-func TestTOMLTemporalTypesDecodeToISOStrings(t *testing.T) {
-	value, err := wrench.TOML.Decode([]byte("d = 2026-01-01\ndt = 2026-01-01T07:32:00Z\n"))
-	if err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	table := value.(map[string]any)
-	if table["d"] != "2026-01-01" {
-		t.Errorf("a local date became %v, want the date alone", table["d"])
-	}
-	if got, _ := table["dt"].(string); !strings.HasPrefix(got, "2026-01-01T07:32:00") {
-		t.Errorf("an offset datetime became %v", table["dt"])
-	}
-}
-
 // COVERS: FR-2.10 | positive
 func TestAWrapperPerFormatSuppliesTheCodec(t *testing.T) {
 	writer := &stubWriter{}
@@ -231,14 +127,6 @@ func TestAWrapperPerFormatSuppliesTheCodec(t *testing.T) {
 	}
 	if value.(map[string]any)["success"] != true {
 		t.Errorf("json wrapper read %v", value)
-	}
-
-	tomlWriter := &stubWriter{}
-	if err := wrench.SaveTOMLFile(map[string]any{"success": true}, "out.toml", wrench.EnvelopeSchema, tomlWriter); err != nil {
-		t.Fatalf("save toml: %v", err)
-	}
-	if string(tomlWriter.data) != "success = true\n" {
-		t.Errorf("toml wrapper wrote %q", tomlWriter.data)
 	}
 
 	yamlWriter := &stubWriter{}
@@ -295,7 +183,6 @@ func TestAFloatHasOneSpellingInEveryCodec(t *testing.T) {
 	}{
 		{"yaml", wrench.YAML, "\"n\": ", "\n"},
 		{"json", wrench.JSON, "{\n  \"n\": ", "\n}\n"},
-		{"toml", wrench.TOML, "n = ", "\n"},
 	}
 
 	for _, c := range codecs {
@@ -317,24 +204,22 @@ func TestAFloatHasOneSpellingInEveryCodec(t *testing.T) {
 func canonicalEscapes() []struct {
 	point rune
 	yaml  string
-	toml  string
 } {
 	return []struct {
 		point rune
 		yaml  string
-		toml  string
 	}{
-		{0x00, `\0`, `\u0000`},
-		{0x07, `\a`, `\u0007`},
-		{0x08, `\b`, `\b`},
-		{0x09, `\t`, `\t`},
-		{0x0B, `\v`, `\u000B`},
-		{0x1B, `\e`, `\u001B`},
-		{0x7F, `\x7F`, `\u007F`},
-		{0x85, `\N`, "\u0085"},
-		{0x9F, `\x9F`, "\u009f"},
-		{0x2028, `\L`, "\u2028"},
-		{0x2029, `\P`, "\u2029"},
+		{0x00, `\0`},
+		{0x07, `\a`},
+		{0x08, `\b`},
+		{0x09, `\t`},
+		{0x0B, `\v`},
+		{0x1B, `\e`},
+		{0x7F, `\x7F`},
+		{0x85, `\N`},
+		{0x9F, `\x9F`},
+		{0x2028, `\L`},
+		{0x2029, `\P`},
 	}
 }
 
@@ -350,14 +235,6 @@ func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
 		}
 		if want := "\"n\": \"a" + c.yaml + "b\"\n"; string(yamlBytes) != want {
 			t.Errorf("yaml U+%04X wrote %q, want %q", c.point, yamlBytes, want)
-		}
-
-		tomlBytes, err := wrench.TOML.Encode(value)
-		if err != nil {
-			t.Fatalf("toml encode U+%04X: %v", c.point, err)
-		}
-		if want := "n = \"a" + c.toml + "b\"\n"; string(tomlBytes) != want {
-			t.Errorf("toml U+%04X wrote %q, want %q", c.point, tomlBytes, want)
 		}
 
 		// Reading it back is the half that was broken: two packs wrote files
