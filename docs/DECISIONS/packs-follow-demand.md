@@ -22,16 +22,26 @@ support. It is what is blocked without it.
 | Go | `bolt.go`, the previous Go implementation | Built |
 | Python | toolbox's adapters and checkers, and skid | Built |
 | Rust | bolt, which is now a Rust implementation | Built |
-| TypeScript | Consumer not yet identified | Not built |
-| Ruby | Consumer not yet identified | Not built |
+| Ruby | the estate's Ruby tooling as it is written | Built 2026-09-07 |
+| TypeScript | the estate's TypeScript tooling as it is written | Being built |
 
-The two unbuilt packs wait on a consumer rather than on a decision or a library.
-Ruby was dropped and restored, and the round trip is worth keeping: it was
+**The rule is relaxed, 2026-09-07, and the reason is that its cost premise no
+longer holds.** The decision reasoned that a pack is expensive after it is
+written, being a second implementation every schema change has to land in. That
+was true of a pack carrying a hand-written emitter per format. It is not true of
+what a pack is now.
+
+`packs-agree-on-structure-not-on-bytes` retired the emitters. A pack is its
+language's libraries, the four adapters, the error family and the two calls: the
+Ruby pack is 535 lines including its suite. The calls, the seams and the error
+kinds are fixed by the contract and do not move, so the only thing that reaches
+a pack afterwards is a new or changed schema.
+
+So the question stopped being "what is blocked without it" and became "is this a
+language the estate writes tools in". **A library is still never why a pack does
+or does not get built**, which is what the Ruby round trip established: it was
 doubted because `json_schemer` sounded unsupported, and measuring showed it is
-not. **A library is never why a pack does or does not get built.**
-
-No consumer written in Ruby exists today, and the option is kept open anyway.
-Absence is the current condition rather than a verdict.
+not.
 
 Toolbox's checkers and adapters are not fixed to Python. Any of Go, Python, Rust
 or TypeScript is allowed, so what needs a pack is a live question for toolbox
