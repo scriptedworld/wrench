@@ -1,0 +1,12 @@
+# FR-4.7, retired
+
+Retirement is carried by this file's name. The row is kept so the id stays registered as retired and can never be reused.
+
+| ID | Retired | Superseded by |
+|---|---|---|
+| FR-4.7 | 2026-09-07 | nothing. TOML no longer ships, per FR-2.7. |
+
+It stated TOML's canonical form and what that form refuses. There is no TOML
+codec in any pack now, so there is nothing for the row to be true of, and it was
+the only requirement in the set with no test in any suite the moment the codecs
+went.
