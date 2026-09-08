@@ -889,7 +889,6 @@ def test_codec_and_io_are_independent():
     # so it is excluded here rather than counted as a fourth shipped format.
     assert sorted(n for n in wrench.__all__ if n.endswith("Codec") and n != "Codec") == [
         "JSONCodec",
-        "TOMLCodec",
         "YAMLCodec",
     ]
     assert {"Codec", "Reader", "Writer"} <= set(wrench.__all__), "a seam the other packs name is not exported"
@@ -1015,7 +1014,7 @@ THREE_FORMATS = {"b": 1, "a": {"z": [1, 2], "y": "x"}, "d": True}
 
 CANONICAL_JSON = b'{\n  "a": {\n    "y": "x",\n    "z": [\n      1,\n      2\n    ]\n  },\n  "b": 1,\n  "d": true\n}\n'
 
-CANONICAL_TOML = b'b = 1\nd = true\n\n[a]\ny = "x"\nz = [1, 2]\n'
+
 
 
 # COVERS: FR-2.7, FR-4.6 | property
@@ -1026,77 +1025,16 @@ def test_json_canonical_form():
     assert wrench.JSON.decode(CANONICAL_JSON) == THREE_FORMATS
 
 
-# COVERS: FR-2.7, FR-4.7 | property
-def test_toml_canonical_form():
-    """Scalars first and sorted, then each sub-table as a section, arrays
-    inline, no indentation."""
-    assert wrench.TOML.encode(THREE_FORMATS) == CANONICAL_TOML
-    assert wrench.TOML.decode(CANONICAL_TOML) == THREE_FORMATS
-
-
-# COVERS: FR-4.7 | edge
-def test_toml_writes_an_array_of_tables_as_repeated_sections():
-    """The most ordinary shape in a hand-written config, and the one TOML has no
-    inline spelling for. Found by the skid session round-tripping a real config
-    while this row was still being written: the emitter sent every array down the
-    inline path, so `[[x]]` had no route at all."""
-    value = {
-        "name": "x",
-        "substitution": [
-            {"kind": "literal", "pattern": "kokoro"},
-            {"kind": "regex", "pattern": "skid"},
-        ],
-    }
-    encoded = wrench.TOML.encode(value)
-    assert encoded == (
-        b'name = "x"\n\n[[substitution]]\nkind = "literal"\npattern = "kokoro"\n\n[[substitution]]\nkind = "regex"\npattern = "skid"\n'
-    )
-    assert wrench.TOML.decode(encoded) == value
-
-    # An empty array is not a table array, whatever it would have held.
-    assert wrench.TOML.encode({"a": []}) == b"a = []\n"
-
-
-# COVERS: FR-4.7 | negative
-def test_toml_refuses_a_null():
-    """TOML cannot spell null, and substituting one would invent a document
-    nobody wrote. The message names where it sits."""
-    with pytest.raises(wrench.EncodeError) as caught:
-        wrench.TOML.encode({"a": {"b": None}})
-    assert "a.b" in str(caught.value)
-
-
-# COVERS: FR-4.7 | edge
-def test_toml_refuses_a_document_that_is_not_a_table():
-    """There is no top-level scalar or array in TOML, so wrapping one in an
-    invented key is the alternative and is worse."""
-    with pytest.raises(wrench.EncodeError):
-        wrench.TOML.encode([1, 2])
-
-
-# COVERS: FR-4.7 | negative
-def test_toml_refuses_an_integer_past_int64_in_both_directions():
-    """Python is the whole of the deviation here, so the check is wrench's own.
-
-    `tomllib` and `tomlkit` both accept a value TOML says must throw, because
-    Python integers are unbounded and neither range-checks. Six parsers in Go
-    and Rust refuse it, so a document Python accepted was one no other pack
-    could read back.
-    """
-    with pytest.raises(wrench.ParseError):
-        wrench.TOML.decode(b"n = 9223372036854775808\n")
-    with pytest.raises(wrench.EncodeError):
-        wrench.TOML.encode({"n": 2**63})
-    assert wrench.TOML.decode(b"n = 9223372036854775807\n") == {"n": 2**63 - 1}
-
-
 # COVERS: FR-4.11 | edge
 def test_negative_zero_is_signed_in_json_and_an_integer_elsewhere():
     """JavaScript decides what a JSON document means, and V8 reads -0 as signed.
 
-    TOML says the opposite for its own format outright: -0 and +0 are identical
-    to an unprefixed zero, and only -0.0 and +0.0 map according to IEEE 754.
-    YAML has no such sentence and four implementations agree anyway.
+    YAML has no sentence about it and every implementation agrees anyway: an
+    integer zero cannot carry a sign, so `-0` is the integer 0 and only `-0.0`
+    is a signed zero. The decimal point is the whole of the distinction.
+
+    The TOML arm went with FR-2.7. It said the same thing from a third format's
+    spec, and JSON against YAML is what the row is about.
     """
     signed = wrench.JSON.decode(b'{"n": -0}')["n"]
     assert isinstance(signed, float)
@@ -1104,11 +1042,8 @@ def test_negative_zero_is_signed_in_json_and_an_integer_elsewhere():
 
     assert wrench.YAML.decode(b"n: -0")["n"] == 0
     assert isinstance(wrench.YAML.decode(b"n: -0")["n"], int)
-    assert isinstance(wrench.TOML.decode(b"n = -0")["n"], int)
 
-    # The decimal point is the whole of the distinction, in every format.
     assert math.copysign(1, wrench.YAML.decode(b"n: -0.0")["n"]) < 0
-    assert math.copysign(1, wrench.TOML.decode(b"n = -0.0")["n"]) < 0
 
 
 # COVERS: FR-4.10 | property
@@ -1132,15 +1067,6 @@ def test_an_integer_past_int64_widens_to_a_float():
     assert isinstance(exact, int)
 
 
-# COVERS: FR-4.7 | regression
-def test_toml_temporal_types_decode_to_iso_strings():
-    """FR-2.9 applied to the second format with native dates. Each spelling is
-    what the type it was read as prints, so a date does not become a datetime."""
-    value = wrench.TOML.decode(b"d = 2026-01-01\ndt = 2026-01-01T07:32:00Z\n")
-    assert value["d"] == "2026-01-01"
-    assert value["dt"].startswith("2026-01-01T07:32:00")
-
-
 # COVERS: FR-2.10 | positive
 def test_a_wrapper_per_format_supplies_the_codec():
     """The wrappers add no behaviour. Each is the core call with one argument
@@ -1151,10 +1077,6 @@ def test_a_wrapper_per_format_supplies_the_codec():
 
     reader = Stub(b'{"success": true}')
     assert wrench.load_json_file("out.json", wrench.ENVELOPE_SCHEMA, reader) == {"success": True}
-
-    toml_writer = Stub()
-    wrench.save_toml_file({"success": True}, "out.toml", wrench.ENVELOPE_SCHEMA, toml_writer)
-    assert toml_writer.written == b"success = true\n"
 
     yaml_writer = Stub()
     wrench.save_yaml_file({"success": True}, "out.yaml", wrench.ENVELOPE_SCHEMA, yaml_writer)
@@ -1186,17 +1108,16 @@ CANONICAL_FLOATS = [
     (-0.0, "-0.0"),
 ]
 
-CANONICAL_FLOAT_CODECS: list[tuple[wrench.YAMLCodec | wrench.JSONCodec | wrench.TOMLCodec, str, str]] = [
+CANONICAL_FLOAT_CODECS: list[tuple[wrench.YAMLCodec | wrench.JSONCodec, str, str]] = [
     (wrench.YAML, '"n": ', "\n"),
     (wrench.JSON, '{\n  "n": ', "\n}\n"),
-    (wrench.TOML, "n = ", "\n"),
 ]
 
 
 # COVERS: FR-4.8 | property
 @pytest.mark.parametrize(("value", "spelled"), CANONICAL_FLOATS)
 def test_a_float_has_one_spelling_in_every_codec(value: float, spelled: str) -> None:
-    """Positional decimal, never an exponent, in all three codecs.
+    """Positional decimal, never an exponent, in both codecs.
 
     Each language's default float formatting picks its own threshold for
     switching to an exponent, and the three disagreed. A consumer matching a
@@ -1207,26 +1128,26 @@ def test_a_float_has_one_spelling_in_every_codec(value: float, spelled: str) -> 
         assert codec.encode({"n": value}) == (prefix + spelled + suffix).encode()
 
 
-# The escape spellings below are asserted identically in all three suites. A
+# The escape spellings below are asserted identically in every suite. A
 # table that differs between packs is packs that differ.
 CANONICAL_ESCAPES = [
-    (0x00, r"\0", r"\u0000"),
-    (0x07, r"\a", r"\u0007"),
-    (0x08, r"\b", r"\b"),
-    (0x09, r"\t", r"\t"),
-    (0x0B, r"\v", r"\u000B"),
-    (0x1B, r"\e", r"\u001B"),
-    (0x7F, r"\x7F", r"\u007F"),
-    (0x85, r"\N", "\u0085"),
-    (0x9F, r"\x9F", "\u009f"),
-    (0x2028, r"\L", "\u2028"),
-    (0x2029, r"\P", "\u2029"),
+    (0x00, r"\0"),
+    (0x07, r"\a"),
+    (0x08, r"\b"),
+    (0x09, r"\t"),
+    (0x0B, r"\v"),
+    (0x1B, r"\e"),
+    (0x7F, r"\x7F"),
+    (0x85, r"\N"),
+    (0x9F, r"\x9F"),
+    (0x2028, r"\L"),
+    (0x2029, r"\P"),
 ]
 
 
 # COVERS: FR-4.9 | property
-@pytest.mark.parametrize(("point", "in_yaml", "in_toml"), CANONICAL_ESCAPES)
-def test_a_control_character_is_escaped_in_every_codec(point, in_yaml, in_toml):
+@pytest.mark.parametrize(("point", "in_yaml"), CANONICAL_ESCAPES)
+def test_a_control_character_is_escaped_in_every_codec(point, in_yaml):
     """Escaped rather than written raw, in each format's own spelling.
 
     A raw control character is refused by a strict YAML reader, accepted by a
@@ -1238,7 +1159,6 @@ def test_a_control_character_is_escaped_in_every_codec(point, in_yaml, in_toml):
 
     encoded = wrench.YAML.encode(value)
     assert encoded == f'"n": "a{in_yaml}b"\n'.encode()
-    assert wrench.TOML.encode(value) == f'n = "a{in_toml}b"\n'.encode()
 
     # Reading it back is the half that was broken: two packs wrote files their
     # own parser then refused.
@@ -1273,19 +1193,3 @@ def test_every_failure_is_wrenchs_own_type_with_its_step():
     }
     for want, call in cases.items():
         assert failing(call).step == want
-
-
-# COVERS: FR-4.7 | regression
-def test_a_non_ascii_toml_key_is_quoted_and_reads_back() -> None:
-    """A bare key is ASCII, and `str.isalnum` is not.
-
-    This pack wrote `é = 5` bare, reported success, and its own loader refused
-    the file. Go and Rust test ASCII explicitly and were right; only Python's
-    spelling was wrong. No fixture in any of the three suites held a non-ASCII
-    character, so the packs disagreed in silence.
-    """
-    for key in ("é", "日本", "Ω", "ключ"):
-        document = {key: 5}
-        assert wrench.TOML.decode(wrench.TOML.encode(document)) == document, key
-
-    assert b'"' not in wrench.TOML.encode({"ok_key-9": 1})

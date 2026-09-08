@@ -50,7 +50,6 @@ from wrench.schema import (
     Schema,
     compile_schema,
 )
-from wrench.toml_codec import TOML, TOMLCodec
 
 # What a Python caller may hand the two calls. The seams stay `str`, and a path
 # is normalised once on the way in. See
@@ -64,7 +63,6 @@ __all__ = [
     "JSON",
     "LOCAL_FILE",
     "MANIFEST_SCHEMA",
-    "TOML",
     "YAML",
     "Codec",
     "EncodeError",
@@ -76,7 +74,6 @@ __all__ = [
     "Reader",
     "Schema",
     "SchemaError",
-    "TOMLCodec",
     "UsageError",
     "ValidationError",
     "WriteError",
@@ -85,11 +82,9 @@ __all__ = [
     "compile_schema",
     "load_formatted_file",
     "load_json_file",
-    "load_toml_file",
     "load_yaml_file",
     "save_formatted_file",
     "save_json_file",
-    "save_toml_file",
     "save_yaml_file",
     "schemas",
 ]
@@ -193,24 +188,6 @@ def load_json_file(path: StrPath, schema: Schema, reader: Reader) -> Any:
 def save_json_file(data: Any, path: StrPath, schema: Schema, writer: Writer) -> None:
     """Save a structure as canonical JSON, validated against `schema`."""
     save_formatted_file(data, path, schema, JSON, writer)
-
-
-def load_toml_file(path: StrPath, schema: Schema, reader: Reader) -> Any:
-    """Load a TOML file, validated against `schema`.
-
-    A native date, time or datetime decodes to its ISO 8601 string, which is what
-    FR-2.9 requires of every decoder.
-    """
-    return load_formatted_file(path, schema, TOML, reader)
-
-
-def save_toml_file(data: Any, path: StrPath, schema: Schema, writer: Writer) -> None:
-    """Save a structure as canonical TOML, validated against `schema`.
-
-    Refuses a structure containing null, which TOML cannot spell, and refuses one
-    that is not a table, which TOML has no way to be.
-    """
-    save_formatted_file(data, path, schema, TOML, writer)
 
 
 def _path(path: StrPath) -> str:
