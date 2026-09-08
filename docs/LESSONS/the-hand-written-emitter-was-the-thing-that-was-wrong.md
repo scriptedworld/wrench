@@ -1,91 +1,47 @@
 # The hand-written emitter was the thing that was wrong
 
-`a-codec-emits-by-hand-when-libraries-disagree` says to write the emitter when
-two libraries disagree, and gives TOML as the case that turned the YAML emitter
-from a one-off into a rule. Measured again on 2026-09-07, both halves of that
-turn out to be wrong, and the TOML emitter is not merely unnecessary. It is
-incorrect.
+Three packs emitted byte-identical TOML for a document none of them could read
+back. A sub-table inside an array-of-tables entry was written with a
+root-relative header, so `{"a": [{"b": {"c": 1}}]}` decoded as
+`{"a": [{}], "b": {"c": 1}}`, and FR-2.4 promises a saved file survives a load.
+FR-2.7 carries the defect, the three source lines and the round-trip runs.
 
-## The TOML emitter writes a file it cannot read back
+The emitters existed to control exactly that hazard. Each codec's own docstring
+named it: TOML binds a bare key to the most recent header. Every maintained
+library tested writes the qualified header and round trips.
 
-FR-2.4 says validation on the way out stops a caller writing a structure wrench
-would refuse to read back, so a file produced by a save always survives a load.
-It does not.
+## Why nothing saw it
 
-A nested table inside an array of tables loses its qualifying path:
+**Agreement between implementations written from one description is not
+independent evidence.** The three packs were written from the same contract, and
+the contract said what the bytes had to look like, so they made the same
+inference and produced the same wrong document. A cross-pack byte comparison
+then reported agreement, which is what it was built to do.
 
-    wrench canonical            tomli_w 1.2.0
-    [[seq_of_maps]]             [[seq_of_maps]]
+The fixture set could not have caught it either: it held no nested table inside
+an array of tables, and a gap in a fixture set looks exactly like agreement.
 
-    [deep]                      [seq_of_maps.deep]
-    deeper = ["a", 3.5]         deeper = ["a", 3.5]
+So two mechanisms both reported a defect as a pass, and neither was broken.
+A single pack round-tripping its own output would have found it in one run.
 
-`[deep]` is a top-level table. Read back, `deep` leaves the array entirely and
-the array's second entry is `{}`.
+## What replaced the rule
 
-    canonical round trips: False
-    tomli_w round trips:   True
+`a-codec-emits-by-hand-when-libraries-disagree.superseded` said to write the
+emitter when two libraries disagree. The divergences it measured were real and
+were properties rather than formats: ordering, float spelling, quoting style,
+null spelling, each reachable by an adapter over a library that already gets
+escaping right.
 
-This is the exact hazard the codec's own docstring names: *"TOML binds a bare
-key to the most recent header, so a scalar written after a section lands inside
-it."* The emitter exists to control that hazard and falls into it. The library
-does not.
+A codec is now a library plus the four adapters,
+`packs-agree-on-structure-not-on-bytes`, and a library is accepted only after it
+survives a round trip over the control-character fixture,
+`docs/PATTERNS/adopting-a-library-for-a-codec.md`. Two hand-written YAML
+emitters are still in the tree, in the Python and Rust packs.
 
-Reproduce with `.ephemera/parity-toml.py`.
+## What to take from it
 
-## The YAML emitter is replaceable by configuration
-
-`ruamel.yaml` 0.19.1 emitted output **byte-identical** to the 207-line
-hand-written emitter, across a 53-key tree carrying control characters, the
-separators, unicode from four scripts, multiline strings, the int64 boundaries
-and floats that want an exponent.
-
-It took four adapters, none of which emits text:
-
-    sort the keys                       a dict comprehension
-    quote every string AND key          DoubleQuotedScalarString
-    spell floats positionally           one representer, calling float_text
-    write null as the word              one representer
-
-Roughly 25 lines of configuration for 207 lines of emitter. **ruamel's escape
-table already matched wrench's exactly**, including `\a`, `\x7F`, `\e`, `\0`,
-`﻿` and `\L`. That part of the emitter was reimplementing something the
-library had right.
-
-Quoting keys is the one that is easy to miss: ruamel's own answer for a numeric
-key is a single-quoted `'10'`, which is a third spelling again. It is fixed by
-wrapping the key, not by writing an emitter.
-
-## PyYAML loses data and that is a separate finding
-
-`yaml.safe_dump` writes U+0085 raw, and reading it back folds it to a space.
-
-    canonical -> 'before\x85after'
-    pyyaml    -> 'before after'
-
-Both the Python and Ruby packs detected it independently. FR-4.9 exists for
-exactly this, and PyYAML violates it. Anything in the estate still writing with
-`yaml.safe_dump` is exposed, and toolbox's adapters do.
-
-## What the measurement says about the rule
-
-The decision reasoned from an observation that was true: three TOML writers
-produced three arrangements. What it concluded does not follow. The divergences
-were **properties**, not formats, and every one is reachable by an adapter:
-ordering, float spelling, quoting style, null spelling.
-
-Writing a whole emitter to fix four properties is what put a round-trip defect
-in the TOML codec, three times over, in a file long enough that nothing noticed.
-
-**A library plus named adapters, or the format is not supported.** A format that
-can only be served by hand-written emission is a format this project should
-decline, because the emitter is where the defects live.
-
-## What is not settled here
-
-Byte-identity across packs was the requirement forcing all of this, and it is
-worth asking separately whether it buys anything. The measurement says three of
-four differently-written YAML files decode to one structure in both packs, and
-the estate's own adapters already emit non-canonical YAML that bolt reads
-without complaint. So the requirement is asserted in the contract and not held
-in production.
+A comparison between two things built from one description tests the building,
+not the description. Where the answer has to be right rather than consistent,
+put the check somewhere that does not share the assumption: a round trip through
+the pack's own reader, or a library that was written by somebody who never read
+this contract.

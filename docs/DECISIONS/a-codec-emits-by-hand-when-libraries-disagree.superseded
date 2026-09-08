@@ -1,11 +1,40 @@
-# A codec emits by hand when the libraries disagree
+# A codec emits by hand when the libraries disagree, superseded
 
-The YAML emitter was written by hand because no library produced wrench's bytes.
-That read as a YAML-specific inconvenience until TOML shipped and turned out to
-need exactly the same treatment, so it is a rule rather than a one-off.
+Supersession is carried by this file's name, the way `docs/REQUIREMENTS/` marks
+a retired row. The reasoning is kept because the measurement under it was sound,
+because the rule is cited from source comments and older commits, and because
+what falsified it is only legible beside what it replaced.
+
+| Superseded by | With |
+|---|---|
+| `packs-agree-on-structure-not-on-bytes.md` | a library plus four named adapters, and packs held to structure rather than to bytes |
+
+## What did not follow from the measurement
+
+The observation held: three TOML writers produced three arrangements of one
+structure. The conclusion did not. Those divergences are **properties**, not
+formats, and each one is reachable by an adapter: ordering, float spelling,
+quoting style, null spelling. Writing a whole emitter to reach four properties
+is what put a round-trip defect in the TOML codec three times over, in a file
+long enough that nothing noticed it. FR-2.7 carries that defect and the three
+lines it came from.
+
+The rule also had two counterexamples inside the repository it was written for.
+`go/yaml.go` writes no text at all, building nodes and handing the document to
+the library, and `rust/src/json_codec.rs` is serde_json plus a float adapter.
+Both met the requirement without the emitter the rule said it forced.
+
+**A library plus named adapters, or the format is not supported.** A format that
+can only be served by hand-written emission is one this project declines,
+because the emitter is where the defects live. Which library, and what it has to
+survive before it is taken, is `adopting-a-library-for-a-codec`.
+
+## What the rule was
 
 **Take a library's emitter only after measuring it against the other packs.
-Where two disagree, write the emitter.**
+Where two disagree, write the emitter.** The YAML emitter was written by hand
+because no library produced wrench's bytes, and TOML then needed the same
+treatment, which is what turned a one-off into a rule.
 
 ## What was measured
 
