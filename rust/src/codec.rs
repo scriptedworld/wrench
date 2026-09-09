@@ -5,13 +5,14 @@
 //! bare. Quoting marks intent, so `no`, `1.20` and `null` survive a round trip
 //! as the strings they were.
 //!
-//! The emitter is written here rather than handed to a library, as it is in the
-//! Go and Python packs. `testdata/canonical/` defines the form and no YAML
-//! emitter produces it: they quote what would be ambiguous, which is the
-//! opposite rule to quoting by what the value is.
+//! libyaml EMITS. The document is handed to it as events with the style named
+//! on each scalar, and it decides layout, indentation, escaping and line
+//! breaks. Its escape table is already the one this pack wants. What is here
+//! is the four adapters and nothing that produces text.
 //!
-//! Only the parser is bound, to yaml-rust2.
+//! yaml-rust2 parses; its emitter cannot be used, and Cargo.toml says why.
 
+use libyaml_safer::{Emitter, Encoding, Event, MappingStyle, ScalarStyle, SequenceStyle};
 use serde_json::{Map, Value};
 use yaml_rust2::{yaml::Yaml, YamlLoader};
 
@@ -45,7 +46,7 @@ impl Codec for YamlCodec {
     }
 
     fn encode(&self, value: &Value) -> Result<Vec<u8>, crate::Error> {
-        Ok(canonical(value, 0)?.into_bytes())
+        canonical(value)
     }
 }
 
@@ -108,139 +109,90 @@ fn at(where_: String, error: crate::Error) -> crate::Error {
     crate::Error::encode(Message(format!("{where_}: {error}")))
 }
 
-fn canonical(value: &Value, depth: usize) -> Result<String, crate::Error> {
-    let pad = " ".repeat(INDENT * depth);
+/// A plain scalar: the spelling is the value's own and needs no quotes.
+fn plain(text: &str) -> Event {
+    Event::scalar(None, None, text, true, false, ScalarStyle::Plain)
+}
 
-    Ok(match value {
-        Value::Object(map) if map.is_empty() => format!("{pad}{{}}\n"),
+/// A double-quoted scalar. ADAPTER 2, and libyaml escapes the contents.
+fn quoted(text: &str) -> Event {
+    Event::scalar(None, None, text, false, true, ScalarStyle::DoubleQuoted)
+}
+
+/// Feed one value to the emitter as events.
+///
+/// This produces no text. Every branch hands libyaml a node and a style, and
+/// libyaml decides layout, indentation, escaping and line breaks.
+fn walk(emitter: &mut Emitter, value: &Value) -> Result<(), crate::Error> {
+    match value {
+        Value::Null => emit_one(emitter, plain("null")),
+        Value::Bool(flag) => emit_one(emitter, plain(if *flag { "true" } else { "false" })),
+        Value::String(text) => emit_one(emitter, quoted(text)),
+        Value::Number(number) => {
+            // ADAPTER 3. An integer is its own spelling; a float is FR-4.8's,
+            // which is positional decimal and never an exponent.
+            let text = match number.as_i64() {
+                Some(whole) => whole.to_string(),
+                None => match number.as_f64() {
+                    Some(real) => crate::float_text::canonical_float_text(real),
+                    None => number.to_string(),
+                },
+            };
+            emit_one(emitter, plain(&text))
+        }
+        Value::Array(items) => {
+            emit_one(
+                emitter,
+                Event::sequence_start(None, None, true, SequenceStyle::Block),
+            )?;
+            for (index, item) in items.iter().enumerate() {
+                walk(emitter, item).map_err(|e| at(format!("at index {index}"), e))?;
+            }
+            emit_one(emitter, Event::sequence_end())
+        }
         Value::Object(map) => {
-            // A mapping has no order of its own, so sorting is what makes two
-            // runs over the same structure produce the same bytes. serde_json's
-            // Map is insertion-ordered without the preserve_order feature, so
-            // the keys are collected and sorted rather than trusted.
+            emit_one(
+                emitter,
+                Event::mapping_start(None, None, true, MappingStyle::Block),
+            )?;
+            // ADAPTER 1. A mapping has no order of its own, and serde_json's Map
+            // is insertion-ordered, so the keys are sorted rather than trusted.
             let mut names: Vec<&String> = map.keys().collect();
             names.sort();
-
-            let mut out = String::new();
             for name in names {
-                let item = &map[name];
-                // The key is rendered before the branch, so neither arm needs a
-                // fallible expression inside a closure.
-                let key = scalar(&Value::String(name.clone()))
-                    .map_err(|e| at(format!("at key {name:?}"), e))?;
-                let rendered = if nested(item) {
-                    canonical(item, depth + 1).map(|block| format!("{pad}{key}:\n{block}"))
-                } else {
-                    inline(item).map(|text| format!("{pad}{key}: {text}\n"))
-                };
-                out.push_str(&rendered.map_err(|e| at(format!("at key {name:?}"), e))?);
+                emit_one(emitter, quoted(name))?;
+                walk(emitter, &map[name]).map_err(|e| at(format!("at key {name:?}"), e))?;
             }
-            out
+            emit_one(emitter, Event::mapping_end())
         }
-        Value::Array(items) if items.is_empty() => format!("{pad}[]\n"),
-        Value::Array(items) => {
-            let mut out = String::new();
-            for (index, item) in items.iter().enumerate() {
-                let rendered = if nested(item) {
-                    canonical(item, depth + 1).map(|block| {
-                        let (first, rest) = block.split_once('\n').unwrap_or((block.as_str(), ""));
-                        let mut piece = format!("{pad}- {}\n", first.trim_start());
-                        if !rest.is_empty() {
-                            piece.push_str(rest);
-                            if !rest.ends_with('\n') {
-                                piece.push('\n');
-                            }
-                        }
-                        piece
-                    })
-                } else {
-                    inline(item).map(|text| format!("{pad}- {text}\n"))
-                };
-                out.push_str(&rendered.map_err(|e| at(format!("at index {index}"), e))?);
-            }
-            out
-        }
-        other => format!("{pad}{}\n", inline(other)?),
-    })
-}
-
-/// Whether a value renders as a block rather than on the key's own line.
-/// A string, escaped the way YAML spells escapes. FR-4.9.
-///
-/// A raw control character in a quoted scalar is refused by a strict YAML reader
-/// and folded to a space by a lenient one, so a file carrying one is read
-/// differently depending on the reader. Escaping keeps every value writable,
-/// which `docs/DECISIONS/parity-is-reached-by-widening-never-by-refusing.md`
-/// requires.
-///
-/// U+0085, U+2028 and U+2029 are here because YAML 1.1 makes all three line
-/// breaks and 1.2 does not, so which of them fold depends on the reader's
-/// version rather than on the character. The table matches the Go pack byte for
-/// byte, including uppercase hex.
-fn escape(value: &str) -> String {
-    let mut out = String::with_capacity(value.len());
-    for ch in value.chars() {
-        match ch {
-            '\u{0}' => out.push_str("\\0"),
-            '\u{7}' => out.push_str("\\a"),
-            '\u{8}' => out.push_str("\\b"),
-            '\t' => out.push_str("\\t"),
-            '\n' => out.push_str("\\n"),
-            '\u{b}' => out.push_str("\\v"),
-            '\u{c}' => out.push_str("\\f"),
-            '\r' => out.push_str("\\r"),
-            '\u{1b}' => out.push_str("\\e"),
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\u{85}' => out.push_str("\\N"),
-            '\u{2028}' => out.push_str("\\L"),
-            '\u{2029}' => out.push_str("\\P"),
-            '\u{feff}' => out.push_str("\\uFEFF"),
-            c if (c < ' ') || c == '\u{7f}' || ('\u{80}'..='\u{9f}').contains(&c) => {
-                out.push_str(&format!("\\x{:02X}", c as u32));
-            }
-            c => out.push(c),
-        }
-    }
-    out
-}
-
-fn nested(value: &Value) -> bool {
-    match value {
-        Value::Object(map) => !map.is_empty(),
-        Value::Array(items) => !items.is_empty(),
-        _ => false,
     }
 }
 
-fn inline(value: &Value) -> Result<String, crate::Error> {
-    Ok(match value {
-        Value::Object(_) => "{}".to_string(),
-        Value::Array(_) => "[]".to_string(),
-        other => scalar(other)?,
-    })
+fn emit_one(emitter: &mut Emitter, event: Event) -> Result<(), crate::Error> {
+    emitter
+        .emit(event)
+        .map_err(|e| crate::Error::encode(Message(e.to_string())))
 }
 
-fn scalar(value: &Value) -> Result<String, crate::Error> {
-    Ok(match value {
-        Value::Null => "null".to_string(),
-        Value::Bool(true) => "true".to_string(),
-        Value::Bool(false) => "false".to_string(),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                i.to_string()
-            } else if let Some(f) = n.as_f64() {
-                // One spelling for every codec in every pack. FR-4.8.
-                crate::float_text::canonical_float_text(f)
-            } else {
-                n.to_string()
-            }
-        }
-        Value::String(s) => format!("\"{}\"", escape(s)),
-        other => {
-            return Err(crate::Error::encode(Message(format!(
-                "cannot write {other} in canonical form"
-            ))))
-        }
-    })
+/// The whole document, emitted by libyaml.
+fn canonical(value: &Value) -> Result<Vec<u8>, crate::Error> {
+    let mut out: Vec<u8> = Vec::new();
+    {
+        let mut emitter = Emitter::new();
+        emitter.set_output_string(&mut out);
+        // Settings rather than code. Width off because the default folds a long
+        // scalar across lines, which reads back the same and makes a diff
+        // noisy; unicode on so a non-ASCII character is written as itself.
+        emitter.set_width(-1);
+        emitter.set_unicode(true);
+        emitter.set_indent(INDENT as i32);
+
+        emit_one(&mut emitter, Event::stream_start(Encoding::Utf8))?;
+        // Implicit, so there is no `---` line.
+        emit_one(&mut emitter, Event::document_start(None, &[], true))?;
+        walk(&mut emitter, value)?;
+        emit_one(&mut emitter, Event::document_end(true))?;
+        emit_one(&mut emitter, Event::stream_end())?;
+    }
+    Ok(out)
 }

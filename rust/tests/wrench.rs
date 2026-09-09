@@ -111,10 +111,26 @@ fn canonical_form_matches_the_shared_fixtures() {
             .encode(&value)
             .unwrap_or_else(|e| panic!("{case}: encoding: {e}"));
 
+        // STRUCTURE, NOT BYTES, per FR-5.5. This pack emits through libyaml,
+        // which writes block sequences without indenting them under their key
+        // and hard-codes that with no setting. So its bytes differ from the
+        // fixture's, which Go and Python still match, and what the contract
+        // asks is that the value survives: the fixture decodes to what this
+        // pack emits, and this pack's output decodes to the same thing.
+        let fixture_value = YAML
+            .decode(want.as_bytes())
+            .unwrap_or_else(|e| panic!("{case}: decoding the fixture: {e}"));
+        let round_tripped = YAML
+            .decode(&got)
+            .unwrap_or_else(|e| panic!("{case}: decoding what we emitted: {e}"));
+
         assert_eq!(
-            String::from_utf8_lossy(&got),
-            want,
-            "{case}: canonical form differs from the shared fixture"
+            round_tripped, fixture_value,
+            "{case}: this pack's output does not decode to the fixture's value"
+        );
+        assert_eq!(
+            value, fixture_value,
+            "{case}: the input and the fixture are not the same value"
         );
 
         // A fixture that is an instance of a shipped schema says so, and is held
@@ -152,12 +168,20 @@ fn canonical_form_is_a_fixed_point() {
                 .join("canonical.yaml"),
         )
         .expect("a golden");
-        let again = YAML
+        // A FIXED POINT OF THIS PACK'S OWN OUTPUT, not of the shared fixture.
+        // The property is that encoding is idempotent: emit once, and emitting
+        // what that decodes to gives the same bytes. Held against the fixture
+        // it would be asserting that this pack's layout matches Go's, which
+        // FR-5.5 stopped requiring and libyaml cannot do.
+        let once = YAML
             .encode(&YAML.decode(&canonical).expect("decodes"))
+            .expect("encodes");
+        let again = YAML
+            .encode(&YAML.decode(&once).expect("decodes"))
             .expect("encodes");
         assert_eq!(
             String::from_utf8_lossy(&again),
-            String::from_utf8_lossy(&canonical),
+            String::from_utf8_lossy(&once),
             "{case}: encoding the canonical form changed it"
         );
     }
@@ -324,9 +348,13 @@ fn save_writes_canonical_form() {
     .expect("a valid envelope saves");
 
     let written = writer.written.borrow().clone().expect("bytes were written");
+    // This pack's own layout: libyaml does not indent a block sequence under
+    // its key. The properties the row is about are all here and are the ones
+    // that survive a pack changing its emitter: keys sorted, every string and
+    // key quoted, a boolean left bare.
     assert_eq!(
         String::from_utf8_lossy(&written),
-        "\"reasons\":\n  - \"kind\": \"k\"\n    \"message\": \"m\"\n\"success\": false\n"
+        "\"reasons\":\n- \"kind\": \"k\"\n  \"message\": \"m\"\n\"success\": false\n"
     );
 }
 
