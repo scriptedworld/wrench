@@ -30,7 +30,7 @@ changed, and the record stayed.
 - **infobot's FR-1.11d and FR-1.11n**, both retired rows, both asserting as
   present fact that "the port kept the hand-emitter and wrench declined the link
   on 2026-08-28". FR-1.11n's own closing line is *"retiring a row on a future
-  state is the mistake here"* — and the future state then arrived, which a
+  state is the mistake here"*, and the future state then arrived, which a
   retired row cannot say.
 - **infobot's FR-1.11p**, live, requiring the form be "pinned independently at
   both ends" and a change to be "a two-repository change". There is one emitter.
@@ -44,7 +44,7 @@ changed, and the record stayed.
   glob would swallow `bolt.rust-quality.yaml`, which is this project's own gate
   and IS tracked". bolt carries no jig. The same comment cited
   `bin/count-selection.py`, deleted earlier.
-- **infobot's and qwark's `.gitignore`**, both objecting to a glob — correctly,
+- **infobot's and qwark's `.gitignore`**, both objecting to a glob, correctly,
   to `bolt.*.yaml`, which does swallow their definitions file. Neither had
   revisited the narrower `bolt.*-quality.yaml` that skid used all along and that
   cannot match a `*.definitions.yaml`. The reason was about a different glob than
@@ -53,7 +53,7 @@ changed, and the record stayed.
   an adapter that left the set, and never mentioning the `rust` set, so a fresh
   clone followed to the letter cannot run one of its two gate runs.
 - **toolbox's `docs/PROJECT.md`**, describing the Go jig as having "no coverage"
-  and citing the decision that removed it — a decision whose own text says the
+  and citing the decision that removed it, a decision whose own text says the
   removal lasted one day.
 - **The coverage plan in `HANDOFF.md`**, which said lcov's branch records were
   already in the file wrench's consumers produce. cargo-llvm-cov writes `BRF:0`
@@ -71,7 +71,7 @@ usually a fact about another file or another repository, and prose has no
 failing state.
 
 So the expiry condition ends up costing more than it looks like it saves. It
-reads as diligence — the writer thought about what would falsify this — while
+reads as diligence, the writer thought about what would falsify this, while
 creating an obligation with no owner and no trigger. The next reader arrives for
 some other reason entirely, months later, and the document has been quietly wrong
 the whole time to everyone who did not arrive.
@@ -85,7 +85,7 @@ the `jig:` field no jig carries, the retired FR ids asserted as current. A
 checker in the family of `bin/test-traceability.py` could fail on those the same
 way it fails on a test citing a requirement that does not exist.
 
-The other four cannot be evaluated by a machine — "wrench declined the link",
+The other four cannot be evaluated by a machine, "wrench declined the link",
 "the port kept the hand-emitter" are claims about what another project chose. For
 those the value is not automation but enumeration: a decision that declares a
 condition should be findable as a list, so the review is a finite set somebody

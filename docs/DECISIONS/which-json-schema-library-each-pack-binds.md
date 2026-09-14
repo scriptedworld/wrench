@@ -82,13 +82,13 @@ its message is the crate's rather than wrench's, which FR-2.11 does not allow to
 cross the boundary.
 
 `default-features = false` stays. Keeping `reqwest` and a TLS stack out of a
-build that does not want them is worth the line — it is just a dependency
+build that does not want them is worth the line, it is just a dependency
 decision rather than a security one.
 
 **The three packs now refuse by three mechanisms and reach the same place**: Go
 installs a loader, Python compiles against a registry with nothing else in it,
 Rust installs a retriever. None of them has an escape hatch. The asymmetry this
-file used to describe — one pack stronger than the other two — was resolved by
+file used to describe, one pack stronger than the other two, was resolved by
 making the other two structural, not by weakening Rust.
 
 ## So the CLI fallback is not needed

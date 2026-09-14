@@ -43,7 +43,7 @@ without its used count means nothing. It was added to the shipped set on exactly
 that reasoning and taken back out, because the only thing that reads it is an
 operator keeping an eye on context consumption across a handful of agents. That
 is a convenience between two tools, not something bolt, wrench or toolbox needs
-to agree about — and its subject is a Claude Code session, which a generic runner
+to agree about, and its subject is a Claude Code session, which a generic runner
 has no business having a word for.
 
 **Parts 1 and 2 are satisfied by almost any file two programs share**, so a test

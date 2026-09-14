@@ -22,15 +22,15 @@ Python pack, came back identical:
 
 So the decision was that nothing changed in either project: infobot kept
 hand-emitting, wrench kept its emitter, and the two agreed. infobot's argument
-against importing wrench stood on its own terms — the status line runs on every
+against importing wrench stood on its own terms, the status line runs on every
 Claude Code event, and a dependency that can fail to resolve is one that can
 blank the line.
 
 ## How it ended, which is the part worth keeping
 
 This document named its own expiry and then did not watch for it. Its closing
-section offered infobot two honest options — re-run its probe when its emitter
-changes, or land its task 14 Go port so the second emitter stops existing — and
+section offered infobot two honest options, re-run its probe when its emitter
+changes, or land its task 14 Go port so the second emitter stops existing, and
 said of the second that it "removes the duplication this document is about, so
 this decision is on borrowed time in the best way."
 
@@ -48,8 +48,8 @@ carries what that costs and what would have caught it.
 that `testdata/canonical/a-hand-emitted-status-file/` "pins one end only", that
 wrench "holds a frozen copy and never re-derives infobot's output", and that "if
 infobot drifts the fixture keeps passing and silently stops representing what it
-claims to". infobot then drifted — linking the pack changed its bytes on three
-escape spellings, U+2028 to `\L`, U+2029 to `\P` and U+0085 to `\N` — and the
+claims to". infobot then drifted, linking the pack changed its bytes on three
+escape spellings, U+2028 to `\L`, U+2029 to `\P` and U+0085 to `\N`, and the
 fixture kept passing, because it holds none of those three characters.
 
 **The fixture stays, and it is no longer about infobot.** It earns its place on
