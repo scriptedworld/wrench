@@ -19,9 +19,9 @@ and been told it was mandatory.
 ## Why the copy is the one that rots
 
 The original gets changed because it is the authority. The copy gets changed
-only if somebody remembers it exists. `PROJECT.md` was the file a session is
-told to read before deciding how to do anything here, so its stale half had the
-widest reach of any document in the repository.
+only if somebody remembers it exists. `PROJECT.md` is the file anyone starting
+work here is told to read before deciding how to do anything, so its stale half
+had the widest reach of any document in the repository.
 
 The length is what hid it. In 653 lines a false paragraph reads as one more
 paragraph.
@@ -41,8 +41,8 @@ Ask what each document is for and let it hold only that. Here:
     docs/PROJECT.md       what it is, how it is gated, what is not done
     NEXT_STEPS.md         open questions that are not yet work
 
-**Where a figure is the only claim, print the command instead.** `PROJECT.md`
-already told the reader to regenerate the parity numbers rather than trust the
+Where a figure is the only claim, print the command instead. `PROJECT.md`
+already told the reader to regenerate the parity numbers instead of trusting the
 paragraph, while carrying thirty-one dated figures of its own that it did not
 apply the same rule to.
 

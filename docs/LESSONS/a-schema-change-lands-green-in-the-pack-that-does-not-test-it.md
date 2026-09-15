@@ -7,7 +7,7 @@ Two commits changed the shipped schemas and touched Go only.
     bd62361  a schema for definitions, shared by the jig that carries them
     9b3700f  a manifest variable says which layer supplied it
 
-`go test ./...` was green after both. The session read that, and stopped.
+`go test ./...` was green after both, and that green was taken as done.
 
 At that point the Python pack was broken three ways:
 
@@ -35,26 +35,26 @@ have caught it was the `grep` above, and it costs nothing.
 
 ## What it cost
 
-Two commits sat on `main` with the tree red in a pack nobody ran. It was found by
-the next session running `pytest` during `/grok`, not by a gate, because
-**wrench gates nothing**: `ls bolt.*.yaml` returns nothing, so the Python pack has
-no test task anything but a person runs.
+Two commits sat on `main` with the tree red in a pack nobody ran. It was found
+when `pytest` ran during the next `/grok`, not by a gate, because wrench gated
+nothing at the time: `ls bolt.*.yaml` returned nothing, so the Python pack had no
+test task anything but a person ran.
 
 Cheap this time. The same failure with a consumer downstream is a producer
 writing files a consumer will refuse, discovered by the consumer.
 
 ## What to do instead
 
-**Changing a shipped schema is a change to every pack, so land it in every pack
-in one commit.** `docs/PATTERNS/holding-two-packs-level.md` is the checklist.
+Changing a shipped schema is a change to every pack, so land it in every pack in
+one commit. `docs/PATTERNS/holding-two-packs-level.md` is the checklist.
 
-**Before believing a green run, confirm what it read.** For a schema change:
+Before believing a green run, confirm what it read. For a schema change:
 
     grep -rn '<SchemaName>' go/*_test.go python/tests/    # who exercises it?
 
 If that prints nothing for a pack, that pack did not test your change, and its
 green is silence rather than agreement.
 
-**A schema no pack validates against is a shape the gate cannot hold anything
-to.** Both packs now assert the manifest table. The absence of a test was the
-defect that let the other three in.
+A schema no pack validates against is a shape the gate cannot hold anything to.
+Both packs now assert the manifest table. The absence of a test was the defect
+that let the other three in.

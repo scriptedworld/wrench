@@ -3,7 +3,7 @@
 Reads, writes and validates the form of the ecosystem's structured files. The
 schemas live here, and a library per language that handles one.
 
-## What it is FOR
+## What it is for
 
 Every component here reads and writes YAML that another component has to
 understand. A runner writes a result envelope, a checker reads a jig, an adapter
@@ -84,8 +84,8 @@ child's `kind` and `message` and naming the child result it came from.
 
 Analysis never scans an output or artefact directory. The jig defines
 `artefacts_regex` once and the tasks that need it filter with it: every
-dot-directory, anything named for a cache, and build, dist, out and target. A
-scratch `.go` file under `.ephemera` used to fail `go-format`, and a stale
+dot-directory, anything named for a cache, and build, dist, out and target.
+Without it a scratch `.go` file under `.ephemera` fails `go-format`, and a stale
 `python/build/` still fails the shared Python jig's mypy and pylint.
 
 Two lines are silenced and nothing is mocked. `SUPPRESSIONS` carries both with
@@ -103,9 +103,9 @@ the register against every source file, not only the Python pack. There is no
 | Ruby | the estate's Ruby tooling as it is written | Built, under `ruby/`, and outside the gate |
 | TypeScript | the estate's TypeScript tooling as it is written | Being built |
 
-`packs-follow-demand` says what decides when a pack gets written, and it is no
-longer a waiting consumer: the emitters that made a pack expensive are gone, so
-the test is whether the estate writes tools in that language.
+`packs-follow-demand` says what decides when a pack gets written: whether the
+estate writes tools in that language. A waiting consumer is not required,
+because the emitters that made a pack expensive are gone.
 
 The Ruby pack is the least finished of the four. It exposes no `Schemas`, so
 FR-5.7 is undischarged there; no jig task runs its suite; and the parity check
@@ -153,23 +153,23 @@ predates the third pack.
 
 ## How it fits against its siblings
 
-**bolt** takes the Rust pack by path, so an uncommitted change under `rust/` is
+bolt takes the Rust pack by path, so an uncommitted change under `rust/` is
 bolt's build. It is also what runs this repository's gate.
 
-**toolbox** owns the shared jigs and the checkers `bin/` symlinks into. A change
+toolbox owns the shared jigs and the checkers `bin/` symlinks into. A change
 there lands here with nothing in this repository moving, which has turned the
 gate red on rows nothing had previously read. toolbox's adapters are the Python
 pack's intended consumer.
 
-**silo** owns the platform decision wrench implements, that every structured
-file is YAML validated as JSON Schema over the decoded structure. wrench does
-not make that decision and does not get to differ from it.
+silo owns the platform decision wrench implements, that every structured file
+is YAML validated as JSON Schema over the decoded structure. wrench does not
+make that decision and does not get to differ from it.
 
-**skid** consumes the Python pack and is the first caller to type-check against
-it, which found the public API annotated more narrowly than it behaves.
+skid consumes the Python pack and is the first caller to type-check against it,
+which found the public API annotated more narrowly than it behaves.
 
-A consumer enforces the schema it was built with rather than the one shipped
-here, and nothing in this repository can detect the gap.
+A consumer enforces the schema it was built with, not the one shipped here, and
+nothing in this repository can detect the gap.
 `a-consumer-enforces-the-schema-it-was-built-with` explains why no guard here
 could.
 

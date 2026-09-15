@@ -35,7 +35,7 @@ release, because there is no release step here and a consumer resolves whenever
 it syncs.
 
 A consumer that suspects it is holding a stale copy can check what it actually
-has rather than what the tree says:
+has, instead of what the tree says:
 
     python -c "import wrench, pathlib; print(pathlib.Path(wrench.__file__).resolve())"
 

@@ -15,14 +15,14 @@ designated outsider, so adding a language looked like it broke something.
 The gate asks every validator wrench binds and requires unanimity, plus at least
 one implementation no pack binds.
 
-That makes the TypeScript question stop being load-bearing. `ajv` becomes one of
-N rather than the independent one, so a TypeScript pack binds what its ecosystem
+That takes the weight off the TypeScript question. `ajv` becomes one of N
+instead of the independent one, so a TypeScript pack binds what its ecosystem
 expects and nothing has to move.
 
 ## Why unanimity is stronger than one outsider
 
 The existing check runs ajv with `strict: false`, deliberately, because wrench's
-schemas use union types and ajv's strict mode is a style opinion rather than a
+schemas use union types and ajv's strict mode is a style opinion, not a
 validity check. So today it contributes exactly one implementation's reading of
 the specification and nothing more. Several independent implementations agreeing
 is more than that.
@@ -34,7 +34,7 @@ defect the gate should catch, and asking each pack the question catches it.
 ## The outsider stays, and why
 
 Unanimity alone could become unanimous agreement among wrench's own bindings,
-which is the thing the original check existed not to be. Keeping at least one
+which is exactly what the original check was built to avoid. Keeping at least one
 implementation no pack binds means N-of-N can never quietly become N-of-wrench.
 
 Whoever adds the fifth pack checks this again: a pack and the gate's independent

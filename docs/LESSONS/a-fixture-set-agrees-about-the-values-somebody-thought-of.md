@@ -24,10 +24,10 @@ provide.
 
 ## What it cost
 
-It was found from outside, by a consumer, across a repository boundary. The
-infobot session hit it while measuring whether it could use the Go pack's
-encoder. Its board matches `[0-9.]+` against a value, so `1e+06` reads as `1`: a
-count of a million displayed as one, with no error anywhere.
+It was found from outside, by a consumer, across a repository boundary. infobot
+hit it while measuring whether it could use the Go pack's encoder. Its board
+matches `[0-9.]+` against a value, so `1e+06` reads as `1`: a count of a million
+displayed as one, with no error anywhere.
 
 Nothing inside wrench was going to find it. The fixture set reported agreement,
 both checkers were green, and `bin/test-suite-parity.py` compares which rows are
@@ -54,18 +54,18 @@ integer, where a sign survives a zero.
 
 ## What to do instead
 
-**Derive boundary cases from the type, not from imagination.** For each scalar,
+Derive boundary cases from the type, not from imagination. For each scalar,
 take the value at each limit, one either side, and the sign and zero variants.
 That enumeration is mechanical, so it can be written once and reviewed, where a
 hand-picked set cannot be checked for completeness at all.
 
-**Cover every codec with files rather than with copied constants.** As this is
-written, `testdata/canonical/` feeds `input.yaml` only, and JSON and TOML
-canonical form is asserted by a `canonicalJSON` constant hand-copied into three
-suites. Two of the three codecs are held level by copy-paste, which is how the
-JSON float divergence survived its own review.
+Cover every codec with files, not with copied constants. As this is written,
+`testdata/canonical/` feeds `input.yaml` only, and JSON and TOML canonical form
+is asserted by a `canonicalJSON` constant hand-copied into three suites. Two of
+the three codecs are held level by copy-paste, which is how the JSON float
+divergence survived its own review.
 
-**Exercise decode, not only encode.** Every number defect found the day after
+Exercise decode, not only encode. Every number defect found the day after
 FR-4.8 landed was a decode defect: they happen before an emitter runs, and a
 fixture that is only ever an input to encoding cannot see them. Task
 `parity/40` carries those.
@@ -82,48 +82,46 @@ DEL, the whole C1 block and five Unicode specials, the answer is 61. The C1
 range was invisible to the sample, and the error was sevenfold in the direction
 that flattered this repository's own pack.
 
-**A sample has no baseline, which is the deeper problem.** PyYAML alone, with no
+The deeper problem is that a sample has no baseline. PyYAML alone, with no
 wrench in the path, gives 6 ok, 61 unreadable, 3 changed. So the 61 is the
 parser's rule that no emitter can move, and wrench's Python pack is that
 baseline plus two escapes. The number that read as a score was a constant, and
 only the sweep and the baseline together showed which column varied: silent
 corruptions, 0, 0, 1.
 
-**So sweep the range and measure the baseline before quoting either.** The sweep
-is a loop over code points and the baseline is the same loop calling the library
+So sweep the range and measure the baseline before quoting either. The sweep is
+a loop over code points and the baseline is the same loop calling the library
 directly; neither needs the pack under test.
 
 ## Publish the set, not the verdict
 
 Both defects here were found by a consumer and this repository at once, and the
-mechanism was the same both times: one side published something checkable, a
-case list or an escape set, and the other checked it rather than agreeing with
+mechanism was the same both times: one side published something checkable (a
+case list or an escape set) and the other checked it instead of agreeing with
 it.
 
-**Agreement between two implementations is not evidence, and neither is
-agreement between two agents.** What made the exchange work is that each side
-could re-run the other's measurement and get a different answer, which is what
-happened: the consumer's "your escaping is strictly better than mine" survived
-neither sweep.
+Agreement between two implementations is not evidence, and neither is agreement
+between two agents. What made the exchange work is that each side could re-run
+the other's measurement and get a different answer, which is what happened: the
+consumer's "your escaping is strictly better than mine" survived neither sweep.
 
-The corollary is what to send. A verdict invites assent; a set invites a check.
+So send a set. A verdict invites assent; a set invites a check.
 
 ### Implementations of the same version are one witness, not three
 
 Three YAML parsers were asked whether raw U+2028 survives; all three said yes
 and all three were wrong. YAML 1.1 makes it a line break and 1.2 does not, so
-they agreed because they share an era rather than an argument.
+they agreed because they share an era, not an argument.
 
 A poll of implementations answers what happens here today, never what the
 contract is. Where a specification exists it is the only independent witness,
 and reading it took minutes where three probes took an hour and were confident.
 
-**The tell is a question about a rule wearing a question about behaviour's
-clothes.** "Does this round trip" is answerable by probing; "is this a line
-break" is not.
+The tell is a question about a rule disguised as a question about behaviour.
+"Does this round trip" is answerable by probing; "is this a line break" is not.
 
 ## What does not help
 
 Adding the value that just bit you. `floats-never-use-an-exponent` is now the
 tenth fixture and it closes this instance. It does nothing about the next scalar
-type, which is why the lesson is the enumeration rather than the case.
+type, which is why the lesson is the enumeration and not the case.

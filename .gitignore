@@ -10,9 +10,9 @@ START_HERE.md
 # egg-info lands beside the source rather than in a build directory.
 #
 # `build/` is here because building a wheel to check what it carries leaves one,
-# and the gate then GRADES it: measured 2026-08-28, `analyse` and `types` both
-# failed against copied sources under `python/build/`. The walk honours gitignore,
-# so ignoring it is what keeps the gate measuring the pack rather than a copy.
+# and the gate then grades it: `analyse` and `types` both fail against copied
+# sources under `python/build/`. The walk honours gitignore,
+# so ignoring it keeps the gate measuring the pack and not a copy.
 __pycache__/
 *.egg-info/
 build/
@@ -38,7 +38,7 @@ python/.coverage
 #
 # Named one at a time rather than as `bolt.*.yaml`, because that glob would also
 # swallow `bolt.wrench-quality.yaml` and `bolt.wrench.definitions.yaml`, which
-# are this repository's own files and ARE tracked.
+# are this repository's own files and are tracked.
 #
 # `bin/` cannot be ignored wholesale for the same reason: it holds wrench's own
 # checkers beside two links, so the two are named.

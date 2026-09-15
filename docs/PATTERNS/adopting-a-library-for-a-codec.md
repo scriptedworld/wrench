@@ -7,8 +7,8 @@ and `docs/SPEC.md` says what the adapters are.
 
 Not every maintained library is acceptable, and the test is not popularity. A
 library that loses a character through its own emitter cannot be adopted, and
-the loss is silent, so it has to be measured before the codec is written rather
-than discovered by a consumer.
+the loss is silent, so it has to be measured before the codec is written, not
+discovered by a consumer.
 
 ## Apply the adapters first, then measure
 
@@ -24,7 +24,7 @@ check.
 
 ## The acceptance check
 
-**A round trip over the control-character fixture, one code point at a time.**
+A round trip over the control-character fixture, one code point at a time.
 Encode, decode with the same library, and compare the string that comes back
 against the one that went in. A library passes only if every point survives.
 
@@ -34,14 +34,14 @@ It holds eleven values: NUL, BEL, tab, newline, escape, DEL, one C1, NEL, and
 the two Unicode line separators, plus a plain string for contrast. Widen it for
 the probe to the whole of C0 and the whole C1 range, and add the noncharacters
 and an astral character, because a reader that refuses what its own emitter
-wrote fails on those rather than on the named eleven.
+wrote fails on those and not on the named eleven.
 
 Write the probe in the language being measured, keep it under `.ephemera/`, and
 report the code points that were lost rather than a pass or a fail. A count of
 survivors says nothing about which character a consumer will hit.
 
-This is the check that decides adoption. Anything else about a library, its
-popularity, its release date, whose name is on it, is secondary to whether it
+This is the check that decides adoption. Anything else about a library (its
+popularity, its release date, whose name is on it) is secondary to whether it
 can write a document it can read.
 
 ## Then check it against the other packs

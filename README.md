@@ -31,7 +31,7 @@ Those were wrench's own packs, and no error was raised anywhere.
 Every pack now writes a float in positional decimal, never an exponent, with the
 shortest digits that read back identically, sorts map keys, quotes a string and
 a key so neither changes type on the way back, and escapes a control character
-rather than emitting it raw.
+instead of emitting it raw.
 
 Layout is not part of the promise. Two packs may indent a list differently or
 wrap a long line in different places, because no canonical form exists that all
@@ -55,17 +55,17 @@ No pack is the oracle for another: if two disagree, the fixture is right.
         --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' .
 
-A suite per pack, and a checker that compares them **against each other**. The
+A suite per pack, and a checker that compares them against each other. The
 parity check fails when a case is covered in one pack and missing from another,
 which is the only thing standing between "four libraries" and "one library with
 four bindings". It stands at the root because no pack can run it: a pack that
 could would have to know about its siblings.
 
-**Ruby is not in that command yet, and adding it reports 55 divergences.** Its
+Ruby is not in that command yet, and adding it reports 55 divergences. Its
 suite carries 16 `COVERS:` marks against the 67 the other three hold level, and
 no part of the gate runs it. `NEXT_STEPS.md` carries what is missing.
 
-**The contract is written down and traced to the tests.** `docs/REQUIREMENTS/`
+The contract is written down and traced to the tests. `docs/REQUIREMENTS/`
 holds one file per requirement, and every test names the requirement it
 discharges in a comment above it:
 
@@ -83,9 +83,9 @@ are load-bearing, so they are tested by being pointed at the wrong place:
     parity: suite 'go' matched no files at '*_test.go'
     exit 2
 
-That refusal is the point. Run with the correct globs it reports 67 tests held
-level across three suites, and a scan that found nothing must never be reported
-as a scan that found nothing wrong.
+A scan that found nothing must never be reported as a scan that found nothing
+wrong, so it refuses. Run with the correct globs it reports 67 tests held level
+across three suites.
 
 ## The two calls
 

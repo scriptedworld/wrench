@@ -58,7 +58,7 @@ Adding a scope marker to silence a parity failure is the one wrong use of it. A
 marker is for a row a pack cannot discharge; a row merely untested in one pack
 is the finding.
 
-**The Ruby pack is not in that command.** Adding `--suite
+The Ruby pack is not in that command. Adding `--suite
 ruby='ruby/test/*.rb'` reports 55 divergences and exits 1, because the pack is
 new and its suite covers 16 rows against the 67 the other three hold level.
 Neither a scope marker nor a deletion is the answer there: the tests are missing
@@ -96,9 +96,9 @@ key that was a string coming back as a number, a float spelled with an exponent,
 a null that reads as the empty string. Those four properties are the adapters
 `docs/SPEC.md` lists, and they are what a change here has to preserve.
 
-Emit through the language's library with those adapters on top. A hand-written
-emitter is what byte-identity used to force, it is where the defects turned up,
-and two packs still carry one. `packs-agree-on-structure-not-on-bytes` is the
+Emit through the language's library with those adapters on top. Hand-written
+emitters exist because the contract once asked for identical bytes. They are
+where the defects turned up, and two packs still carry one. `packs-agree-on-structure-not-on-bytes` is the
 argument and `adopting-a-library-for-a-codec` is the procedure.
 
 Parity is reached by widening. Where the packs differ, the one that handles more
@@ -142,8 +142,8 @@ a per-repository one, install to the name it dispatches to instead.
 The suites and the parity check are what a contributor runs, and they need
 nothing but this checkout.
 
-Beyond them, this repository is held to a **quality standard versioned in one
-place and adopted by every project that uses it**. The checkers, the adapters
+Beyond them, this repository is held to a quality standard versioned in one
+place and adopted by every project that uses it. The checkers, the adapters
 and the tool configuration live in a companion repository, `toolbox`, and a
 project adopts them as symlinks rather than as copies. One definition of what a
 passing repository looks like, changed once, and every adopter has the change.
@@ -152,9 +152,9 @@ That is the same argument this project makes about file formats: several
 implementations of one standard drift, and the fix is to give the standard a
 single owner. wrench owns the format; toolbox owns the gate.
 
-**The cost is that a clone of this repository alone has no gate.** The links
-point at a sibling that is not there yet, so the runner reports a definition it
-cannot read. That is adoption not yet run, rather than a broken checkout.
+The cost is that a clone of this repository alone has no gate. The links point
+at a sibling that is not there yet, so the runner reports a definition it cannot
+read. That means adoption has not run yet; the checkout is not broken.
 
 Clone `toolbox` beside this repository and run its linker:
 

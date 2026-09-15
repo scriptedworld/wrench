@@ -12,7 +12,7 @@ dotfiles first called the package an orphan swept up in a cleanup. A QEMU instal
 test was then mentioned, and dotfiles withdrew the orphan reading and marked it
 unverified.
 
-**The QEMU run was real and had nothing to do with the package.** It arrived
+The QEMU run was real and had nothing to do with the package. It arrived
 mid-investigation, it was true, and it moved the reading away from an answer
 that was correct. The package came in as a dependency of `llvm-19-tools`. Only
 the declaration was ever dotfiles', and the reason in its comment was invented.

@@ -1,28 +1,26 @@
 # What earns a place in the shipped set
 
 Four schemas ship. Nothing said why those four, or what a fifth would have to be,
-until silo asked whether a resolved execution graph would fit beside them on
-Answering meant reconstructing a criterion that had never been
-written down, which is the sort of thing that should not live in one session's
-head.
+until silo asked whether a resolved execution graph would fit beside them.
+Answering meant reconstructing a criterion that had never been written down, and
+a criterion like that should not live only in somebody's memory.
 
 ## The test, in three parts
 
 **1. The file crosses a boundary between two components.** It has a producer and
 a consumer, and they are different things. That is what makes its form a contract
-rather than an implementation detail, and a contract is the only thing wrench
-owns.
+and not an implementation detail, and a contract is the only thing wrench owns.
 
-**2. A schema over it can refuse something.** Not "is well-formed", but refuses a
-document somebody could plausibly write. A schema that cannot fail is
+**2. A schema over it can refuse something.** More than "is well-formed": it
+refuses a document somebody could plausibly write. A schema that cannot fail is
 documentation wearing a checker's clothes.
 
-**3. The form is the ecosystem's vocabulary rather than two tools' private
+**3. The form is the ecosystem's vocabulary, not two tools' private
 arrangement.** bolt, wrench and toolbox share a language, and a schema in the
 shipped set is a word in it. A file whose producer and consumer both sit outside
 that language crosses a boundary without crossing this one.
 
-**bolt is a generic runner, and the set inherits that.** It runs declared command
+bolt is a generic runner, and the set inherits that. It runs declared command
 lines over a file set for anybody; the envelope is a workflow standard it uses
 because a fixed shape is an easier thing for scripts to adjudicate than free
 output. So a document tied to one vendor's agent product is out of scope by
@@ -43,18 +41,18 @@ without its used count means nothing. It was added to the shipped set on exactly
 that reasoning and taken back out, because the only thing that reads it is an
 operator keeping an eye on context consumption across a handful of agents. That
 is a convenience between two tools, not something bolt, wrench or toolbox needs
-to agree about, and its subject is a Claude Code session, which a generic runner
+to agree about. Its subject is also a Claude Code session, which a generic runner
 has no business having a word for.
 
-**Parts 1 and 2 are satisfied by almost any file two programs share**, so a test
-carrying only those two grows the set by whatever happens to have a reader. The
-question is not whether a file has a consumer. It is whether this ecosystem
-would be missing a word without it.
+Parts 1 and 2 are satisfied by almost any file two programs share, so a test
+carrying only those two grows the set by whatever happens to have a reader. What
+matters is whether this ecosystem would be missing a word without the file, and
+having a consumer does not answer that.
 
-**Such a schema still belongs somewhere**, and that somewhere is the tool that
-owns the file, handed to `compile_schema`. Validation on the way out is
-FR-2.4 and does not require shipping: a producer gets its file checked before
-anything reads it, and the shipped set stays the ecosystem's own vocabulary.
+Such a schema still belongs somewhere, and that somewhere is the tool that owns
+the file, handed to `compile_schema`. Validation on the way out is FR-2.4 and
+does not require shipping: a producer gets its file checked before anything
+reads it, and the shipped set stays the ecosystem's own vocabulary.
 
 ## The four, against it
 
@@ -68,39 +66,39 @@ anything reads it, and the shipped set stays the ecosystem's own vocabulary.
     definitions  a person writes it, a runner substitutes from it. Refuses a
                  nested value, which is the whole shape of the thing.
 
-**Authored against produced is not the axis.** Two of the four are written by a
+Authored against produced is not the axis. Two of the four are written by a
 person and two by a runner, and the set does not care. A produced document needs
 no new category, which is the first thing the question got wrong.
 
 ## What does not earn a place
 
-**An internal representation.** One component writing a file it alone reads is
+An internal representation. One component writing a file it alone reads is
 free to change its form whenever it likes, and a schema there converts a private
 choice into a public promise for nothing.
 
-**A document whose only real invariant is referential integrity.** JSON Schema
+A document whose only real invariant is referential integrity. JSON Schema
 cannot say "this string must equal one of the `name` values elsewhere in this
 document". So for a document whose defining property is that its references
-resolve, the one thing worth checking is the one thing a schema cannot check, and
-what is left is shape the producer cannot get wrong.
+resolve, the one thing to check is the one thing a schema cannot check, and what
+is left is shape the producer cannot get wrong.
 
 A resolved execution graph is the worked example of both. It is derived from a
 jig by the runner that will execute it, its edges pointing at nodes that exist is
-its whole point, and nobody writes one by hand for a schema to refuse.
+what it is for, and nobody writes one by hand for a schema to refuse.
 
 ## The trigger that changes the answer
 
-**A second producer.** The moment two components emit the same kind of document,
-a schema earns its place immediately, and for the reason FR-5.7 already states:
-two implementations of one contract with nothing holding them level is the
-failure the shipped set exists to prevent.
+A second producer. The moment two components emit the same kind of document, a
+schema earns its place immediately, and for the reason FR-5.7 already states:
+two implementations of one contract with nothing holding them level is what the
+shipped set is there to stop.
 
-Watch for it rather than deciding in advance. A document with one producer today
+Watch for it instead of deciding in advance. A document with one producer today
 and two next quarter earns its schema then, and adding one is additive.
 
 **A schema is not the same as agreement.** It can require the string `success`
 and cannot make two engines mean the same thing by it. Where two implementations
-must agree on *behaviour* rather than on form, the thing to share is the code
+must agree on *behaviour* and not merely on form, the thing to share is the code
 that decides, or a fixture set that holds both to the same answers. That is what
 `testdata/canonical/` does for the packs here, and it is why the packs are level
 where a schema alone would not have made them so.

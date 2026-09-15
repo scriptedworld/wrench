@@ -1,7 +1,7 @@
 # The Python pack is installed after mise, not before it
 
 Answers FR-7.4, which asked how the pack reaches its bootstrap consumer. It has
-no bootstrap consumer, so the question dissolved rather than being decided.
+no bootstrap consumer, so the question dissolved without needing a decision.
 
 ## The premise that failed
 
@@ -27,40 +27,39 @@ So the bootstrap window needs no YAML, no validation, and nothing from wrench.
 ## Where it is installed instead
 
 Into the standard mise-managed Python through a `python_projects` list, or via
-`uv tool` if it ever becomes a tool rather than a module to import. Both land
-after mise exists.
+`uv tool` if it ever becomes a tool and not a module to import. Both land after
+mise exists.
 
-That list does not exist yet, so this is intent relayed at one remove rather
-than something measured. `python_projects` has never appeared in
-`packages.toml`, on any branch, in any commit.
+That list does not exist yet, so this is intent relayed at one remove, not
+something measured. `python_projects` has never appeared in `packages.toml`, on
+any branch, in any commit.
 
 ## What it changes here
 
-**FR-6.1 and FR-6.2 keep their property and lose their justification.** Importing
+FR-6.1 and FR-6.2 keep their property and lose their justification. Importing
 by name and running from a source checkout are still true and still wanted, for
-reasons of their own rather than because an interpreter without pip has to cope.
+reasons of their own, not because an interpreter without pip has to cope.
 
 The editable install this once required is gone with the same premise. The pack
 carries the shipped schemas as generated source, so it resolves them without
 reference to where it sits and every install form works.
 `every-pack-compiles-the-schemas-in` has that.
 
-**Nothing gets declared or vendored on dotfiles' account.** Not `python3-yaml`,
+Nothing gets declared or vendored on dotfiles' account. Not `python3-yaml`,
 not `python3-jsonschema`, and no vendored copy.
 
-**Nothing wrench holds ever rested on `python3-yaml`**, which is the only part
-wrench needed settled, and it is settled by the route above rather than by what
-that package turns out to be. It is an artefact rather than a floor: it arrived
-as a dependency of `llvm-19-tools`, the line declaring it in dotfiles invented a
-reason, and that declaration is gone at dotfiles `bf38481` while the package
-stays installed. Removing it would take `llvm-19-dev` and `llvm-19-tools` with
-it.
+Nothing wrench holds ever rested on `python3-yaml`, which is the only part
+wrench needed settled, and the route above settles it whatever that package
+turns out to be. It is an artefact, not a floor: it arrived as a dependency of
+`llvm-19-tools`, the line declaring it in dotfiles invented a reason, and that
+declaration is gone at dotfiles `bf38481` while the package stays installed.
+Removing it would take `llvm-19-dev` and `llvm-19-tools` with it.
 
-**Whether `jsonschema` is imported lazily is wrench's own call**, on wrench's
+Whether `jsonschema` is imported lazily is wrench's own call, on wrench's
 merits, with no external constraint. The reason to keep it at module level is
-that the pack validates and validation is the point; a lazy import would trade a
-clear failure at import for an obscure one at first use, and buy nothing now
-that no caller lacks the module.
+that the pack exists to validate; a lazy import would trade a clear failure at
+import for an obscure one at first use, and buy nothing now that no caller lacks
+the module.
 
 ## What is still owed, and it is dotfiles'
 

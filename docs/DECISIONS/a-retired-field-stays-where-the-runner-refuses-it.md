@@ -37,7 +37,7 @@ retired feature was replaced by.
 
 ## The general form
 
-**An earlier error is not automatically a better one.** The argument for
+An earlier error is not automatically a better one. The argument for
 dropping was that the schema accepts a document the runner will refuse, putting
 the error a layer later than it could be. Later is worse only when the earlier
 layer can say as much. Here it cannot, and the measurement is the difference
@@ -54,15 +54,14 @@ should reach for. `config-dir` said *"Where the child looks for jigs. Left out,
 it inherits."* Nothing in that sentence suggests no runner has read it since
 bolt `f3304d8`.
 
-That is the defect the task found without naming: not a schema describing too
-much, but a schema describing a dead feature as a live one. Each description now
-opens with the retirement, and the `oneOf` branch carries why it is kept, so the
-next reader deciding this question finds the measurement rather than repeating
-it.
+That is the defect the task found without naming. The schema did not describe
+too much; it described a dead feature as a live one. Each description opens with
+the retirement, and the `oneOf` branch carries why it is kept, so the next reader
+deciding this question finds the measurement instead of repeating it.
 
 ## Where the compatibility surface was
 
-The bolt session scanned all 35 jigs in the estate. Beyond wrench's own two
+bolt scanned all 35 jigs in the estate. Beyond wrench's own two
 tasks, nothing used these fields, and nothing used `short-circuit-failure`,
 `time-limit`, `optional` or `adapter-command` either. `bolt.wrench-quality.yaml`
 was the whole surface, which is why this could be settled on its merits rather

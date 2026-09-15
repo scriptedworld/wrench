@@ -6,8 +6,8 @@ and the only reason anybody found out was that it was asked to refuse something.
 
 ## What happened
 
-`core.hooksPath` is set in `~/.gitconfig` to `~/.git-hooks`. **git then consults
-that directory and no other**, so `.git/hooks/` is dead in every repository on
+`core.hooksPath` is set in `~/.gitconfig` to `~/.git-hooks`. git then consults
+that directory and no other, so `.git/hooks/` is dead in every repository on
 this machine. There is no warning, no message, and `ls -l .git/hooks/pre-commit`
 shows exactly what a working installation shows.
 
@@ -30,10 +30,9 @@ available short of making it refuse is consistent with both.
 
 `docs/LESSONS/a-check-that-answers-a-weaker-question.md` names the class, and
 bolt's file of that name is the collection. Every instance ran and measured the
-wrong thing,
-so every one produced output that could be read sceptically. **This one produced
-none**, which is the harder case: scepticism has nothing to bite on, and the
-absence of a complaint is what a passing check looks like.
+wrong thing, so every one produced output that could be read sceptically. This
+one produced none, which is the harder case: scepticism has nothing to bite on,
+and the absence of a complaint is what a passing check looks like.
 
 ## What to do instead
 
@@ -51,9 +50,9 @@ land, and the exit status alone would not say so. Here that is HEAD:
     ...attempt...
     [ "$before" = "$(git rev-parse HEAD)" ] && echo REFUSED
 
-**The probe belongs in the record.** A script that
-builds a throwaway repository, gives it a hook that only refuses, commits, and
-reports whether the commit landed. It regenerates the reading in a second, and
+The probe belongs in the record: a script that builds a throwaway repository,
+gives it a hook that only refuses, commits, and reports whether the commit
+landed. It regenerates the reading in a second, and
 it fails loudly if the finding ever goes stale.
 
 ## What it also caught, immediately
@@ -63,5 +62,5 @@ in `bin/test-requirement-count.py` had wrapped so the pragma spelling opened a
 line, and the register read the prose as a bare pragma silencing the whole file.
 That is the same wrapping hazard the file's own comment was describing.
 
-**A guard earns its place by refusing something on the day it lands.** This one
-did, on a defect nothing else in the estate was positioned to see.
+So the hook refused something on the day it landed, and it was a defect nothing
+else in the estate was positioned to see.

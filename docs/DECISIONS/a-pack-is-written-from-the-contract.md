@@ -3,27 +3,27 @@
 ## The decision
 
 Each language pack is written from `docs/REQUIREMENTS/` and the schemas. Reading an
-existing pack to find out what to build is the thing this rule exists to prevent.
+existing pack to find out what to build is what this rule forbids.
 
 ## Why
 
 Otherwise the first implementation's accidents become the specification. A pack
 written by reading the Go one inherits every choice Go made for Go's reasons,
-and the contract silently becomes "whatever the Go pack does". That is the
-provenance failure this whole ecosystem exists to avoid: a document that
-describes an implementation is not a specification, it is a transcript.
+and the contract silently becomes "whatever the Go pack does". That is a
+provenance failure: a document that describes an implementation is a transcript
+of it, and a transcript is not a specification.
 
 The contract is settled first and stated independently of any implementation, so
-a second pack agreeing with the first is evidence the contract is complete rather
-than evidence one was copied.
+a second pack agreeing with the first is evidence the contract is complete, not
+evidence one was copied.
 
 ## The Python pack did not meet this, and the guarantee is weaker than it reads
 
-The Python pack was written by the session that had just
-written the Go pack, with the Go source in context. Independence cannot be
-claimed for it, and that was recorded at the time rather than reconstructed later.
+The Python pack was written straight after the Go pack, with the Go source in
+context. Independence cannot be claimed for it, and that was recorded at the
+time, not reconstructed later.
 
-**What actually holds the two packs level is the shared fixture set**, and that
+What actually holds the two packs level is the shared fixture set, and that
 does hold: both packs produce byte-identical canonical output
 for all five cases in `testdata/canonical/`, each checked by its own suite.
 
@@ -31,12 +31,12 @@ So the guarantee in force is "two implementations agree on a declared set of
 cases", not "two implementations were derived independently". Those are different
 strengths and only the first has been demonstrated.
 
-**The next pack is where this decision can still be kept**, whichever of Rust,
+The next pack is where this decision can still be kept, whichever of Rust,
 TypeScript or Ruby it turns out to be. Write it from
 `docs/REQUIREMENTS/` and `schemas/`, run it against `testdata/canonical/`, and do
 not open `go/wrench.go` or `codec.py` while doing it. If the contract turns out to
-be insufficient to write a pack from, that is the finding, and it is worth more
-than a third pack that agrees because it was copied.
+be insufficient to write a pack from, that is the finding, and it says more than
+a third pack that agrees because it was copied.
 
 ## Retired requirement ID
 

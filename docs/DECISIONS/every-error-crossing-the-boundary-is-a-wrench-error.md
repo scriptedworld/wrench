@@ -8,9 +8,9 @@ caller has to know a dependency to name.
 
 A consumer writing `except wrench.ValidationError` or
 `errors.As(&wrench.ParseError{})` should not have to know that wrench binds
-PyYAML rather than ruamel, or santhosh-tekuri rather than another validator. **If
-the bound library is visible in the error type, it is part of the contract**, and
-swapping it becomes a breaking change for every consumer rather than an
+PyYAML and not ruamel, or santhosh-tekuri and not another validator. If the
+bound library is visible in the error type, it is part of the contract, and
+swapping it becomes a breaking change for every consumer instead of an
 implementation detail.
 
 It is the same failure as the float defect one layer up: a library's choice
@@ -48,40 +48,40 @@ All three are now zero.
 
 ## The rule
 
-1. **Every public entry point returns wrench's own error type.** Not only the
-   two calls. A codec, a schema, an IO boundary and `compile_schema` are all
-   public, so all of them are boundaries.
-2. **The cause is preserved, never swallowed.** Python `raise ... from err`, Go
+1. Every public entry point returns wrench's own error type. Not only the two
+   calls. A codec, a schema, an IO boundary and `compile_schema` are all public,
+   so all of them are boundaries.
+2. The cause is preserved, never swallowed. Python `raise ... from err`, Go
    `%w`, Rust `#[source]`. A caller who genuinely wants the underlying type can
-   still reach it; what changes is that they must ask rather than be handed it.
-3. **The message names the step.** FR-2.6's distinction between parse and
-   validate extends downward rather than stopping at the two calls.
+   still reach it; what changes is that they must ask for it.
+3. The message names the step. FR-2.6's distinction between parse and validate
+   extends downward and does not stop at the two calls.
 
-## What it costs, stated rather than discovered
+## What it costs
 
-**Python is the one that can break somebody.** `except yaml.ParserError` around a
+Python is the one that can break somebody. `except yaml.ParserError` around a
 direct `YAML.decode` stops catching once the wrap lands, and no base-class trick
 fixes that without inheriting from every library's exception. The documented API
 is the two calls, which already wrap, and the pack was early enough that nothing
 depended on the leaked types; that was the argument for doing it before a
 consumer came to rely on one.
 
-**Go is compatible.** Wrapping with `%w` keeps `errors.Is` and `errors.As`
-working against the underlying type, so a consumer doing either keeps working
-and gains the wrench type.
+Go is compatible. Wrapping with `%w` keeps `errors.Is` and `errors.As` working
+against the underlying type, so a consumer doing either keeps working and gains
+the wrench type.
 
-**Rust is a signature change.** Returning `Error` rather than
+Rust is a signature change. Returning `Error` in place of
 `Box<dyn Error + Send + Sync>` from the traits is what makes the guarantee real,
-and it is the change a consumer notices at compile time rather than at runtime,
-which is the better of the two.
+and a consumer notices it at compile time, not at runtime, which is the better of
+the two.
 
 ## What this is not
 
-**Not hiding the cause.** A wrapped error that discards what happened is worse
+It does not hide the cause. A wrapped error that discards what happened is worse
 than a leaked one, because the leak at least says what went wrong. Every wrap
 carries its source, and the tests assert the source is reachable.
 
-**Not a reason to invent an error per library.** The set is fixed at seven by
+It is not a reason to invent an error per library. The set is fixed at seven by
 FR-2.11: `read`, `parse`, `schema`, `validate`, `encode`, `write` and `usage`.
 What `compile_schema` needed was the open question when this was decided, and
 `schema` is the answer; `usage` came with it, for a call made wrongly before any

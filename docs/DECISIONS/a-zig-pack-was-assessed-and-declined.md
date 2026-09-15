@@ -7,7 +7,7 @@ not being built. Nothing is blocked on it and no consumer is waiting.
 
 Not because a Zig consumer exists. The question was whether Zig is what to reach
 for when something must be small and fast, in the role Go and Rust hold. That
-makes it a question about the language rather than about wrench, and wrench was
+makes it a question about the language more than about wrench, and wrench was
 the convenient place to ask it because a pack is a known quantity of work with a
 fixture set that judges it.
 
@@ -18,7 +18,7 @@ Rust is faster per document by about three times, and the crossover is around
 three documents per process. So the case for Zig is a binary that has to be
 small and is invoked once, which is not the shape of anything here.
 
-The blockers were tooling and churn rather than capability. Zig ships no
+The blockers were tooling and churn, not capability. Zig ships no
 coverage tool at all, which matters because coverage is judged per file and
 never settled by excluding one. And of thirteen Zig libraries built against
 0.16.0, three do not compile and three more hide a working library behind a
@@ -36,9 +36,9 @@ names each library by remote and commit with what it passed. And the
 measurement, in `docs/LESSONS/a-measurement-can-be-too-small-to-hold-what-it-measures.md`,
 which carries both the figures and the reason the first set of them was wrong.
 
-Those exist so that reopening this costs a read rather than a fortnight. Ask
-again when something needs a small single-shot binary, and start from the
-shortlist rather than from a search sorted by stars.
+With those, reopening this costs a read instead of a fortnight. Ask again when
+something needs a small single-shot binary, and start from the shortlist, not
+from a search sorted by stars.
 
 ## What this does not decide
 

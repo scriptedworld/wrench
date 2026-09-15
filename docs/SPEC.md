@@ -25,8 +25,8 @@ settle every case:
 - Where the spelling is lossless, coerce. A YAML timestamp decodes to its ISO
   8601 string (FR-2.9), the value being carried whole by the text it was
   written as.
-- Where it is not, refuse. A mapping key that is not a string is refused rather
-  than stringified, because the coercion is not reversible.
+- Where it is not, refuse. A mapping key that is not a string is refused, not
+  stringified, because the coercion is not reversible.
 
 This is what makes one schema validate a file whichever codec read it (FR-3.3),
 and what makes a codec substitutable at all. A pack whose YAML decoder hands
@@ -86,7 +86,7 @@ inventing a source and a source without inventing a format (FR-2.5).
 | `Writer` | `write(path, bytes)` | The IO on the way out. Puts the whole contents in place. |
 | `Schema` | `validate(value)` | Applies to the decoded structure, not the text. |
 
-**A reader is handed the path rather than bytes** (FR-2.5a). Handing it bytes
+A reader is handed the path, not bytes (FR-2.5a). Handing it bytes
 would put the open where the caller is, and a test substituting a reader would
 then be replacing the parse alone. Handed the path, a substituted reader
 exercises every validation path against no filesystem at all.
@@ -114,7 +114,7 @@ languages emits its canonical form, and the hand-written emitters that stood in
 for one wrote a document they could not read back. FR-2.7 carries the defect and
 the three source lines it came from.
 
-**The codec is named, never inferred from the suffix.** Choosing a parser by
+The codec is named, never inferred from the suffix. Choosing a parser by
 filename makes behaviour depend on what a file is called, and renaming a file
 would silently change how it is read. That is the implicitness FR-2.2 exists to
 remove, so reintroducing it at the wrapper would undo the design one layer up.
@@ -140,7 +140,7 @@ Seven kinds, spelled identically in every pack:
 
 The first six are steps of the two calls and appear in the sequences above.
 `usage` is the seventh and sits outside them: a missing schema, codec, reader or
-writer. **Rust cannot produce it**, because the same call does not compile
+writer. Rust cannot produce it, because the same call does not compile
 there, and a pack in a language with the same property is right to omit it.
 
 The kinds are the vocabulary a consumer matches on, so a pack exposes them as
@@ -159,13 +159,12 @@ consumer unwraps once to reach the cause.
 
 Canonical form belongs to the save call (FR-4.3), so a caller cannot emit
 something valid but written another way. Each codec has one output for one
-structure, and that output is no longer promised to be a sibling pack's.
+structure, and that output is not promised to be a sibling pack's.
 
 **The packs agree on structure, not on bytes** (FR-5.5). Any pack's output must
 decode to the same value in every other pack, and a difference in whitespace is
-not a defect. Byte-identity was the older promise and cannot be kept alongside
-library emission: no canonical form exists that all four languages' YAML
-libraries can produce, libyaml writing block sequences indentless and
+not a defect. Byte identity cannot be kept alongside library emission: no
+canonical form exists that all four languages' YAML libraries can produce, libyaml writing block sequences indentless and
 hard-coding it while Go's `yaml.v3` indents them and offers only `SetIndent`.
 `packs-agree-on-structure-not-on-bytes` carries the measurement and what the
 change costs.
@@ -196,14 +195,14 @@ that reads back as something else, which is why they are the contract and the
 layout is not.
 
 An emitter in the libyaml family takes two settings beside them, both settings
-rather than code: the line width off, so a long scalar is never wrapped, and
+and not code: the line width off, so a long scalar is never wrapped, and
 unicode passed through rather than escaped. libyaml spells them `set_width(-1)`
 and `set_unicode(true)`, and Psych takes `line_width` on the dump. Go's
 `yaml.v3` offers neither and needs neither: `SetIndent` is the whole of its
 emitter API, its own width and unicode functions being unexported, and it wrote
 a 9,689-character scalar on one line.
 
-**The quoting adapter is what makes escaping possible at all**, so it is not
+The quoting adapter is what makes escaping possible at all, so it is not
 independent of the others. A single-quoted YAML scalar has no escapes, so a
 control character in one is written raw and read back as something else.
 Quote every string and the emitter escapes what it must.
@@ -234,11 +233,11 @@ library, that being the part of the library every pack found correct. No value
 is refused for carrying a control character.
 
 The packs do not all agree on which non-ASCII characters they escape, and under
-structural agreement that is no longer a defect by itself. What is a defect is a
+structural agreement that is not a defect by itself. What is a defect is a
 pack that cannot read its own output, and one still cannot: `NEXT_STEPS.md`
 carries the measurement.
 
-**A value with no canonical form is refused rather than guessed at** (FR-4.1).
+A value with no canonical form is refused, never guessed at (FR-4.1).
 A new codec inherits that rule before it decides anything of its own.
 
 ## The schemas
@@ -263,7 +262,7 @@ They stay files in the tree so a YAML language server can be pointed at one
 while a jig is being written. A pack compiles them in to link a single static
 binary, and what it compiles in is those same bytes.
 
-**A pack discovers them by reading the directory** (FR-3.7), never from a list
+A pack discovers them by reading the directory (FR-3.7), never from a list
 of filenames a person maintains. No compiler here can read a directory, so each
 pack reads it in a generator instead: Rust in `build.rs` on every build, Go and
 Python in `bin/generate-shipped.py` into a committed file. A schema added to
@@ -274,7 +273,7 @@ prevent. The gate task `shipped-schemas-are-current` runs the generator with
 `--check`, which compares bytes and names the stale file. Rust has no such task,
 having no committed copy to go stale.
 
-**A schema is named by the `$id` it declares, never by its filename** (FR-3.6).
+A schema is named by the `$id` it declares, never by its filename (FR-3.6).
 A relative filename resolves against whatever directory the process started in,
 which puts a local absolute path into a message that travels inside an envelope.
 
@@ -290,16 +289,16 @@ There are three tiers and they are the whole of it (FR-3.10a):
     the shipped set        by the $id a schema declares   resolve
     anything else                                         refused
 
-**The tier is decided by the resolved reference, never by its text** (FR-3.10b).
+The tier is decided by the resolved reference, never by its text (FR-3.10b).
 A relative `$ref` resolves against the document's `$id`, so the same string is a
 different reference in a different document, and where a document declares no
 `$id` the compile name is the base instead. Measured in all three packs.
 
-**A keyword in an instance is data** (FR-3.10c). `$ref`, `$id` and `$schema` are
+A keyword in an instance is data (FR-3.10c). `$ref`, `$id` and `$schema` are
 keywords in a schema and ordinary keys in the document being validated. Nothing
 interprets them there, including a `file://` reference whose target exists.
 
-**The refusal reads the same in every pack** (FR-3.10d): `cannot resolve <the
+The refusal reads the same in every pack (FR-3.10d): `cannot resolve <the
 resolved reference>: a schema may reference the shipped schemas and its own
 fragments, and nothing else`, as a `schema` error. Three packs refuse by three
 mechanisms (a loader, a registry with nothing else in it, and a retriever), and
@@ -311,7 +310,7 @@ files only, and did nothing at all in Rust. `SECURITY.md` carries what was
 measured and why Rust's `default-features = false` was never the guarantee it
 read as.
 
-**A document may declare its format version** as a semver string at the top
+A document may declare its format version as a semver string at the top
 level, optional (FR-3.9). Absent claims nothing, which is every document written
 before the field existed. Present, a consumer can refuse a major it does not
 understand. The definitions format does not carry one, being an open mapping
@@ -354,8 +353,8 @@ The two hand-written YAML emitters are what
 are still in place. A pack written now emits through its library with the four
 adapters; the older two are the shape being replaced, not the shape to copy.
 
-**Every pack exposes the same set of schemas** (FR-5.7), and each checks itself
-against the directory rather than against another pack. A schema present in one
+Every pack exposes the same set of schemas (FR-5.7), and each checks itself
+against the directory, not against another pack. A schema present in one
 pack and absent from another is a divergence in the contract, so agreement
 follows from each pack answering to the one authority. The Ruby pack does not
 carry the shipped set at all yet: it compiles a schema a caller hands it and has
@@ -379,7 +378,7 @@ Adding a scope marker to silence a parity failure is the one wrong use of it:
 the marker is for a row a pack cannot discharge, and a row merely untested in
 one pack is the finding.
 
-**The fixture set still compares bytes, and the contract no longer does.** Each
+The fixture set compares bytes, and the contract does not. Each
 of the twelve cases holds an `input.yaml` and a `canonical.yaml`, and the Go,
 Python and Rust suites assert their output equals that golden file. That is a
 stricter test than FR-5.5 now asks for, and those three packs pass it; the Ruby
@@ -408,7 +407,7 @@ platform package and a pip install satisfy it identically.
 
 ## What this does not specify
 
-Named so a reader stops looking rather than concluding the answer is implied.
+Named so a reader stops looking instead of concluding the answer is implied.
 
 **Which schema is the right one for a document.** The signature compels a
 schema and cannot check that it is the correct one (FR-2.3).
@@ -425,7 +424,7 @@ one layer later.
 **The shape of `metadata.evidence` and `metadata.statistics` in the envelope.**
 Both carry a description and no type, so a producer may write either as a
 string, a list, a mapping or a number and validation passes.
-the inbox entry `the-envelope-schema-does-not-constrain-evidence` holds a
+The inbox entry `the-envelope-schema-does-not-constrain-evidence` holds a
 real producer's shape and the range of options.
 
 **Which type a number comes back as within the widened range.** The range rule

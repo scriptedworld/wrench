@@ -4,8 +4,8 @@
 
 bolt embedded an older copy of these schemas. A jig whose only fault was
 `version: 1` passed under the deployed binary and was refused under a rebuilt
-one, at `/version`, got number want string. The old build was issuing false
-greens rather than merely being out of date, and every gate result in the estate
+one, at `/version`, got number want string. The old build was not merely out
+of date; it was issuing false greens, and every gate result in the estate
 from before it was replaced came from the older schema.
 
 The schemas had been committed here. Nothing carried them to the consumer until
@@ -31,8 +31,8 @@ A restrictive change lets an unrebuilt consumer keep accepting what this
 repository now refuses, which is what produced the false greens.
 
 An additive change hands an unrebuilt consumer a key its schema does not know,
-and what happens then belongs to that consumer's unknown-key policy rather than
-to this contract. Answered "fail", every additive change breaks every consumer
+and what happens then belongs to that consumer's unknown-key policy, not to this
+contract. Answered "fail", every additive change breaks every consumer
 that has not rebuilt. Answered "warn", the field is inert while its author sees
 it accepted, which is quieter and worse.
 
@@ -46,12 +46,11 @@ still passes there.
 nothing about when each read the schema. `bin/test-suite-parity.py` compares
 `COVERS:` marks and says nothing about it either.
 
-The reason no guard here can close it is worth being exact about, because it
-decides where a fix could live. Every guard in this repository compares packs on
-the same input by construction, and given the same schema bytes all three agree,
-which is what the fixture set proves. What differs is which bytes each is
-holding at a given instant, and that is a property of how the estate builds
-rather than of the packs.
+Why no guard here can close it decides where a fix could live. Every guard in
+this repository compares packs on the same input by construction, and given the
+same schema bytes all three agree, which is what the fixture set proves. What
+differs is which bytes each is holding at a given instant, and that is a
+property of how the estate builds, not of the packs.
 
 A version stamp that consumers assert against could catch it, by moving the
 disagreement somewhere a run reports it. Treating it as a hole in wrench would
@@ -59,5 +58,5 @@ accept blame for the estate's build topology and send the next reader looking
 for a fix where none can exist.
 
 It is bounded today by there being one shared bolt binary, so there is one stale
-schema rather than several. That holds while `~/bin/bolt` is a single file, and
+schema and not several. That holds while `~/bin/bolt` is a single file, and
 nothing states it as a requirement.

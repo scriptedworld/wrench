@@ -93,8 +93,8 @@ JSON Schema validator, and each was written from the same contract.
 | YAML | `go.yaml.in/yaml/v3` | `PyYAML` | `yaml-rust2` | Psych |
 | JSON | `encoding/json` | `json` | `serde_json` | `json` |
 
-Twelve independent implementations across four languages. **None of them agrees
-with the others about how to spell an ordinary value**, and none raises an error
+Twelve independent implementations across four languages. None of them agrees
+with the others about how to spell an ordinary value, and none raises an error
 about it.
 
 TOML was a fourth row and is retired: no maintained library in any of these
@@ -113,7 +113,7 @@ wrench's own packs, and every test passed:
 | `1000000.0` | `1e+06` | `1000000.0` | `1000000.0` |
 | `1e21` | `1e+21` | `1e+21` | `1000000000000000000000.0` |
 
-**Floats are the main one.** Every pack now writes positional decimal, never an
+Floats are the main one. Every pack now writes positional decimal, never an
 exponent, with the shortest digits that read back as the same float, and a whole
 number keeps its `.0` so it never reads back as an integer.
 
@@ -124,36 +124,36 @@ consumer parsing with a naive numeric pattern reads correctly, which is how the
 defect was found: `1e+06` matched by `[0-9.]+` yields `1`. The cost is bounded
 at 326 characters for a subnormal.
 
-**Control characters** are escaped rather than emitted raw.
+Control characters are escaped, never emitted raw.
 
-**Keys, quoting and null** are the other three. Keys are sorted, every string
-and every key is quoted so nothing changes type on the way back, and a null is
-written as the word rather than as an empty value.
+Keys, quoting and null are the other three. Keys are sorted, every string and
+every key is quoted so nothing changes type on the way back, and a null is
+written as the word, not as an empty value.
 
-**Layout is not part of it.** Two packs may indent a list differently or wrap a
+Layout is not part of it. Two packs may indent a list differently or wrap a
 long line in different places. What they are held to is that any pack's output
 decodes to the same value in every other pack, because no canonical form exists
 that all four languages' YAML libraries can emit.
 
-**What holds it true is not intent.** A shared fixture set in
-`testdata/canonical/` is read by the Go, Python and Rust packs, and the
-suite-parity check refuses to pass over an emptiness: pointed at a glob matching
-no files it exits 2 rather than reporting success. The Ruby pack is in neither
-yet, so treat its output as measured rather than as gated.
+Intent is not what holds it true. A shared fixture set in `testdata/canonical/`
+is read by the Go, Python and Rust packs, and the suite-parity check refuses to
+pass over an emptiness: pointed at a glob matching no files it exits 2 rather
+than reporting success. The Ruby pack is in neither yet, so treat its output as
+measured, not gated.
 
 ## How this repository gates itself, if yours has several packs
 
 wrench is one repository holding four independent libraries, so the gate runs at
 two levels and the split is deliberate.
 
-**Each pack gates itself.** `just checks` runs `_each checks`, and every pack
-runs the language jig for its own language plus the common one. A pack knows
-nothing about its siblings.
+Each pack gates itself. `just checks` runs `_each checks`, and every pack runs
+the language jig for its own language plus the common one. A pack knows nothing
+about its siblings.
 
-**The root runs what no pack can.** `bin/test-suite-parity.py` fails when one
-pack's suite covers something another's does not, and it reads them all at once.
-A pack that could run it would have to know about its siblings, which is what
-the layering exists to prevent.
+The root runs what no pack can. `bin/test-suite-parity.py` fails when one pack's
+suite covers something another's does not, and it reads them all at once. A
+pack that could run it would have to know about its siblings, and the layering
+is there so that no pack does.
 
     just checks        each pack, then the parity check
     just test          the suite in every pack
@@ -164,7 +164,7 @@ the `Justfile` is `go python rust`, so every recipe above runs nothing Ruby and
 exits 0 having done so. Whatever fans out in your own repository, make the list
 it fans over fail loudly when a directory is missing from it.
 
-**The Justfile is where the coordination lives, not the jig.** Bolt can compose
+The coordination lives in the Justfile, not the jig. Bolt can compose
 by running itself against a subdirectory and taking the verdict, and that is the
 right tool when the subprojects are unlike each other. Here they are several
 implementations of one contract, checked identically and then compared, so a
@@ -201,5 +201,4 @@ fresh clone has no gate until you do.
 path travelling with the jig resolves against `{config_dir}`, a path belonging
 to your project stays relative to your root.
 
-**A float changing across a round trip** is the defect wrench exists to prevent.
-Report it.
+**A float changing across a round trip** is a defect in wrench. Report it.

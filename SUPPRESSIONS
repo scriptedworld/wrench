@@ -1,15 +1,14 @@
 Register.
 
 Every `# nosec` in this repository appears below, with the question that was
-asked and the answer that was given. A pragma nobody justified is what this file
-exists to prevent, so an entry here is the justification and not a record that
-one was wanted.
+asked and the answer that was given. No pragma goes in unjustified, so an entry
+here is the justification and not a record that one was wanted.
 
 ## B404 and B603, the subprocess in the Python suite
 
-**Asked 2026-08-28. Answered: allowed.**
+Asked 2026-08-28. Answered: allowed.
 
-**Two lines are allowed, not the module.** Both pragmas are line-scoped, which
+Two lines are allowed, not the module. Both pragmas are line-scoped, which
 is how bandit applies them, so a second `subprocess.run` added anywhere in this
 suite is reported and is not covered by anything here.
 
@@ -18,13 +17,13 @@ suite is reported and is not covered by anything here.
 
 Those are the lines as of wrench `8d27c06`. A line number drifts, so the source
 text is quoted beside it: if the number no longer names that text, this entry is
-describing something that has moved and needs re-reading rather than trusting.
+describing something that has moved and needs re-reading before it is trusted.
 
 Both sit in `test_the_pack_is_importable_without_an_install`, and bandit reports
 `B404 blacklist` for the import and
 `B603 subprocess_without_shell_equals_true` for the call.
 
-**The question.** `test_the_pack_is_importable_without_an_install` discharges
+The question: `test_the_pack_is_importable_without_an_install` discharges
 FR-6.1, which says the pack imports from a source checkout with no install
 having run. The only way to observe that is a fresh interpreter, which means a
 subprocess. Bandit is right that a subprocess is worth looking at and wrong that
@@ -32,13 +31,13 @@ this one is a risk: the argument vector is a literal, the executable is
 `sys.executable`, no shell is involved, and nothing in it comes from outside the
 test.
 
-**Why config could not do it.** The shared jig invokes `bandit -r -q --skip B101
+Config could not do it. The shared jig invokes `bandit -r -q --skip B101
 tests` and passes no `-c`, so bandit never reads `[tool.bandit]` from
 `pyproject.toml` and a configured skip would not be seen. A skip that did reach
 it would also apply to the `security` task over the pack's own source, which
 would weaken a check that currently passes on its merits.
 
-**What is deliberately not suppressed.** `B101 assert_used` is skipped by the
+Some things are deliberately not suppressed. `B101 assert_used` is skipped by the
 jig itself, on its own reasoning, and no pragma here touches it. The `security`
 task over `python/wrench/` carries no suppressions at all.
 
@@ -47,37 +46,35 @@ task over `python/wrench/` carries no suppressions at all.
     python/tests/test_wrench.py   # nosec B404
     python/tests/test_wrench.py   # nosec B603
 
-**The paths are relative to the repository root, whichever base the checker is
-scanning from.** `common-quality` runs at each pack's own base, so a register
+The paths are relative to the repository root, whichever base the checker is
+scanning from. `common-quality` runs at each pack's own base, so a register
 serving more than one of them cannot be written in any single scan's frame. The
 checker resolves both sides against the repository, found by walking up for
 `.git`, which is the frame a person writes in anyway.
 
-That is a toolbox change, and it closes a defect in the shared register. These
-rows were briefly written in the scan frame as a workaround for that defect,
-and are back to the root spelling they started with.
+That is a toolbox change, and it closes a defect in the shared register.
 
-**A row for a pack this scan does not cover is left alone rather than reported
-gone.** That is the half that makes one register serve two bases: without it, a
+A row for a pack this scan does not cover is left alone, not reported gone.
+That is the half that makes one register serve two bases: without it, a
 scan at `python/` would call every Go row a pragma that had vanished. A row
 naming a file that exists nowhere is still a phantom wherever it sits, because
 no other scan would catch it either.
 
-**One row per pragma, not one per file.** The checker keys on the set of codes a
+One row per pragma, not one per file. The checker keys on the set of codes a
 single pragma carries, so the two lines above are two entries of one code each
 rather than one entry carrying both. Registering them together reads as a third
 pragma silencing `B404` and `B603` at once, which is not what the source has.
 
-**This register is checked, since toolbox `6ac4304` on 2026-08-28**, which
-taught `bin/suppression-register.py` every language rather than Go alone. It had
-previously matched gosec's `G\d+` and not bandit's `B\d+`, so it passed
-vacuously here. wrench symlinks the checker, so the upgrade took effect with no
-change in this repository and the gate failed on the two rows above being
-spelled for a reader rather than for the checker.
+This register is checked from toolbox `6ac4304`, which taught
+`bin/suppression-register.py` every language and not Go alone. Before it the
+checker matched gosec's `G\d+` and not bandit's `B\d+`, so it passed vacuously
+here. wrench symlinks the checker, so the upgrade reached this repository with
+no change here, and the two rows above are spelled for the checker, not for a
+reader.
 
 ## SLF001, the guard that no public entry point can reach
 
-**Asked 2026-09-04. Answered: allowed, one line.**
+Asked 2026-09-04. Answered: allowed, one line.
 
     python/tests/test_json_canonical_refusals.py    # noqa: SLF001
 
@@ -87,15 +84,15 @@ constants built from the generated set, so the name and the set agree by
 construction. It is a guard against the set and the constants coming apart,
 which is a programming error rather than an input.
 
-**The question.** A guard nothing exercises is a guard whose message nobody has
+The question: a guard nothing exercises is a guard whose message nobody has
 read, and this one names the name precisely because "no shipped schema" with no
 subject tells a reader nothing. Reaching the private class is the only way to
 see it fire. The alternative was leaving `wrench/schema.py` at 77.8% of branches
-against the 80% the gate began enforcing on 2026-09-04, which would have been a
-coverage failure settled by not looking — hard rule 5's case exactly.
+against the 80% the gate enforces. That would have been a coverage failure
+settled by not looking, which is exactly the case hard rule 5 covers.
 
-**One line, and it is line-scoped.** A second private access anywhere in this
+One line, and it is line-scoped. A second private access anywhere in this
 suite is reported and is covered by nothing here.
 
-**What would retire this entry**: `_Shipped` gaining a public constructor, which
-nothing wants, or the guard becoming unreachable and being deleted with its test.
+This entry retires if `_Shipped` gains a public constructor, which nothing
+wants, or if the guard becomes unreachable and is deleted with its test.

@@ -41,7 +41,7 @@ emitters are still in the tree, in the Python and Rust packs.
 ## What to take from it
 
 A comparison between two things built from one description tests the building,
-not the description. Where the answer has to be right rather than consistent,
+not the description. Where the answer has to be right and not merely consistent,
 put the check somewhere that does not share the assumption: a round trip through
 the pack's own reader, or a library that was written by somebody who never read
 this contract.

@@ -13,9 +13,9 @@ spells a function.
 
 ## Why
 
-**What the packs share is behaviour, not identifiers.** A pack that spelled its
+What the packs share is behaviour, not identifiers. A pack that spelled its
 calls in another language's convention would be a foreign object in every codebase
-that used it, and the cost lands on every call site rather than once here.
+that used it, and the cost would land on every call site instead of once here.
 
 ## Why it is written down
 
@@ -30,9 +30,9 @@ This matters most for the packs not yet built.
     TypeScript  loadFormattedFile    saveFormattedFile
 
 Rust and Ruby spell functions in snake case, so both match the contract directly.
-**TypeScript does not**, and camel case is what its ecosystem expects, so it
+TypeScript does not, and camel case is what its ecosystem expects, so it
 transforms the contract exactly as Go does. Two of the four planned packs
-therefore rename, which is the rule working rather than an exception to it.
+therefore rename, and that is the rule working, not an exception to it.
 
 ## A pack may widen an argument's type to its language's idiom
 
@@ -44,8 +44,8 @@ That is the same rule as the naming, applied to a type: what the packs share is
 behaviour, and a `pathlib.Path` has always worked here because every path
 reaches the shipped IO through `Path(path)`. Annotating the parameter `str`
 reported four errors in the first consumer to type-check against the pack, on
-calls that run correctly, which is an annotation narrower than the contract
-rather than a contract the consumer broke.
+calls that run correctly. The annotation was narrower than the contract; the
+consumer had broken nothing.
 
 Widening the surface does not widen the seams. A path is normalised once on the
 way in, so a `Reader` or `Writer` is handed one type and an error message quotes

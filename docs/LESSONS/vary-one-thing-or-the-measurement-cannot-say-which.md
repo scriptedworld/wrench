@@ -3,7 +3,7 @@
 ## What happened
 
 bolt's summary line prints a number that reads as a count of failures and is not
-one. Two sessions measured it.
+one. It was measured twice, from two repositories.
 
 skid measured three runs: two jigs, two repositories, three different failure
 counts.
@@ -42,10 +42,9 @@ variable, and the explanation set collapses to one.
 It is cheap here and it is cheap generally: run B was the same command as run A
 after a fix landed. The instrument was one extra invocation.
 
-**So when a measurement surprises you, ask what else moved.** Three packs
-spelling a float three ways varied pack and codec together, and needed a
-baseline, the library alone with wrench out of the path, before the numbers
-meant anything.
+So when a measurement surprises you, ask what else moved. Three packs spelling a
+float three ways varied pack and codec together, and needed a baseline (the
+library alone, with wrench out of the path) before the numbers meant anything.
 `docs/LESSONS/a-fixture-set-agrees-about-the-values-somebody-thought-of.md`
 carries that instance.
 
@@ -53,18 +52,18 @@ carries that instance.
 
 wrench sent skid a two-part claim: the count is the total, and the label follows
 the verdict. skid could verify the first three times and the second not at all,
-and recorded the second as wrench's claim rather than as measured.
+and recorded the second as wrench's claim, not as measured.
 
-That was correct and the reason is worth having exactly. In skid's own words:
+That was correct, and skid put the reason exactly:
 
 > I had no way to check the second half, and "cannot verify" is a cheaper rule
 > to follow than "sounds coherent, be suspicious".
 
-**A coherent pair is what makes an unverified half easy to absorb.** The
-verified half lends its credit to the other one, and both arrive looking
-measured. No amount of suspicion scales to catching that; a convention that asks
-how do I know this, rather than does this sound right, does, because it is
-answerable without judgement.
+A coherent pair is what makes an unverified half easy to absorb. The verified
+half lends its credit to the other one, and both arrive looking measured. No
+amount of suspicion scales to catching that; a convention that asks how do I
+know this, rather than does this sound right, does, because it is answerable
+without judgement.
 
 Both halves are facts now and the entry still keeps them marked apart, so a
 reader who later finds the count behaves differently on the Rust bolt knows
@@ -76,21 +75,21 @@ wrench ran bolt's `target/release` binary, got one refusal message, and only
 tried `target/debug` because the wording did not match what bolt had quoted. Two
 builds, opposite answers, same probe.
 
-**The mismatch was visible only because both sides had quoted the exact output.**
+The mismatch was visible only because both sides had quoted the exact output.
 "The refusal names the field" and "task child carries the retired jig field" are
 the same claim, and only the second can be noticed to differ from what the other
 party is holding. A summary cannot disagree with a summary.
 
-**So the check that fired was not measuring.** wrench's habit is to re-run a
-claim rather than cite it, and running the wrong binary is re-running it: the
-check does not fail, it does not happen, and from the inside that is
-indistinguishable from it passing. What caught it was measuring and having
-something to disagree with. Either alone fails, because a message with no
-measurement is one unverified claim, and a measurement with no second source
-returns whatever the artifact says and reports it as fact.
+So the check that fired was not measuring. wrench's habit is to re-run a claim
+instead of citing it, and running the wrong binary is re-running it: the check
+does not fail, it does not happen, and from the inside that is indistinguishable
+from it passing. What caught it was measuring and having something to disagree
+with. Either alone fails, because a message with no measurement is one
+unverified claim, and a measurement with no second source returns whatever the
+artifact says and reports it as fact.
 
 bolt's `docs/LESSONS/a-second-build-answers-for-the-tree.md`, `960edbb`, carries
-the case and the rule it ends on. The half worth having here is why a stale
+the case and the rule it ends on. The part that matters here is why a stale
 binary beats a stale document: a document is read as prose and weighed, where a
 binary is run and its output is evidence, so it defeats a
 measure-rather-than-believe habit by supplying a measurement.
