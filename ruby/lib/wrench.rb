@@ -10,25 +10,24 @@ require_relative "wrench/yaml_codec"
 # wrench reads, writes and validates the form of the ecosystem's structured
 # files. This is the Ruby pack.
 #
-# THE TWO CALLS ARE THE WHOLE OF FILE HANDLING, FR-2.1:
+# The two calls are the whole of file handling, FR-2.1:
 #
 #     load_formatted_file(path, schema, codec, reader) -> value
 #     save_formatted_file(value, path, schema, codec, writer)
 #
 # Load reads, decodes, then validates. Save validates, encodes, then writes.
-# Validating on the way out is not symmetry for its own sake: it stops a caller
-# writing a structure wrench would refuse to read back, FR-2.4, so a file
-# produced by a save always survives a load.
+# Validating on the way out stops a caller writing a structure wrench would
+# refuse to read back, FR-2.4, so a file produced by a save always survives a
+# load.
 #
 # The schema argument cannot be omitted, FR-2.2. It can be wrong, and no part of
 # this library detects that, FR-2.3.
 #
-# TWO CODECS SHIP, YAML AND JSON. TOML was the third and is retired, FR-2.7: no
-# maintained library in any of the four languages could emit its canonical form,
-# and the hand-written emitters written instead wrote documents they could not
-# read back.
+# Two codecs ship, YAML and JSON. TOML is retired, FR-2.7: no maintained library
+# in any of the four languages can emit its canonical form, and the hand-written
+# emitters tried in its place wrote documents they could not read back.
 module Wrench
-  # The codecs, named rather than inferred from a filename. Choosing a parser by
+  # The codecs, named and never inferred from a filename. Choosing a parser by
   # suffix would make behaviour depend on what a file is called, and renaming a
   # file would silently change how it is read.
   YAML = YAML_CODEC

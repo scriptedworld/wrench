@@ -3,7 +3,7 @@
  *
  * FR-4.8. Positional decimal, never an exponent. The digits are the shortest
  * decimal string that reads back as the same double, placed with the decimal
- * point where it belongs rather than moved into an `e`. A whole float keeps a
+ * point where it belongs instead of moved into an `e`. A whole float keeps a
  * `.0`, so it never reads back as an integer.
  *
  * The rule carries no threshold on purpose. Every alternative needs a magnitude
@@ -14,15 +14,15 @@
  * which is how this defect was found.
  *
  * The cost is bounded: 326 characters for a subnormal near the bottom of the
- * range, 311 for the largest finite double. Both measured against the Python
- * pack's `canonical_float_text`, which produces the same strings.
+ * range, 311 for the largest finite double. The Python pack's
+ * `canonical_float_text` produces the same strings for both.
  *
- * JAVASCRIPT HAS ONE NUMBER TYPE, so unlike every other pack this one cannot be
+ * JavaScript has one number type, so unlike every other pack this one cannot be
  * told whether a value is an integer or a float. It is decided by the value:
  * a safe integer is written as an integer, and everything else as a float. That
  * is also what makes the widening FR-4.10 asks for visible here, because a
- * literal past 2^53 arrives already rounded and is written with a `.0` rather
- * than as an exact-looking integer it is not.
+ * literal past 2^53 arrives already rounded and is written with a `.0` instead
+ * of as an exact-looking integer it is not.
  */
 
 /**

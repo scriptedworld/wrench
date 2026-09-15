@@ -12,20 +12,20 @@ The form is `deno fmt` clean, and that is deliberate. `bolt.wrench-quality.yaml`
 already runs `deno fmt --check` over `schemas/*.json`, so a second answer about
 JSON layout would put two formatters in one repository.
 
-**The structure is walked by hand, and only because of floats.** `json.dumps`
-was correct about everything else and offers no supported hook for how a number
+The structure is walked by hand, and only because of floats. `json.dumps`
+is correct about everything else and offers no supported hook for how a number
 is spelled: with `indent` set the pure-Python encoder runs, and it formats every
 float with `float.__repr__` taken as a default argument, which a subclass cannot
 override and which no parameter reaches. `repr` chooses an exponent on a
 threshold of its own, so it disagrees with this pack's YAML codec and with the
 other packs. FR-4.8 states one spelling.
 
-**The walk is a float adapter wearing a walk's clothes**, and the Ruby pack
-shows the smaller version: it hands the library a pre-spelled fragment through
-`to_json` and keeps every other decision. Python has no equivalent seam, which
-is why this one is shaped as it is, and it is the reason to keep looking for
-one. `docs/DECISIONS/packs-agree-on-structure-not-on-bytes.md` is the rule it
-answers to now.
+In effect the walk is a float adapter, and the Ruby pack shows the smaller
+version: it hands the library a pre-spelled fragment through `to_json` and
+keeps every other decision. Python has no equivalent seam, which is why this
+one is shaped as it is, and a reason to keep looking for one.
+`docs/DECISIONS/packs-agree-on-structure-not-on-bytes.md` is the rule it
+answers to.
 
 String escaping still goes through `json.dumps`, which is the part of the
 library that is right, so this walk owns layout and numbers and nothing else.
@@ -49,7 +49,7 @@ class JSONCodec:
 
         `json.JSONDecodeError` does not cross this boundary; the cause is kept.
 
-        `_normalise` is shared with the YAML and TOML codecs rather than
+        `_normalise` is shared with the YAML and TOML codecs, not
         reimplemented, so an integer past int64 widens to a float here on the
         same terms. json.loads produces Python's unbounded int, which is the one
         type no other pack has.
@@ -70,7 +70,7 @@ class JSONCodec:
 def _json_int(text: str) -> int | float:
     """One integer literal, as the value JSON gives it.
 
-    NEGATIVE ZERO IS A VALUE IN JSON AND NOT A SPELLING OF ZERO. JavaScript is
+    Negative zero is a value in JSON, not a spelling of zero. JavaScript is
     the reference for what a JSON document means, and V8 reads `-0` as a signed
     zero: `Object.is(JSON.parse("-0"), -0)` is true and `1/x` is -Infinity. An
     integer zero cannot carry the sign, so this is the one literal with no

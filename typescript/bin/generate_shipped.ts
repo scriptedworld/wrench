@@ -4,15 +4,15 @@
  *     deno task shipped            write it
  *     deno task shipped:check      fail when it is stale, naming the file
  *
- * A PACK DISCOVERS THE SCHEMAS BY READING THE DIRECTORY (FR-3.7), never from a
+ * A pack discovers the schemas by reading the directory (FR-3.7), never from a
  * list of filenames a person maintains. TypeScript cannot read a directory at
  * compile time any more than the other packs' compilers can, so the reading
  * happens here and the result is committed, exactly as Go's and Python's do.
  *
- * The committed copy is the cost, and it is the drift FR-3.2 exists to prevent.
- * What holds it current is `--check`, run by this pack's own suite rather than
- * by a gate task: a check inside the suite fails wherever the suite runs, and
- * needs nothing added to a jig that three other sessions are working in.
+ * The committed copy is the cost, and FR-3.2 forbids it drifting. What holds it
+ * current is `--check`, run by this pack's own suite and not by a gate task: a
+ * check inside the suite fails wherever the suite runs, and needs nothing added
+ * to the shared jig.
  *
  * The target is excluded from `deno fmt` in `deno.json`, and that is what makes
  * the two checks agree. The formatter breaks a long string literal onto its own

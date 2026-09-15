@@ -6,23 +6,23 @@
  * because the gate already runs `deno fmt --check` over `schemas/*.json` and a
  * second answer about JSON layout would put two formatters in one repository.
  *
- * THE RUNTIME EMITS AND THIS ADDS TWO ADAPTERS. `JSON.stringify` is already
- * canonical form for everything but ordering and floats, which is why JSON
- * needed no hand-written emitter in any pack. Both adapters are supported hooks
- * rather than text this file writes:
+ * The runtime emits and this module adds two adapters. `JSON.stringify` is
+ * already canonical form for everything but ordering and floats, which is why
+ * JSON needs no hand-written emitter in any pack. Both adapters are supported
+ * hooks, not text this file writes:
  *
- *   sort the keys       a replacer ARRAY names the properties and their order,
+ *   sort the keys       a replacer array names the properties and their order,
  *                       so one sorted list of every key in the tree orders
  *                       every mapping in it
  *   positional floats   FR-4.8, through `JSON.rawJSON`, which is the standard
  *                       way to hand the serialiser digits it must not respell
  *
- * THE ORDERING ADAPTER IS NOT OPTIONAL AND NOT COSMETIC. An object's own
- * property order is not insertion order: an integer-like key is enumerated
- * first, in ascending numeric order, whatever order it was written in. So
- * rebuilding an object with its keys inserted sorted produces `2` before `10`,
- * where every other pack sorts as strings and writes `10` before `2`. Measured
- * against the parity tree's `keys_needing_order`.
+ * The ordering adapter is required. An object's own property order is not
+ * insertion order: an integer-like key is enumerated first, in ascending
+ * numeric order, whatever order it was written in. So rebuilding an object with
+ * its keys inserted sorted produces `2` before `10`, where every other pack
+ * sorts as strings and writes `10` before `2`. The parity tree's
+ * `keys_needing_order` shows the difference.
  */
 
 import { EncodeError, ParseError } from "./errors.ts";
@@ -39,14 +39,13 @@ export class JSONCodec implements Codec {
    * Bytes into maps, lists and scalars.
    *
    * A `SyntaxError` from the parser does not cross this boundary; the cause is
-   * kept, so a consumer catches one family rather than knowing which parser
-   * wrench binds.
+   * kept, so a consumer catches one family without knowing which parser wrench
+   * binds.
    *
-   * NEGATIVE ZERO IS A VALUE IN JSON AND NOT A SPELLING OF ZERO. JavaScript is
-   * the reference for what a JSON document means and V8 reads `-0` as a signed
-   * zero, which is what FR-4.11 records. Nothing here has to arrange that: it
-   * is what the runtime already does, and this pack is the one where that
-   * behaviour is native rather than reproduced.
+   * Negative zero is a value in JSON, not a spelling of zero. JavaScript is the
+   * reference for what a JSON document means and V8 reads `-0` as a signed
+   * zero, which is what FR-4.11 records. Nothing here has to arrange that: this
+   * is the one pack where that behaviour is native and not reproduced.
    */
   decode(data: Uint8Array | string): WrenchValue {
     try {
@@ -102,9 +101,9 @@ function collectKeys(value: unknown, into: Set<string>): Set<string> {
  * string escaping included, is the runtime's and is the part every pack found
  * correct.
  *
- * A value with no canonical form is refused here rather than emitted, because
+ * A value with no canonical form is refused here, not emitted, because
  * `JSON.stringify` writes `null` for a NaN and for an infinity, which is a
- * different document rather than a failure.
+ * different document instead of a failure.
  */
 function withRawNumbers(value: unknown): unknown {
   if (typeof value === "number") return rawJSON(canonicalNumberText(value));
@@ -125,5 +124,5 @@ function withRawNumbers(value: unknown): unknown {
   throw new TypeError(`cannot write ${typeof value} in canonical form`);
 }
 
-/** The codec, named rather than inferred from a filename. */
+/** The codec, named and never inferred from a filename. */
 export const JSON_CODEC: JSONCodec = new JSONCodec();

@@ -18,13 +18,13 @@ module Wrench
   #           The format. Knows nothing about where bytes came from.
   #           `encode` emits canonical form.
   #   Reader  read(path) -> bytes
-  #           The IO on the way in. HANDED THE PATH, NOT THE BYTES.
+  #           The IO on the way in. Handed the path, not the bytes.
   #   Writer  write(path, bytes)
   #           The IO on the way out. Puts the whole contents in place.
   #   Schema  validate(value)
   #           Applies to the decoded structure, not the text.
   #
-  # A READER IS HANDED THE PATH RATHER THAN BYTES, FR-2.5a. Handing it bytes
+  # A reader is handed the path and not bytes, FR-2.5a. Handing it bytes
   # would put the open where the caller is, and a test substituting a reader
   # would then be replacing the parse alone. Handed the path, a substituted
   # reader exercises every validation path against no filesystem at all.
@@ -42,9 +42,9 @@ module Wrench
 
     # The bytes, in place, atomically (FR-6.3).
     #
-    # They go to a temporary file BESIDE the target and are renamed over it, so
+    # They go to a temporary file beside the target and are renamed over it, so
     # a concurrent reader sees the previous contents or the new ones and never a
-    # half-written file. Beside rather than in a temporary directory, because a
+    # half-written file. Beside it and not in a temporary directory, because a
     # rename across filesystems is a copy and stops being atomic.
     def write(path, bytes)
       target = File.expand_path(path.to_s)

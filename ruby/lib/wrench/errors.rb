@@ -5,14 +5,14 @@
 # raise and no consumer ever handles Psych::SyntaxError or JSON::ParserError.
 #
 # A failing call says which step failed. `step` is the vocabulary a consumer
-# matches on, exposed as data rather than only as a class, because bolt writes
-# one into a reason's `kind`.
+# matches on, exposed as data and not only as a class, because bolt writes one
+# into a reason's `kind`.
 #
-# THESE SUBCLASS StandardError AND NOTHING NARROWER. The contract forbids
+# These subclass StandardError and nothing narrower. The contract forbids
 # hanging them off a language's semantic error hierarchy: a validation failure
 # can be a wrong type, which `'three' is not of type 'integer'` demonstrates,
 # and Ruby's TypeError and ArgumentError each exclude half of what a schema
-# refuses. StandardError is Ruby's rescuable base rather than a claim about what
+# refuses. StandardError is Ruby's rescuable base and makes no claim about what
 # went wrong, which is the same position Python's pack takes with Exception.
 module Wrench
   # Anything wrench raises.
@@ -55,7 +55,7 @@ module Wrench
 
   # The structure did not match the schema.
   #
-  # A SUBCLASS OF NEITHER TypeError NOR ArgumentError, deliberately. Validation
+  # A subclass of neither TypeError nor ArgumentError, deliberately. Validation
   # spans both: a wrong type and a wrong value are the same failure here.
   class ValidationError < Error
     def self.step = "validate"
@@ -86,6 +86,6 @@ module Wrench
   end
 
   # Every step word, in the order the contract lists them. Exposed so a consumer
-  # can enumerate the vocabulary rather than restating it.
+  # can enumerate the vocabulary instead of restating it.
   STEPS = %w[read parse schema validate encode write usage].freeze
 end

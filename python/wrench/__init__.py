@@ -165,9 +165,9 @@ def save_formatted_file(data: Any, path: StrPath, schema: Schema, codec: Codec, 
 # These add no behaviour. Each supplies one argument to the two calls above, so
 # validation still sits in the signature and the seam is unchanged.
 #
-# NAMED RATHER THAN INFERRED FROM THE SUFFIX. Choosing a parser by filename makes
-# behaviour depend on what a file is called, so renaming one would silently
-# change how it is read. FR-2.2 exists to remove exactly that implicitness.
+# The format is named, never inferred from the suffix. Choosing a parser by
+# filename makes behaviour depend on what a file is called, so renaming one
+# would silently change how it is read. FR-2.2 forbids that implicitness.
 
 
 def load_yaml_file(path: StrPath, schema: Schema, reader: Reader) -> Any:
@@ -205,10 +205,10 @@ def _path(path: StrPath) -> str:
 def _require(schema: object, codec: object, io: object, io_name: str) -> None:
     """The signature compels a schema. None is the one way round that in a
     language with no compile-time check, and it is refused here so the
-    guarantee holds rather than being a convention.
+    guarantee holds instead of being a convention.
 
-    Typed as `object` because the whole point is to receive what the annotations
-    say cannot arrive. Rust needs no equivalent: there the same call does not
+    Typed as `object` because its job is to receive what the annotations say
+    cannot arrive. Rust needs no equivalent: there the same call does not
     compile, which is why it is the one pack that cannot raise `usage`.
     """
     if schema is None:

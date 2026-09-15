@@ -6,15 +6,15 @@ producer drifting apart while both believe they conform.
 
 Compiling is deferred until something validates against a schema, so importing
 wrench costs nothing and a broken schema surfaces as an error from the call that
-needed it rather than at import.
+needed it instead of at import.
 
-THE ID, NOT THE FILENAME, is what a schema is called in an error. A relative
+A schema is called by its id in an error, never by its filename. A relative
 filename resolves against whatever directory the process happened to start in,
 which puts a local absolute path into a message that travels inside an envelope.
 
 Every shipped schema is registered by its own `$id` before any of them compiles,
 so one may reference another. A shape two files both need is then written once
-instead of copied, which is the drift a shipped schema exists to prevent.
+instead of copied, and cannot drift.
 """
 
 from __future__ import annotations
@@ -48,9 +48,9 @@ SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schemas"
 def unresolved(uri: str) -> str:
     """The one sentence every pack gives for a reference it will not follow.
 
-    It names the reference as RESOLVED rather than as written, because a relative
+    It names the reference as resolved, not as written, because a relative
     `$ref` resolves against the document's `$id` and the two can look nothing
-    alike. Measured 2026-09-03: `/tmp/x.schema.json` under an `$id` of
+    alike: `/tmp/x.schema.json` under an `$id` of
     `https://elsewhere.invalid/root.json` resolves to
     `https://elsewhere.invalid/tmp/x.schema.json`, and quoting what was written
     would send a reader looking for the wrong thing.
@@ -115,7 +115,7 @@ class Schema:
         """Check a decoded structure, raising ValueError describing the first
         problem and where in the document it sits.
 
-        Compiled here rather than at construction, so importing wrench costs
+        Compiled here and not at construction, so importing wrench costs
         nothing and a broken schema surfaces from the call that needed it.
         """
         # Held in a local through the lazy build, because reading the attribute
@@ -150,18 +150,17 @@ class Schema:
         """The reference a resolution failure was about, resolved against this
         schema's base so every pack names the same thing.
 
-        `referencing.exceptions.Unresolvable` carries it on `ref` AS WRITTEN,
+        `referencing.exceptions.Unresolvable` carries it on `ref` as written,
         where the Go loader and the Rust retriever are both handed it already
-        resolved. Measured 2026-09-03: a `$ref` of `sibling.schema.json` under
-        an `$id` of `https://elsewhere.invalid/root.json` reached this pack as
+        resolved. A `$ref` of `sibling.schema.json` under an `$id` of
+        `https://elsewhere.invalid/root.json` reaches this pack as
         `sibling.schema.json` and the other two as
-        `https://elsewhere.invalid/sibling.schema.json`. Resolving it here is
-        what makes one sentence in three packs a sentence about one thing.
+        `https://elsewhere.invalid/sibling.schema.json`. Resolving it here makes
+        the one sentence all three packs give name the same reference.
 
-        `str(cause)` is the fallback rather than the first choice: the repr of
-        an exception prepends its own class name, which put
-        `cannot resolve Unresolvable: ...` into the message the first time this
-        was written.
+        `str(cause)` is only the fallback: the repr of an exception prepends its
+        own class name, which puts `cannot resolve Unresolvable: ...` into the
+        message.
         """
         reference = getattr(cause, "ref", None)
         if reference is None:
@@ -210,19 +209,19 @@ def compile_schema(name: str, document: str | dict[str, Any]) -> Schema:
     The shipped set are not special: anything in the ecosystem can attach a
     schema to its own structured files and hand it to the same two calls.
 
-    A caller's schema MAY reference a shipped one by its `$id`, because the
+    A caller's schema may reference a shipped one by its `$id`, because the
     shipped registry is handed to it. That is the case a consumer most wants: an
-    adapter extending the envelope schema references it rather than copying it,
-    and a copy is the drift FR-3.2 exists to prevent.
+    adapter extending the envelope schema references it instead of copying it,
+    and FR-3.2 forbids the drift a copy invites.
 
-    It may reference NOTHING ELSE, and there is no way to ask for more. The
+    It may reference nothing else, and there is no way to ask for more. The
     registry is always supplied, so `jsonschema`'s own retrieval is never
     reachable: a reference it does not hold raises rather than being fetched.
     """
     # Neither `json.JSONDecodeError` nor `jsonschema.SchemaError` crosses this
     # boundary. A caller should not have to know which JSON parser or which
-    # validator wrench binds in order to catch a schema that will not compile,
-    # and both types were reaching consumers until this wrap. The cause is kept.
+    # validator wrench binds in order to catch a schema that will not compile.
+    # Without this wrap both types reach consumers. The cause is kept.
     try:
         parsed = json.loads(document) if isinstance(document, str) else document
     except Exception as err:

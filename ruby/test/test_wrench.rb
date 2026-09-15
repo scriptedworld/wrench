@@ -8,18 +8,18 @@ require "wrench"
 
 # The Ruby pack's suite.
 #
-# Nothing here is mocked. A reader is handed a path rather than bytes precisely
+# Nothing here is mocked. A reader is handed a path and not bytes precisely
 # so a test can substitute one without a filesystem, and where a file is wanted
 # the test writes a real one into a temporary directory.
 class TestWrench < Minitest::Test
   # The shared parity tree, the same 53 keys every pack is measured against, so
-  # a divergence here is a divergence from the other packs rather than from a
+  # a divergence here is a divergence from the other packs and not from a
   # fixture only this pack has.
   #
-  # A COPY, BESIDE THE SUITE, AND NOT THE ONE IN .ephemera. It was read from
-  # there first, and `.gitignore` holds that directory out, so `git archive HEAD`
-  # carried this file and not the tree it loads: the suite passed here and could
-  # not run in a clone. A test fixture is part of the pack.
+  # A tracked copy beside the suite, never a path into .ephemera. `.gitignore`
+  # holds that directory out, so a suite loading the tree from there passes
+  # locally, and `git archive HEAD` carries the suite without the tree, so it
+  # cannot run in a clone. A test fixture is part of the pack.
   TREE = JSON.parse(File.read(File.join(__dir__, "parity-tree.json"))).freeze
 
   ANY = Wrench.compile_schema("anything", {}).freeze
@@ -63,7 +63,7 @@ class TestWrench < Minitest::Test
 
   # COVERS: FR-4.1 | property
   def test_a_string_keeps_its_type_through_a_round_trip
-    # The point of quoting every string. Unquoted, a YAML reader takes each of
+    # Why every string is quoted. Unquoted, a YAML reader takes each of
     # these for something else, and `1.20` loses its trailing zero as a number.
     tricky = { "a" => "no", "b" => "yes", "c" => "on", "d" => "null",
                "e" => "~", "f" => "1.20", "g" => "007", "h" => "12:30:45" }
@@ -135,7 +135,7 @@ class TestWrench < Minitest::Test
 
   # COVERS: FR-2.5a | property
   def test_a_reader_is_handed_the_path_and_can_be_substituted
-    # No filesystem at all. This is what handing the reader a path rather than
+    # No filesystem at all. This is what handing the reader a path and not
     # bytes buys: a substituted reader exercises decode and validate together.
     seen = []
     reader = Object.new

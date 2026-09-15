@@ -1,11 +1,11 @@
 /**
  * The YAML codec: bytes to a structure, and a structure to canonical bytes.
  *
- * THE LIBRARY EMITS AND THIS ADDS FOUR ADAPTERS. Nothing here writes a
+ * The library emits and this module adds four adapters. Nothing here writes a
  * character of YAML: layout, indentation, escaping and line breaks are all
- * js-yaml's, and its escape table is the one that ships. The adapters exist
- * because they preserve MEANING rather than layout, which is what
- * `packs-agree-on-structure-not-on-bytes` holds every pack to:
+ * js-yaml's, and its escape table is the one that ships. The adapters preserve
+ * meaning, not layout, which is what
+ * docs/DECISIONS/packs-agree-on-structure-not-on-bytes.md holds every pack to:
  *
  *   sort the keys                two runs over one structure must agree
  *   quote every string and key   `no`, `1.20`, `null` and `10` stay what they
@@ -16,22 +16,22 @@
  *   null written as the word     an empty value and a missing one should not
  *                                look the same to a reader
  *
- * WHICH LIBRARY, AND WHY IT IS NOT THE OTHER ONE. Both maintained TypeScript
- * YAML libraries survive the acceptance check, which is a round trip of the
- * control-character fixture through the library's own reader. `yaml` 2.9.0 then
- * fails the requirement the check is a proxy for: its double-quoted escaping is
- * driven by `JSON.stringify`, which escapes nothing above U+001F, so U+007F,
- * U+0085, U+00A0, U+2028, U+2029 and U+FEFF are written RAW. Its own reader
- * takes them back, and Python's does not: ruamel refuses the whole document
- * with `unacceptable character #x007f`. A file no sibling pack can read is not
+ * Why js-yaml and not `yaml`. Both maintained TypeScript YAML libraries survive
+ * the acceptance check, which is a round trip of the control-character fixture
+ * through the library's own reader. `yaml` 2.9.0 then fails the requirement the
+ * check is a proxy for: its double-quoted escaping is driven by
+ * `JSON.stringify`, which escapes nothing above U+001F, so U+007F, U+0085,
+ * U+00A0, U+2028, U+2029 and U+FEFF are written raw. Its own reader takes them
+ * back, and Python's does not: ruamel refuses the whole document with
+ * `unacceptable character #x007f`. A file no sibling pack can read is not
  * structural parity, so the round trip through one library is necessary and not
- * sufficient. Measured 2026-09-08.
+ * sufficient.
  *
  * js-yaml escapes them as libyaml does, `\x7F`, `\N`, `\_`, `\L`, `\P` and
  * `U+FEFF`, and leaves U+200B alone, which is a printable character and is what
  * every other pack does with it.
  *
- * `forceQuotes` IS NOT THE QUOTING ADAPTER, and looks like it. It skips keys by
+ * `forceQuotes` looks like the quoting adapter and is not. It skips keys by
  * construction, and it quotes numbers and booleans as well as strings, which
  * makes the emitter write `!!int '3'` to keep the type. The hooks that do the
  * job are the schema's tag list and `transform`, which hands the emitter's own
@@ -66,10 +66,10 @@ const STR_TAG = "tag:yaml.org,2002:str";
  * gives a `.0` must be selected by the float tag, or the text and the tag
  * disagree and the library says so in the output.
  *
- * JavaScript has one number type, so this is a property of the value rather
- * than of a type it was decoded as. Past 2^53 it is also the widening FR-4.10
- * asks for: a literal that arrived already rounded is written with a `.0`
- * rather than as an exact-looking integer it is not.
+ * JavaScript has one number type, so this is a property of the value and not
+ * of a type it was decoded as. Past 2^53 it is also the widening FR-4.10 asks
+ * for: a literal that arrived already rounded is written with a `.0` instead of
+ * as an exact-looking integer it is not.
  */
 function isPlainInteger(value: unknown): boolean {
   return typeof value === "number" && Number.isSafeInteger(value) &&
@@ -132,7 +132,7 @@ const WRITE_SCHEMA = new Schema(replaced(CORE_SCHEMA.tags));
  *
  * `realMapTag` builds a native `Map`, so a mapping key keeps the type it was
  * written with. The object-based tag turns `1:` into the key `"1"`, and a
- * coercion that is not reversible has to be refused rather than made (FR-2.9).
+ * coercion that is not reversible has to be refused, not made (FR-2.9).
  * There is nowhere else to see it: by the time a mapping is a JavaScript object
  * the evidence is gone.
  */
@@ -146,8 +146,8 @@ const READ_SCHEMA = new Schema(
  * Adapters one and two, through the emitter's own AST.
  *
  * A scalar carries its resolved tag, so the string ones are told to print
- * double-quoted and a number is left alone by construction rather than by
- * inspecting its text.
+ * double-quoted and a number is left alone by construction, without inspecting
+ * its text.
  *
  * The keys are sorted by their spelling, which is the same string comparison
  * every pack makes and is what puts `10` before `2`.
@@ -170,7 +170,7 @@ function adapt(documents: any[]): void {
 }
 
 /**
- * `noRefs` is load-bearing. Left off, a structure holding the same object twice
+ * `noRefs` is required. Left off, a structure holding the same object twice
  * is emitted with an anchor and an alias, which is a file this codec's own
  * reader then refuses. `flowLevel: -1` keeps block style at every depth
  * (FR-4.4), and `lineWidth: -1` turns folding off, because a folded scalar is a
@@ -187,10 +187,10 @@ const WRITE_OPTIONS = {
 };
 
 /**
- * `maxAliases: 0` refuses aliases rather than expanding them: a document that
+ * `maxAliases: 0` refuses aliases instead of expanding them: a document that
  * expands to something larger than itself is a denial of service in a library
  * whose whole job is reading files from elsewhere. `json: false` keeps a
- * duplicate key an error rather than letting the last one win.
+ * duplicate key an error instead of letting the last one win.
  */
 const READ_OPTIONS = { schema: READ_SCHEMA, json: false, maxAliases: 0 };
 
@@ -200,10 +200,10 @@ export class YAMLCodec implements Codec {
    *
    * A `YAMLException` does not cross this boundary; the cause is kept.
    *
-   * An empty document is `null` rather than a parse failure, which is what the
-   * Python pack answers and what a caller reading a file somebody has emptied
-   * expects. js-yaml calls it an error, so this is the one place the library's
-   * reading is overridden rather than passed on.
+   * An empty document is `null`, not a parse failure, which is what the Python
+   * pack answers and what a caller reading a file somebody has emptied expects.
+   * js-yaml calls it an error, so this is the one place the library's reading
+   * is overridden.
    */
   decode(data: Uint8Array | string): WrenchValue {
     const text = asText(data);
@@ -270,7 +270,7 @@ function describe(key: unknown): string {
 }
 
 /**
- * A value with no canonical form is refused rather than guessed at (FR-4.1).
+ * A value with no canonical form is refused, never guessed at (FR-4.1).
  *
  * A JavaScript object can only have string keys, so what this reaches is the
  * value a caller could not write at all: an `undefined`, a function, a symbol,
@@ -299,5 +299,5 @@ function refuseValuesWithNoCanonicalForm(value: unknown): void {
   throw new TypeError(`cannot write ${typeof value} in canonical form`);
 }
 
-/** The codec, named rather than inferred from a filename. */
+/** The codec, named and never inferred from a filename. */
 export const YAML_CODEC: YAMLCodec = new YAMLCodec();

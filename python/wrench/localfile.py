@@ -8,7 +8,7 @@ Writes are atomic: the bytes go to a temporary beside the target and the
 temporary is renamed into place, so a reader sees the previous contents or the
 new ones and never a half-written file. Beside the target matters, because a
 temporary elsewhere makes the move a copy across filesystems, which is not
-atomic and defeats the point.
+atomic.
 
 It creates no directories. A path whose parent is missing is an error, and
 deciding that a directory should exist belongs to whoever chose the path.
@@ -31,8 +31,8 @@ class Reader(Protocol):
     """What a load requires of its IO.
 
     A reader is handed the path and not an open handle or the bytes, so
-    substituting one in a test replaces the whole IO boundary rather than only
-    the parse. FR-2.5a.
+    substituting one in a test replaces the whole IO boundary and not only the
+    parse. FR-2.5a.
     """
 
     def read(self, path: str) -> bytes:
@@ -52,12 +52,12 @@ class LocalFileIO:
     """The local filesystem, and the only IO that ships.
 
     Everything wrench serves reads and writes on the machine it runs on, and a
-    test substitutes its own reader rather than needing a second one shipped to
-    do it.
+    test substitutes its own reader without needing a second one shipped to do
+    it.
     """
 
     def read(self, path: str) -> bytes:
-        """The file's bytes. The path is handed in rather than an open handle,
+        """The file's bytes. The path is handed in, not an open handle,
         which is what lets a test replace the whole IO boundary."""
         return Path(path).read_bytes()
 

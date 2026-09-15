@@ -8,13 +8,14 @@ require_relative "float_text"
 module Wrench
   # The YAML codec: bytes to a structure, and a structure to canonical bytes.
   #
-  # PSYCH EMITS, AND THIS DECIDES FOUR THINGS. The document is built as a tree of
-  # `Psych::Nodes` with the style named on each scalar, and Psych turns that into
-  # text. Nothing here writes a character of YAML: layout, indentation, escaping
-  # and line breaks are all Psych's, and its escape table is the one that ships.
+  # Psych emits, and this class decides four things. The document is built as a
+  # tree of `Psych::Nodes` with the style named on each scalar, and Psych turns
+  # that into text. Nothing here writes a character of YAML: layout, indentation,
+  # escaping and line breaks are all Psych's, and its escape table is the one
+  # that ships.
   #
-  # The four are the adapters `packs-agree-on-structure-not-on-bytes` names, and
-  # they exist because they preserve MEANING rather than layout:
+  # The four are the adapters docs/DECISIONS/packs-agree-on-structure-not-on-bytes.md
+  # names, and each preserves meaning, not layout:
   #
   #   sort the keys                two runs over one structure must agree
   #   quote every string and key   `no`, `1.20`, `null` and `10` stay what they
@@ -26,13 +27,13 @@ module Wrench
   #                                look the same to a reader
   #
   # Psych writes block sequences without indenting them under their key. That is
-  # its choice and it is left alone: packs agree on structure now, so a sibling
+  # its choice and it is left alone: packs agree on structure, so a sibling
   # pack's different whitespace is not a defect.
   class YAMLCodec
     # Bytes into maps, arrays and scalars.
     #
     # `Psych::Exception` does not cross this boundary; the cause is kept.
-    # Aliases are refused rather than expanded, because a document that expands
+    # Aliases are refused, never expanded, because a document that expands
     # to something larger than itself is a denial of service in a library whose
     # whole job is reading files from elsewhere.
     def decode(data)
@@ -82,7 +83,7 @@ module Wrench
     end
 
     # A mapping key, which JSON Schema and every pack can only spell as a
-    # string. Refused rather than written otherwise: Ruby's Hash takes any
+    # string. Anything else is refused: Ruby's Hash takes any
     # object, and a bare `1:` would emit a document this codec's own decoder
     # then reads as an integer key. Go and Rust cannot reach this, their map
     # keys being strings by type.
@@ -94,7 +95,7 @@ module Wrench
 
     # Adapters two, three and four. A string is double quoted and everything
     # else is plain, which is what keeps a type through a round trip.
-    # Psych wants the style AND the two flags that agree with it: `plain` and
+    # Psych wants the style and the two flags that agree with it: `plain` and
     # `quoted` are what its emitter checks, and setting only the style raises
     # `neither tag nor implicit flags are specified`.
     def scalar(value)

@@ -5,8 +5,8 @@ require "json_schemer"
 require_relative "errors"
 
 module Wrench
-  # The schema seam: `validate(value)` applied to the DECODED structure rather
-  # than to the text.
+  # The schema seam: `validate(value)` applied to the decoded structure, not to
+  # the text.
   #
   # `json_schemer` 2.5.0 is the binding, chosen in
   # `docs/DECISIONS/which-json-schema-library-each-pack-binds.md`. Each pack
@@ -37,7 +37,7 @@ module Wrench
 
   # Compile a schema structure into something that can validate.
   #
-  # TAKES THE DECODED SCHEMA, NOT A PATH. A schema reaches a pack as a
+  # Takes the decoded schema, not a path. A schema reaches a pack as a
   # structure, whether it was shipped with the pack or read from a file by the
   # caller, so compiling takes what every source already has.
   def self.compile_schema(name, structure)

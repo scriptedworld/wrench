@@ -8,17 +8,16 @@ strings they were and a boolean stays a boolean. Keys are sorted because a
 mapping has no order of its own, and sorting is what makes two runs over the
 same structure produce the same bytes.
 
-**ruamel EMITS, AND THIS DECIDES FOUR THINGS.** The document is handed to
+ruamel emits, and this module decides four things. The document is handed to
 ruamel with the style named on each scalar, and ruamel turns it into text:
 layout, indentation, escaping and line breaks are all its, and its escape table
 is already the one this pack wants, `\\0 \\a \\b \\t \\n \\v \\f \\r \\e \\N \\L
 \\P`, uppercase `\\x7F` and `\\uFEFF`.
 
-The four are the adapters `packs-agree-on-structure-not-on-bytes` names, and
-they preserve MEANING rather than layout: sort the keys, quote every string and
-key, spell floats positionally, write null as the word. An emitter that walked
-the structure producing text stood here until 2026-09-08 and is the thing that
-decision retired.
+The four are the adapters docs/DECISIONS/packs-agree-on-structure-not-on-bytes.md
+names, and they preserve meaning, not layout: sort the keys, quote every string
+and key, spell floats positionally, write null as the word. The pack does not
+walk the structure producing text of its own; that decision retired it.
 """
 
 from __future__ import annotations
@@ -115,14 +114,14 @@ def _writer() -> _RuamelYAML:
 
 
 def _prepared(value: object) -> object:
-    """Adapters one and two: sort the keys, and quote every string AND key.
+    """Adapters one and two: sort the keys, and quote every string and key.
 
     Quoting is what keeps `no`, `1.20` and `null` strings when they are read
     back. It covers keys because an unquoted `10:` is an integer key to a YAML
     1.1 reader, and a library left to choose spells it `'10'`, which is a third
     answer again.
 
-    A key that is not a string is refused rather than written. Python's dict
+    A key that is not a string is refused, not written. Python's dict
     takes any hashable, and a bare `1:` would emit a document this codec's own
     decoder then refuses under FR-1.2.
     """
@@ -132,7 +131,7 @@ def _prepared(value: object) -> object:
             if not isinstance(key, str):
                 raise ValueError(f"cannot write a {type(key).__name__} key in canonical form")
             # The location is added on the way out, so a refusal names the key
-            # or index it happened at rather than only the type. A schema over a
+            # or index it happened at as well as the type. A schema over a
             # large document says nothing useful without one.
             try:
                 out[_Quoted(key)] = _prepared(value[key])
@@ -159,17 +158,17 @@ def _prepared(value: object) -> object:
 def _represent_float(representer: Any, data: float) -> Any:
     """Adapter three: FR-4.8's positional decimal, never an exponent.
 
-    Registered rather than emitted by hand, so ruamel still places the scalar in
-    the document and this owns only its digits.
+    Registered with ruamel instead of emitted by hand, so ruamel still places
+    the scalar in the document and this owns only its digits.
     """
     return representer.represent_scalar("tag:yaml.org,2002:float", canonical_float_text(data))
 
 
 def _represent_none(representer: Any, _data: object) -> Any:
-    """Adapter four: a null is the word rather than an empty.
+    """Adapter four: a null is the word, never an empty value.
 
-    ruamel writes nothing after the colon by default, which reads back as None
-    and is therefore spelling rather than meaning. It matters because a reader
+    ruamel writes nothing after the colon by default, which reads back as None,
+    so the difference is spelling and not meaning. It matters because a reader
     cannot tell an empty value from a missing one, and the other packs write the
     word.
     """
@@ -179,7 +178,7 @@ def _represent_none(representer: Any, _data: object) -> Any:
 def _at(where: str, error: ValueError) -> ValueError:
     """The same refusal, carrying where in the document it happened.
 
-    Prepended rather than appended, and only once per level, so a nested
+    Prepended, and only once per level, so a nested
     failure reads outermost first: `at key "a": at index 2: cannot write ...`.
     """
     return ValueError(f"{where}: {error}")
@@ -194,16 +193,17 @@ INT64_MAX = 2**63 - 1
 def widen(value: int) -> int | float:
     """An integer past int64, as the float every pack agrees on.
 
-    PYTHON IS THE PACK THIS COSTS SOMETHING. Its integers are unbounded, so it
-    alone decoded every value exactly and every other pack widened or refused,
-    which meant one document meant different numbers depending on who read it.
-    Go keeps int64 and reaches for uint64 above it; Rust keeps i64 and falls to
-    f64. Neither can be asked to grow, so the agreement is reached by widening.
+    Python is the pack this costs something. Its integers are unbounded, so
+    without this it alone would decode every value exactly while every other
+    pack widened or refused, and one document would mean different numbers
+    depending on who read it. Go keeps int64 and reaches for uint64 above it;
+    Rust keeps i64 and falls to f64. Neither can be asked to grow, so the packs
+    agree by widening.
 
-    THE LOSS IS DELIBERATE AND VISIBLE. 18446744073709551615 comes back spelled
-    18446744073709552000.0, so a reader sees the precision go rather than
+    The loss is deliberate and visible. 18446744073709551615 comes back spelled
+    18446744073709552000.0, so a reader sees the precision go instead of
     receiving a different exact integer. Two inputs one apart can land on the
-    same float, which is the plainest statement of the cost this makes.
+    same float.
 
     docs/DECISIONS/parity-is-reached-by-widening-never-by-refusing.md
     """
@@ -220,19 +220,19 @@ def _normalise(value: object, integer: Callable[[int], object] = widen) -> objec
     every other implementation throws one.
 
     A mapping key that is not a string has no JSON equivalent, so it is refused
-    rather than coerced: coercing invents a document nobody wrote.
+    and not coerced: coercing invents a document nobody wrote.
 
-    A TIMESTAMP IS THE ONE VALUE THAT IS COERCED, and it is the exception that
-    proves the rule. YAML has a native timestamp type and JSON does not, so an
-    unquoted 2026-01-01 decoded to a date and the structure stopped being the
-    maps, lists and JSON scalars everything downstream assumes. It reached the
-    validator, which has no type for it, and the save call then refused to write
-    back a file the load call had just read.
+    A timestamp is the one value that is coerced. YAML has a native timestamp
+    type and JSON does not, so left alone an unquoted 2026-01-01 decodes to a
+    date and the structure stops being the maps, lists and JSON scalars
+    everything downstream assumes. It reaches the validator, which has no type
+    for it, and the save call then refuses to write back a file the load call
+    has just read.
 
     ISO 8601 is lossless for the value and is what the timestamp was written as,
     so the string carries everything the date did. Refusing instead would mean
-    wrench cannot read an ordinary YAML file, and leaving it alone is what broke
-    the round trip.
+    wrench cannot read an ordinary YAML file, and leaving it alone breaks the
+    round trip.
     """
     if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
         return value.isoformat()
@@ -258,10 +258,10 @@ def within_int64(value: int) -> int:
     must be thrown". Six independent parsers were asked and all six throw,
     three in Go and three in Rust.
 
-    PYTHON IS THE WHOLE OF THE DEVIATION, and it is the ecosystem rather than
-    one library: `tomllib` and `tomlkit` both accept the value, because Python
-    integers are unbounded and neither range-checks. So there is nothing to swap
-    to and the check belongs here.
+    Python is the whole of the deviation, and it is the ecosystem, not one
+    library: `tomllib` and `tomlkit` both accept the value, because Python
+    integers are unbounded and neither range-checks. There is nothing to swap
+    to, so the check belongs here.
 
     This is the one place widening is not the answer. `widen` exists because
     YAML and JSON leave the range open and the packs had to agree on something;
@@ -275,7 +275,7 @@ def within_int64(value: int) -> int:
 def _bare_scalar(value: object) -> str | None:
     """The scalars YAML and JSON spell identically, or None for anything else.
 
-    Shared rather than written twice: null, the booleans, an integer and a float
+    Shared, not written twice: null, the booleans, an integer and a float
     have one spelling across both formats, and a float's is FR-4.8's. What is
     left is the string, which each format quotes its own way, so the caller
     handles it and this returns None to say so.

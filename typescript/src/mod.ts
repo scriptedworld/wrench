@@ -2,7 +2,7 @@
  * wrench reads, writes and validates the form of the ecosystem's structured
  * files. This is the TypeScript pack.
  *
- * THE TWO CALLS ARE THE WHOLE OF FILE HANDLING (FR-2.1):
+ * The two calls are the whole of file handling (FR-2.1):
  *
  *     loadFormattedFile(path, schema, codec, reader) -> value
  *     saveFormattedFile(value, path, schema, codec, writer)
@@ -13,17 +13,17 @@
  * meaning are the contract and are not TypeScript's to change.
  *
  * Load reads, decodes, then validates. Save validates, encodes, then writes.
- * Validating on the way out is not symmetry for its own sake: it stops a caller
- * writing a structure wrench would refuse to read back (FR-2.4), so a file
- * produced by a save always survives a load.
+ * Validating on the way out stops a caller writing a structure wrench would
+ * refuse to read back (FR-2.4), so a file produced by a save always survives a
+ * load.
  *
  * The schema argument cannot be omitted (FR-2.2). It can be wrong, and no part
  * of this library detects that (FR-2.3).
  *
- * TWO CODECS SHIP, YAML AND JSON. TOML was the third and is retired (FR-2.7):
- * no maintained library in any of the languages could emit its canonical form,
- * and the hand-written emitters written instead wrote documents they could not
- * read back.
+ * Two codecs ship, YAML and JSON. TOML is retired (FR-2.7): no maintained
+ * library in any of the languages can emit its canonical form, and the
+ * hand-written emitters tried in its place wrote documents they could not read
+ * back.
  */
 
 import { UsageError, WrenchError } from "./errors.ts";
@@ -47,13 +47,13 @@ export { JSONCodec } from "./json_codec.ts";
 export { YAMLCodec } from "./yaml_codec.ts";
 
 /**
- * The codecs, named rather than inferred from a filename.
+ * The codecs, named and never inferred from a filename.
  *
  * Choosing a parser by suffix would make behaviour depend on what a file is
- * called, and renaming a file would silently change how it is read. That is the
- * implicitness FR-2.2 exists to remove.
+ * called, and renaming a file would silently change how it is read. FR-2.2
+ * forbids that implicitness.
  *
- * Re-exported under their short names rather than assigned, because a module
+ * Re-exported under their short names instead of assigned, because a module
  * binding called `JSON` would shadow the global one everything here uses.
  */
 export { YAML_CODEC as YAML } from "./yaml_codec.ts";

@@ -19,8 +19,8 @@ def wrapping(error: type[Error]) -> Iterator[None]:
     """Turn whatever a bound library raises into `error`, keeping the cause.
 
     Every codec boundary needs the same three lines, and written out per codec
-    they were duplicated closely enough for pylint to say so. One place also
-    means the rule is stated once rather than re-derived.
+    they are duplicated closely enough for pylint to object. One place also
+    means the rule is stated once.
 
     An `Error` passes through untouched: it is already this contract, and
     wrapping it again would make a consumer unwrap twice to reach the cause.
@@ -76,14 +76,14 @@ class Error(Exception):
     _step = "handling"
 
 
-# NONE OF THESE SUBCLASS ValueError, AND THE TAXONOMY IS WHY.
+# None of these subclass ValueError, and the taxonomy is why.
 #
 # It looks like they should. `ValueError` is documented as "inappropriate
 # argument value (of correct type)", `validate` means the value does not match
 # its schema, and Python's own `json.JSONDecodeError` and
 # `tomllib.TOMLDecodeError` are both `ValueError` subclasses.
 #
-# **But a validation failure is not always about the value.** Measured against
+# But a validation failure is not always about the value. Against
 # `{"count": {"type": "integer", "minimum": 0}}`:
 #
 #     {"count": -1}        -1 is less than the minimum of 0     a VALUE problem
@@ -98,15 +98,14 @@ class Error(Exception):
 # `EncodeError` is the same shape: a NaN has no canonical form because of its
 # value, and an `object()` has none because of its type.
 #
-# **So wrench's six kinds are orthogonal to Python's value/type split**, and a
-# consumer catches `WrenchError` or the kind it means. That is also why
-# `except ValueError` stopped working when the wraps landed: it was never a
-# statement about wrench's contract, only about what one library happened to
-# raise.
+# So wrench's six kinds are orthogonal to Python's value/type split, and a
+# consumer catches `WrenchError` or the kind it means. A consumer catching
+# `ValueError` was relying on what one bound library happened to raise, never
+# on wrench's contract, and catches nothing now that every failure is wrapped.
 #
-# `read` and `write` are not `OSError` either, and for a related reason: OSError
+# `read` and `write` are not `OSError` either, for a related reason: OSError
 # carries an errno and filename contract, and a `Reader` may be a network, a
-# buffer or a test stub rather than an operating system.
+# buffer or a test stub instead of an operating system.
 
 
 class ReadError(Error):
@@ -152,11 +151,11 @@ class SchemaError(Error):
 
     Distinct from `ValidationError`, which is a document failing a schema that
     is fine. This is the schema being unreadable or not a valid JSON Schema, so
-    nothing can be validated against it at all and the fix is to the schema
-    rather than to any document.
+    nothing can be validated against it at all and the fix is to the schema,
+    not to any document.
 
-    It is the type recorded as missing when `compile_schema` was
-    found leaking `json.JSONDecodeError` and `jsonschema.SchemaError`.
+    `compile_schema` raises it in place of `json.JSONDecodeError` and
+    `jsonschema.SchemaError`, which would otherwise leak from the libraries.
     """
 
     _doing = "compiling"
@@ -168,7 +167,7 @@ class UsageError(Error):
 
     Passing no schema, codec, reader or writer. The signature compels each one
     and `None` is the one way round that in a language with no compile-time
-    check, so it is refused here rather than left as a convention.
+    check, so it is refused here instead of left as a convention.
 
     Its step word is `usage`, and it is the one that names no step that ran: no
     read was attempted, nothing was parsed, and no schema was consulted. The

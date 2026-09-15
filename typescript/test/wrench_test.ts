@@ -1,7 +1,7 @@
 /**
  * The TypeScript pack's suite.
  *
- * Nothing here is mocked. A reader is handed a path rather than bytes precisely
+ * Nothing here is mocked. A reader is handed a path and not bytes precisely
  * so a test can substitute one without a filesystem, and where a file is wanted
  * the test writes a real one into a temporary directory. `Reading` and
  * `Failing` below are readers, which is a seam the contract declares, not stand
@@ -32,7 +32,7 @@ const ANY = wrench.compileSchema("anything", {});
  * The seam a JavaScript caller passes when it passes none.
  *
  * TypeScript's types forbid it and are erased at run time, so this is what
- * reaches the `usage` kind. Cast through `unknown` rather than through `any`,
+ * reaches the `usage` kind. Cast through `unknown` and not through `any`,
  * which says the same thing without turning the checker off for the expression.
  */
 const NO_SCHEMA = null as unknown as wrench.Schema;
@@ -43,7 +43,7 @@ const UNWRITABLE = { n: undefined } as unknown as wrench.WrenchValue;
 /**
  * A reader handed a path and answering with bytes it already holds.
  *
- * This is the seam FR-2.5a exists for: handed the path rather than the bytes, a
+ * This is the seam FR-2.5a declares: handed the path and not the bytes, a
  * substituted reader exercises decode and validate together against no
  * filesystem at all.
  */
@@ -63,7 +63,7 @@ class Failing implements wrench.Reader {
   }
 }
 
-/** A writer that records rather than writing, for the seam tests. */
+/** A writer that records instead of writing, for the seam tests. */
 class Recording implements wrench.Writer {
   readonly seen: [string, string][] = [];
   write(path: string, bytes: Uint8Array): void {
@@ -92,8 +92,8 @@ const VALID_JIG = 'tasks:\n  - name: check\n    command: "true"\n';
 // COVERS: FR-1.1 | positive
 Deno.test("the pack reads the one copy of the schemas", async () => {
   // The schemas and a library for each language live in one repository, so two
-  // producers work from the same definition. The pack carries their text rather
-  // than resolving a path, so what makes that true is the carried copy being
+  // producers work from the same definition. The pack carries their text instead
+  // of resolving a path, so what makes that true is the carried copy being
   // byte for byte the directory's.
   for (const name of Object.keys(SHIPPED)) {
     const onDisk = await Deno.readTextFile(new URL(`schemas/${name}`, ROOT));
@@ -104,7 +104,7 @@ Deno.test("the pack reads the one copy of the schemas", async () => {
 
 // COVERS: FR-1.2 | negative
 Deno.test("a key that is not a string is refused rather than coerced", () => {
-  // wrench establishes that a file has the FORM its schema declares. A mapping
+  // wrench establishes that a file has the form its schema declares. A mapping
   // key that is not a string has no JSON equivalent, and stringifying it
   // invents a document nobody wrote, so it is refused at the decoder.
   const failure = assertThrows(
@@ -150,7 +150,7 @@ Deno.test("the two calls round trip a document", () => {
 // COVERS: FR-2.2 | positive
 Deno.test("validation sits in the signature", () => {
   // Nothing reads or writes without naming what the file must conform to, so
-  // conformance is a property of the call rather than of remembering to check.
+  // conformance is a property of the call and not of remembering to check.
   const reader = new Reading(VALID_ENVELOPE);
   wrench.loadFormattedFile(
     "f.yaml",
@@ -277,7 +277,7 @@ Deno.test("the codec and the IO are separate seams", () => {
 
 // COVERS: FR-2.5a | positive
 Deno.test("a reader is handed the path and can be substituted", () => {
-  // No filesystem at all. This is what handing the reader a path rather than
+  // No filesystem at all. This is what handing the reader a path and not
   // bytes buys: a substituted reader exercises decode and validate together.
   const reader = new Reading('{"k": 1}');
   assertEquals(wrench.loadJsonFile("some/path", ANY, reader), { k: 1 });
@@ -801,7 +801,7 @@ Deno.test("every shipped schema has a fixture that is an instance of it", async 
 // COVERS: FR-3.9 | edge
 Deno.test("a document may declare the version it conforms to", () => {
   // Optional, because every document written before the field existed carries
-  // none. Present, it is semver, so a consumer can refuse a major rather than
+  // none. Present, it is semver, so a consumer can refuse a major instead of
   // failing later on a field it cannot find.
   const accepted = [
     "1.0.0",
@@ -856,8 +856,8 @@ Deno.test("a document may declare the version it conforms to", () => {
 
 // COVERS: FR-3.9 | property
 Deno.test("the version field is the same in every format that carries it", async () => {
-  // Written into each schema rather than referenced, because it constrains a
-  // scalar rather than describing a shape. Repetition is the cost, so drift is
+  // Written into each schema instead of referenced, because it constrains a
+  // scalar and does not describe a shape. Repetition is the cost, so drift is
   // what this checks.
   const seen: Record<string, unknown> = {};
   for (const name of Object.keys(SHIPPED)) {
@@ -903,7 +903,7 @@ function reachableSchema(): string {
   return path;
 }
 
-/** What happened, rather than an assertion, so a table states its own expectation. */
+/** What happened, instead of an assertion, so a table states its own expectation. */
 function outcome(
   name: string,
   body: wrench.SchemaDocument,
@@ -978,7 +978,7 @@ Deno.test("a shipped $id cannot be redefined by a caller", () => {
 
 // COVERS: FR-3.10a | positive
 Deno.test("a reference within the document resolves", () => {
-  // Both spellings, each asserted by its VIOLATION: an accepted document says
+  // Both spellings, each asserted by its violation: an accepted document says
   // nothing, because a $ref that contributed no constraint would accept it too.
   const bodies: [string, wrench.SchemaDocument][] = [
     ["a pointer into $defs", {
@@ -1034,8 +1034,8 @@ Deno.test("a refusal names the resolved reference", () => {
 // COVERS: FR-3.10c | negative
 Deno.test("a keyword in an instance is data", () => {
   // The schema keywords are ordinary keys in a document being validated. The
-  // file this points at EXISTS, so an implementation that resolved it is caught
-  // here rather than passing for want of a target.
+  // file this points at exists, so an implementation that resolved it is caught
+  // here instead of passing for want of a target.
   const reachable = reachableSchema();
   const instances: [string, wrench.WrenchValue][] = [
     ["a $ref at a file that exists", { $ref: `file://${reachable}` }],
@@ -1109,7 +1109,7 @@ Deno.test("a scalar is quoted exactly when it is meant to be a string", () => {
   };
   assertEquals(wrench.YAML.decode(wrench.YAML.encode(tricky)), tricky);
   // And the types that are not strings stay unquoted, so they come back as
-  // themselves rather than as their spelling.
+  // themselves and not as their spelling.
   const typed = { n: 1, f: 2.5, t: true, z: null };
   assertEquals(wrench.YAML.decode(wrench.YAML.encode(typed)), typed);
   const written = text(wrench.YAML.encode(typed));
@@ -1263,7 +1263,7 @@ Deno.test("a float is positional and never an exponent", () => {
     assertEquals(wrench.canonicalFloatText(value), want, `spelling ${value}`);
   }
   // The two ends of the range, by length because the strings are 326 and 311
-  // characters. Both agree with the Python pack, measured.
+  // characters. Both agree with the Python pack.
   assertEquals(wrench.canonicalFloatText(5e-324).length, 326);
   assertEquals(wrench.canonicalFloatText(1.7976931348623157e308).length, 311);
   for (const value of [5e-324, 1.7976931348623157e308]) {
@@ -1332,14 +1332,14 @@ Deno.test("a control character is escaped and never written raw", () => {
 
 // COVERS: FR-4.10 | property
 Deno.test("an integer past the exact range widens to a float, visibly", () => {
-  // The widening is deliberately VISIBLE: a number that cannot be carried
-  // exactly is written with a `.0` rather than as a different exact-looking
+  // The widening is deliberately visible: a number that cannot be carried
+  // exactly is written with a `.0` instead of as a different exact-looking
   // integer, so a reader sees the precision go.
   //
-  // JAVASCRIPT'S EXACT RANGE IS 2^53 AND NOT 2^63, because its one number type
+  // JavaScript's exact range is 2^53 and not 2^63, because its one number type
   // is a double. The rule is the contract's and the boundary is the language's,
   // and the two int64 endpoints are where this pack diverges from the other
-  // four. Measured against the Python pack, 2026-09-08.
+  // four, which the Python pack confirms.
   const table: [number, string][] = [
     [1, "1"],
     [2147483647, "2147483647"],
@@ -1409,7 +1409,7 @@ Deno.test("the pack binds an established validator rather than implementing one"
 
 // COVERS: FR-5.5 | property
 Deno.test("the shared fixture set decodes to one structure", async () => {
-  // Packs agree on structure and no longer on bytes, so what a fixture holds is
+  // Packs agree on structure and not on bytes, so what a fixture holds is
   // a structure that must survive every pack: the input and the canonical form
   // beside it decode to the same thing here.
   let checked = 0;
@@ -1447,7 +1447,7 @@ Deno.test("the fixture set lives beside the schemas and this pack reads that cop
 
 // COVERS: FR-5.7 | positive
 Deno.test("the shipped set is reachable without the suffix", () => {
-  // `schemas.JIG` rather than a name carrying `_SCHEMA`, the namespace carrying
+  // `schemas.JIG` and not a name carrying `_SCHEMA`, the namespace carrying
   // what kind of thing these are so the names do not have to.
   for (const short of ["ENVELOPE", "JIG", "MANIFEST", "DEFINITIONS"]) {
     const schema = wrench.schemas[short];

@@ -1,9 +1,9 @@
 """Tests for the Python pack.
 
 The canonical cases come from `testdata/canonical/`, the same directories the
-Go pack is held to. That is the point of them: two implementations agreeing on
-the schema and disagreeing on the bytes is the failure a shared fixture set
-exists to catch, and neither pack is the oracle for the other.
+Go pack is held to. Two implementations agreeing on the schema and disagreeing
+on the bytes is what a shared fixture set catches, and neither pack is the
+oracle for the other.
 """
 
 from __future__ import annotations
@@ -26,8 +26,8 @@ CASES = sorted(p.name for p in FIXTURES.iterdir() if p.is_dir())
 
 
 class Stub:
-    """Bytes without a filesystem. Its existence is the point of FR-2.5a: a
-    reader takes the path, so a test replaces the whole IO boundary."""
+    """Bytes without a filesystem. FR-2.5a is what makes it possible: a reader
+    takes the path, so a test replaces the whole IO boundary."""
 
     def __init__(self, data: bytes = b"", error: Exception | None = None) -> None:
         """Bytes to hand back, or an error to raise instead of handing any."""
@@ -37,7 +37,7 @@ class Stub:
         self.written: bytes | None = None
 
     def read(self, path: str) -> bytes:
-        """Record the path it was given, then answer. Recording is the point:
+        """Record the path it was given, then answer. The record matters:
         several tests assert the call passes the path through untouched."""
         self.saw_path = path
         if self.error:
@@ -45,7 +45,7 @@ class Stub:
         return self.data
 
     def write(self, path: str, data: bytes) -> None:
-        """Capture the bytes rather than writing them, so a test can assert the
+        """Capture the bytes instead of writing them, so a test can assert the
         writer never ran when validation or encoding should have stopped it."""
         self.saw_path = path
         if self.error:
@@ -439,8 +439,8 @@ def test_a_format_may_declare_the_version_it_conforms_to():
 
 # COVERS: FR-3.9 | property
 def test_the_version_field_is_the_same_in_every_format_that_carries_it():
-    """Written into each schema rather than referenced, because it constrains a
-    scalar rather than describing a shape, and a shipped schema exists to be an
+    """Written into each schema instead of referenced, because it constrains a
+    scalar and does not describe a shape, and a shipped schema is meant to be an
     instance of something. Repetition is the cost, so drift is what this checks."""
     seen = {}
     for path in sorted((ROOT / "schemas").glob("*.schema.json")):
@@ -472,7 +472,7 @@ def test_a_jigs_definitions_block_is_held_to_the_shared_shape():
 def test_a_jig_may_declare_it_stands_at_the_repository_root():
     """The field reaches the working directory and nothing else. The walk, the
     containment, the filter patterns and {base_dir} stay what the caller
-    granted, which is why it is a boolean on the jig rather than a base a jig
+    granted, which is why it is a boolean on the jig and not a base a jig
     task can be talked into widening."""
     tasks = b'tasks:\n  - name: check\n    command: "true"\n'
 
@@ -517,8 +517,8 @@ def _consumer_schema(target):
 # COVERS: FR-3.10 | positive
 def test_a_consumer_schema_may_reference_a_shipped_one():
     """The case a consumer most wants: an adapter extending the envelope schema
-    references it rather than copying it, and a copy is the drift FR-3.2 exists
-    to prevent."""
+    references it instead of copying it, and FR-3.2 forbids the drift a copy
+    invites."""
     schema = wrench.compile_schema(
         "mine.schema.json",
         _consumer_schema("https://scriptedworld.github.io/wrench/definitions.schema.json"),
@@ -527,8 +527,7 @@ def test_a_consumer_schema_may_reference_a_shipped_one():
     schema.validate({"d": {"a": "x"}})
 
     # A nested value is refused by a rule only the referenced schema states, so
-    # a refusal here is what proves the reference resolved rather than being
-    # skipped.
+    # a refusal here proves the reference resolved and was not skipped.
     _refuses(
         schema,
         {"d": {"a": {"b": 1}}},
@@ -538,9 +537,9 @@ def test_a_consumer_schema_may_reference_a_shipped_one():
 
 # COVERS: FR-3.10 | negative
 def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
-    """Measured before this existed: a file:// reference loaded that file off
-    disk, so a schema's meaning depended on files outside it. Nothing was ever
-    fetched over the network."""
+    """Without this refusal a file:// reference loads that file off disk, so a
+    schema's meaning depends on files outside it. Nothing is fetched over the
+    network either."""
     local = tmp_path / "local.schema.json"
     local.write_text('{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}')
 
@@ -564,16 +563,15 @@ def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
 
 # COVERS: FR-3.10 | negative
 def test_the_environment_cannot_restore_external_references(tmp_path):
-    """Asserted the opposite until 2026-09-03, when the escape hatch was
-    removed. Kept, inverted, because the variable was documented and
-    somebody may still set it: a refusal that quietly became permissive because
-    an old name was still honoured is the failure worth pinning.
+    """The retired escape hatch opens nothing. The variable was documented and
+    somebody may still set it, and a refusal that quietly turns permissive
+    because an old name is still honoured would go unnoticed without this.
 
-    Measured before removal, and the reason it went: one variable meant three
-    different things. Setting it let this pack fetch over HTTP and read files,
-    let Go read files only, and did nothing at all in Rust.
+    It was removed because one variable meant three different things: setting
+    it let this pack fetch over HTTP and read files, let Go read files only,
+    and did nothing at all in Rust.
 
-    os.environ directly rather than monkeypatch: this arranges an input, and
+    os.environ directly and not monkeypatch: this arranges an input, and
     reaching for a patching fixture to do it blurs the line with mocking the
     code under test, which is not allowed here without asking."""
     retired = "WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS"
@@ -692,10 +690,10 @@ def test_round_trip_through_the_real_filesystem(tmp_path):
 
 # COVERS: FR-2.1, FR-6.3 | positive
 def test_a_path_object_is_accepted_and_normalised(tmp_path):
-    """A Python caller passes `pathlib.Path`, and the annotation once said `str`.
-    It ran correctly and a consumer type-checking against the pack got four
-    errors on calls that worked, so the annotation was narrower than the
-    contract.
+    """A Python caller passes `pathlib.Path`, so the annotation must accept it.
+    Annotated as `str`, the call runs correctly and a consumer type-checking
+    against the pack gets four errors on calls that work: an annotation
+    narrower than the contract.
 
     The seam still sees a string: `saw` is what the substituted writer was
     handed, and a reader or writer that had to accept both types would be paying
@@ -763,7 +761,7 @@ def test_the_pack_is_importable_without_an_install():
         capture_output=True,
         text=True,
         # The return code IS the assertion below, so a non-zero one must reach
-        # it rather than raising here.
+        # it instead of raising here.
         check=False,
     )
     assert result.returncode == 0, result.stderr
@@ -774,10 +772,9 @@ def test_the_pack_is_importable_without_an_install():
 def test_yaml_support_is_a_library_rather_than_a_vendored_copy():
     """The pack binds an installed library by name and vendors nothing.
 
-    It named PyYAML until 2026-09-08 and asserted the import line. Both changed
-    together: ruamel is the binding now, because it is the one Python library
-    whose emitter takes the scalar style, which is the quoting adapter and the
-    reason the hand-written emitter could go.
+    The binding is ruamel, because it is the one Python library whose emitter
+    takes the scalar style, which is the quoting adapter and what lets the pack
+    do without a hand-written emitter.
     """
     from ruamel.yaml import YAML as Ruamel
 
@@ -789,9 +786,9 @@ def test_yaml_support_is_a_library_rather_than_a_vendored_copy():
 
 # COVERS: FR-4.3 | property
 def test_nothing_in_the_codec_writes_yaml_by_hand():
-    """The emitter is the library's. This is the property that retired 192
-    lines, and it is asserted because it is the kind of thing that creeps back
-    one special case at a time.
+    """The emitter is the library's. It is asserted because a hand-written
+    emitter (192 lines of one were removed) creeps back one special case at a
+    time.
 
     A codec that built text would need to join or concatenate it. Reading the
     source is the check that survives someone re-adding a helper, where a
@@ -805,8 +802,9 @@ def test_nothing_in_the_codec_writes_yaml_by_hand():
 # ---- rows the Go pack held alone --------------------------------------------
 #
 # One contract, two packs. A row exercised in one pack is a row the other can
-# break silently, which is not hypothetical here: a schema change once landed
-# green in Go because the only test of that schema was in this file.
+# break silently: a schema change once landed green in Go because the only test
+# of that schema was in this file. See
+# docs/LESSONS/a-schema-change-lands-green-in-the-pack-that-does-not-test-it.md.
 
 
 # COVERS: FR-3.1 | negative
@@ -817,13 +815,12 @@ def test_an_unusable_schema_fails_when_it_is_compiled():
         "not json": "{ not json at all",
         "not a schema": '{"type": 42}',
     }.values():
-        # Both cases USED to raise a third-party type, json's JSONDecodeError
-        # and jsonschema's SchemaError, and this test asserted them to document
-        # the leak rather than hide it. FR-2.11 closed it: a caller does not
-        # need to know which JSON parser or which validator wrench binds.
+        # Left to the libraries, these raise json's JSONDecodeError and
+        # jsonschema's SchemaError. FR-2.11 wraps both: a caller does not need
+        # to know which JSON parser or which validator wrench binds.
         #
-        # The cause stays reachable, which is what makes the wrap honest rather
-        # than a way of losing what happened.
+        # The cause stays reachable, so the wrap loses nothing about what
+        # happened.
         with pytest.raises(wrench.SchemaError) as caught:
             wrench.compile_schema("broken.schema.json", document)
         assert caught.value.__cause__ is not None, "the wrap discarded the cause"
@@ -865,7 +862,7 @@ def test_a_failed_write_leaves_no_temporary_behind(tmp_path):
 def test_the_pack_reads_the_one_copy_of_the_schemas():
     """The schemas and a library for each language live in one repository, so a
     Go producer and a Python producer work from the same definition. The pack
-    carries their text rather than resolving a path, so what makes that true is
+    carries their text instead of resolving a path, so what makes that true is
     the carried copy being byte for byte the directory's."""
     from wrench._shipped import SHIPPED
     from wrench.schema import SCHEMA_DIR
@@ -901,12 +898,11 @@ def test_codec_and_io_are_independent():
         envelope = wrench.load_formatted_file("output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, reader)
         assert "success" in envelope, f"the {name} reader produced no envelope"
 
-    # Three codecs ship. The argument existed so adding one later would not be a
-    # change to the two calls, and adding two was not: the calls above are the
-    # ones they were before FR-2.7 was restated.
+    # The codec is an argument so that adding or removing a format is not a
+    # change to the two calls; the calls above are unchanged by FR-2.7.
     assert isinstance(wrench.YAML, wrench.YAMLCodec)
-    # `Codec` is the seam the three implement, which Go and Rust also export,
-    # so it is excluded here rather than counted as a fourth shipped format.
+    # `Codec` is the seam the codecs implement, which Go and Rust also export,
+    # so it is excluded here and not counted as another shipped format.
     assert sorted(n for n in wrench.__all__ if n.endswith("Codec") and n != "Codec") == [
         "JSONCodec",
         "YAMLCodec",
@@ -971,7 +967,7 @@ def test_a_task_may_allow_an_empty_selection():
 def test_a_time_limit_is_a_decimal_with_a_unit():
     """The grammar is deliberately narrower than a float parse, so the runner
     and this schema stay expressible as the same regex. A jig author gets the
-    error against the document being edited rather than one layer later."""
+    error against the document being edited, not one layer later."""
     for limit in ("30s", "1.5m", "2h", "0.5s", ".5s", "90m"):
         document = f"time-limit: {limit}\ntasks:\n  - name: check\n    command: go test ./...\n    time-limit: {limit}\n".encode()
         try:
@@ -979,8 +975,8 @@ def test_a_time_limit_is_a_decimal_with_a_unit():
         except wrench.ValidationError as problem:  # pragma: no cover - failure path
             pytest.fail(f"{limit} was refused: {problem}")
 
-    # `30` is the one a jig author actually writes, and it was accepted here and
-    # refused by the runner before the schema said anything.
+    # `30` is the one a jig author actually writes, and the runner refuses it,
+    # so the schema has to refuse it first.
     refused = {
         "a bare number": b"tasks:\n  - name: c\n    command: go test ./...\n    time-limit: 30\n",
         "a list": b"tasks:\n  - name: c\n    command: go test ./...\n    time-limit: [30]\n",
@@ -1140,9 +1136,9 @@ def test_a_float_has_one_spelling_in_every_codec(value: float, spelled: str) -> 
     """Positional decimal, never an exponent, in both codecs.
 
     Each language's default float formatting picks its own threshold for
-    switching to an exponent, and the three disagreed. A consumer matching a
+    switching to an exponent, and the three disagree. A consumer matching a
     number with a naive pattern reads `1e+06` as 1, so the spelling is the
-    contract's rather than the standard library's.
+    contract's and not the standard library's.
     """
     for codec, prefix, suffix in CANONICAL_FLOAT_CODECS:
         assert codec.encode({"n": value}) == (prefix + spelled + suffix).encode()
@@ -1168,7 +1164,7 @@ CANONICAL_ESCAPES = [
 # COVERS: FR-4.9 | property
 @pytest.mark.parametrize(("point", "in_yaml"), CANONICAL_ESCAPES)
 def test_a_control_character_is_escaped_in_every_codec(point, in_yaml):
-    """Escaped rather than written raw, in each format's own spelling.
+    """Escaped, never written raw, in each format's own spelling.
 
     A raw control character is refused by a strict YAML reader, accepted by a
     lenient one, and folded to a space by one implementing the YAML 1.1
@@ -1180,8 +1176,8 @@ def test_a_control_character_is_escaped_in_every_codec(point, in_yaml):
     encoded = wrench.YAML.encode(value)
     assert encoded == f'"n": "a{in_yaml}b"\n'.encode()
 
-    # Reading it back is the half that was broken: two packs wrote files their
-    # own parser then refused.
+    # Reading it back is the half that breaks: a pack can write files its own
+    # parser then refuses.
     assert wrench.YAML.decode(encoded)["n"] == text
 
 

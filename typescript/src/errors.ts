@@ -5,14 +5,14 @@
  * `MissingRefError`.
  *
  * A failing call says which step failed. `step` is the vocabulary a consumer
- * matches on, exposed as DATA rather than only as a class, because bolt writes
- * one into a reason's `kind` and a class name is not a value it can carry.
+ * matches on, exposed as data and not only as a class, because bolt writes one
+ * into a reason's `kind` and a class name is not a value it can carry.
  *
- * THESE EXTEND `Error` AND NOTHING NARROWER. The contract forbids hanging them
+ * These extend `Error` and nothing narrower. The contract forbids hanging them
  * off a language's semantic error hierarchy: a validation failure can be a
  * wrong type, which `'three' is not of type 'integer'` demonstrates, and
  * JavaScript's `TypeError` and `RangeError` each exclude half of what a schema
- * refuses. `Error` is the rescuable base rather than a claim about what went
+ * refuses. `Error` is the rescuable base and makes no claim about what went
  * wrong, which is the position every other pack takes.
  */
 
@@ -28,7 +28,7 @@ export type Step =
 
 /**
  * Every step word, in the order the contract lists them. Exposed so a consumer
- * can enumerate the vocabulary rather than restating it.
+ * can enumerate the vocabulary instead of restating it.
  */
 export const STEPS: readonly Step[] = [
   "read",
@@ -63,7 +63,7 @@ export class WrenchError extends Error {
     super(detail.path ? `${message} (${detail.path})` : message, {
       cause: detail.cause,
     });
-    // Set explicitly rather than left to the class name, so a consumer reading
+    // Set explicitly instead of left to the class name, so a consumer reading
     // `error.name` gets the same word whatever a bundler renamed the class to.
     this.name = new.target.name;
     this.path = detail.path;
@@ -105,7 +105,7 @@ export class SchemaError extends WrenchError {
 /**
  * The structure did not match the schema.
  *
- * NOT A SUBCLASS OF `TypeError`, deliberately. Validation spans a wrong type
+ * Not a subclass of `TypeError`, deliberately. Validation spans a wrong type
  * and a wrong value, and they are the same failure here.
  */
 export class ValidationError extends WrenchError {

@@ -2,7 +2,7 @@
  * Schemas, and validating a decoded structure against one.
  *
  * The schemas are the files in this repository's `schemas/` directory, carried
- * as text by `shipped.ts` rather than copied by hand. One copy is what stops
+ * as text by `shipped.ts` and never copied by hand. One copy is what stops
  * two producers drifting apart while both believe they conform (FR-3.2).
  *
  * `ajv` 8.20.0 is the binding, in its 2020-12 build, chosen in
@@ -13,16 +13,16 @@
  * Compiling is deferred until something validates, so importing wrench costs
  * nothing and a broken schema surfaces from the call that needed it.
  *
- * THE ID, NOT THE FILENAME, is what a schema is called in an error (FR-3.6). A
+ * A schema is called by its id in an error, never by its filename (FR-3.6). A
  * relative filename resolves against whatever directory the process happened to
  * start in, which puts a local absolute path into a message that travels inside
  * an envelope.
  *
- * A `$ref` RESOLVES FROM THE SHIPPED SET AND THE DOCUMENT'S OWN FRAGMENTS, AND
- * FROM NOWHERE ELSE (FR-3.10). ajv never retrieves anything for a synchronous
- * compile, so the refusal is structural rather than a policy this file applies:
+ * A `$ref` resolves from the shipped set and the document's own fragments, and
+ * from nowhere else (FR-3.10). ajv never retrieves anything for a synchronous
+ * compile, so the refusal is structural and not a policy this file applies:
  * there is no hook to reach the network or the disk and none is installed.
- * Measured against every shape a reference can take, including a `file://` URL
+ * That holds for every shape a reference can take, including a `file://` URL
  * whose target exists.
  */
 
@@ -40,7 +40,7 @@ export type SchemaDocument = Record<string, unknown>;
  * The one sentence every pack gives for a reference it will not follow
  * (FR-3.10d).
  *
- * It names the reference as RESOLVED rather than as written, because a relative
+ * It names the reference as resolved, not as written, because a relative
  * `$ref` resolves against the document's `$id` and the two can look nothing
  * alike: `sibling.schema.json` under an `$id` of
  * `https://elsewhere.invalid/root.json` is a reference to
@@ -74,10 +74,10 @@ function shippedById(): Map<string, SchemaDocument> {
  * A validator holding the shipped set and nothing else.
  *
  * `strict: false` because wrench's schemas use union types deliberately and
- * ajv's strict mode is a style opinion rather than a validity check, which is
- * the same setting the gate's independent check runs with.
+ * ajv's strict mode is a style opinion, not a validity check, which is the same
+ * setting the gate's independent check runs with.
  *
- * One instance per compiled schema rather than one shared: a shared registry
+ * One instance per compiled schema, not one shared: a shared registry
  * would make two callers compiling different documents under one name collide,
  * and the collision would surface as the second caller validating against the
  * first caller's schema.
@@ -133,7 +133,7 @@ export class CompiledSchema implements Schema {
     const ajv = validatorWithShipped();
     let compiled: ValidateFunction | undefined;
     try {
-      // Registered under the name rather than compiled directly, because the
+      // Registered under the name instead of compiled directly, because the
       // name is then the base a relative `$ref` resolves against where the
       // document declares no `$id` of its own. FR-3.10b.
       if (ajv.getSchema(this.name) === undefined) {
@@ -173,12 +173,12 @@ export class CompiledSchema implements Schema {
  * The shipped set are not special: anything in the ecosystem can attach a
  * schema to its own structured files and hand it to the same two calls.
  *
- * A caller's schema MAY reference a shipped one by its `$id`, because the
+ * A caller's schema may reference a shipped one by its `$id`, because the
  * shipped set is registered before it. That is the case a consumer most wants:
- * an adapter extending the envelope schema references it rather than copying
- * it, and a copy is the drift FR-3.2 exists to prevent.
+ * an adapter extending the envelope schema references it instead of copying
+ * it, and FR-3.2 forbids the drift a copy invites.
  *
- * It may reference NOTHING ELSE, and there is no way to ask for more.
+ * It may reference nothing else, and there is no way to ask for more.
  *
  * A caller may not redefine a shipped `$id` either, because a document deciding
  * what the envelope schema means defeats the reason a schema ships at all.
@@ -202,7 +202,7 @@ export function compileSchema(
     throw new SchemaError(`${name}: a shipped schema cannot be redefined`);
   }
 
-  // Checked against the metaschema here rather than at first validate, so a
+  // Checked against the metaschema here and not at first validate, so a
   // document that is not a schema fails where it was handed over. Reference
   // resolution stays deferred, because that is what compiling a reference
   // costs and nothing has asked for it yet.

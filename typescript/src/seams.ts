@@ -8,13 +8,13 @@
  *           The format. Knows nothing about where bytes came from.
  *           `encode` emits canonical form.
  *   Reader  read(path) -> bytes
- *           The IO on the way in. HANDED THE PATH, NOT THE BYTES.
+ *           The IO on the way in. Handed the path, not the bytes.
  *   Writer  write(path, bytes)
  *           The IO on the way out. Puts the whole contents in place.
  *   Schema  validate(value)
  *           Applies to the decoded structure, not the text.
  *
- * A READER IS HANDED THE PATH RATHER THAN BYTES (FR-2.5a). Handing it bytes
+ * A reader is handed the path and not bytes (FR-2.5a). Handing it bytes
  * would put the open where the caller is, and a test substituting a reader
  * would then be replacing the parse alone. Handed the path, a substituted
  * reader exercises every validation path against no filesystem at all.
@@ -30,7 +30,7 @@
  *
  * Maps, lists and the JSON scalars. A format with a type JSON does not have is
  * reconciled in the decoder: a lossless spelling is coerced, and a mapping key
- * that is not a string is refused rather than stringified, because that
+ * that is not a string is refused and not stringified, because that
  * coercion is not reversible.
  *
  * JavaScript's `number` is the JSON number, so this pack needs no rule for
@@ -59,7 +59,7 @@ export interface Codec {
   encode(value: WrenchValue): Uint8Array;
 }
 
-/** The IO on the way in, handed the path rather than the bytes. */
+/** The IO on the way in, handed the path and not the bytes. */
 export interface Reader {
   read(path: string): Uint8Array | string;
 }
@@ -69,7 +69,7 @@ export interface Writer {
   write(path: string, bytes: Uint8Array): void;
 }
 
-/** Applied to the decoded structure rather than to the text. */
+/** Applied to the decoded structure, not to the text. */
 export interface Schema {
   validate(value: WrenchValue): void;
 }

@@ -3,7 +3,7 @@
  * (FR-2.8). Everything wrench serves runs on the machine holding the file, and
  * a test brings its own.
  *
- * SYNCHRONOUS, and that is the contract rather than an oversight. The two calls
+ * Synchronous, and that is the contract, not an oversight. The two calls
  * return a value in every pack, so making this half asynchronous would make
  * `loadFormattedFile` return a promise and stop it being the same call. A
  * consumer wanting the work off the main thread has the seam to do it: a reader
@@ -33,14 +33,14 @@ export class LocalFile implements Reader, Writer {
   /**
    * The bytes, in place, atomically (FR-6.3).
    *
-   * They go to a temporary file BESIDE the target and are renamed over it, so a
+   * They go to a temporary file beside the target and are renamed over it, so a
    * concurrent reader sees the previous contents or the new ones and never a
-   * half-written file. Beside rather than in a temporary directory, because a
+   * half-written file. Beside it and not in a temporary directory, because a
    * rename across filesystems is a copy and stops being atomic.
    *
    * The data is flushed to the device before the rename. A rename that lands
    * before the contents do leaves a file whose name says it is new and whose
-   * bytes are not there, which is the failure atomicity is bought to prevent.
+   * bytes are not there.
    */
   write(path: string, bytes: Uint8Array): void {
     const temporary = `${directoryOf(path)}.wrench-${Deno.pid}-${
@@ -76,7 +76,7 @@ export class LocalFile implements Reader, Writer {
         Deno.removeSync(temporary);
       } catch {
         // It was never created, or something else took it. Either way the
-        // failure worth reporting is the one being thrown.
+        // failure to report is the one being thrown.
       }
       throw new WriteError("could not write the file", { cause, path });
     }

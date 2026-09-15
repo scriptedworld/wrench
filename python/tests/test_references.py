@@ -1,8 +1,8 @@
 """How a `$ref` is handled, and what a schema keyword means in each of its roles.
 
-The cases here are the cases the Go and Rust suites run. The packs were measured
-against each other on 2026-09-03 before any of these were written, and a
-divergence here is a divergence in the contract rather than in one binding.
+The cases here are the cases the Go and Rust suites run. They were written after
+the packs were compared against each other, so a divergence here is a divergence
+in the contract and not in one binding.
 """
 
 from __future__ import annotations
@@ -17,12 +17,12 @@ import pytest
 import wrench
 
 # The sentence FR-3.10d requires of every pack. Held as a constant so a change to
-# the wording fails a test rather than drifting quietly through three
+# the wording fails a test instead of drifting quietly through three
 # repositories' worth of consumers.
 REFUSAL = "a schema may reference the shipped schemas and its own fragments, and nothing else"
 
-# A schema that really is on disk, so "it was not read" is a measurement rather
-# than the absence of a target. It requires a property no instance here carries,
+# A schema that really is on disk, so "it was not read" is a measurement and not
+# the absence of a target. It requires a property no instance here carries,
 # so a document validated against it would fail loudly.
 #
 # The path is derived rather than written as `/tmp/...`, which is what S108 asks
@@ -48,7 +48,7 @@ def _seed_reachable_schema():
 
 
 def outcome(name, schema_body, instance):
-    """What happened, rather than an assertion, so a table states its own
+    """What happened, instead of an assertion, so a table states its own
     expectation."""
     try:
         schema = wrench.compile_schema(name, schema_body)
@@ -83,8 +83,8 @@ def outcome(name, schema_body, instance):
 )
 def test_a_keyword_in_an_instance_is_data(what, instance):
     """The schema keywords are ordinary keys in a document being validated, and a
-    data file is allowed to carry them. The file this points at EXISTS, so an
-    implementation that resolved it is caught here rather than passing for want
+    data file is allowed to carry them. The file this points at exists, so an
+    implementation that resolved it is caught here instead of passing for want
     of a target."""
     got, detail = outcome("https://example.invalid/s.schema.json", PERMISSIVE, instance)
     assert got == "accepted", f"{what} in an instance was interpreted: {got}: {detail}"
@@ -115,7 +115,7 @@ def test_a_keyword_in_an_instance_is_data(what, instance):
     ],
 )
 def test_a_reference_within_the_document_resolves(what, body):
-    """Both spellings of an internal reference, each asserted by its VIOLATION:
+    """Both spellings of an internal reference, each asserted by its violation:
     an accepted document says nothing, because a $ref that silently contributed
     no constraint would accept it too."""
     document = json.dumps(body)
@@ -135,7 +135,7 @@ def test_a_refusal_names_the_resolved_reference():
     looking for something that is not what failed.
 
     This also pins that the $id wins over the compile name: the name here is a
-    bare filename, and were IT the base the reference would resolve to a path
+    bare filename, and were it the base the reference would resolve to a path
     rather than to elsewhere.invalid."""
     body = json.dumps(
         {
@@ -183,15 +183,15 @@ def test_every_refused_form_gives_the_same_sentence(what, ref):
     ],
 )
 def test_no_environment_variable_opens_a_reference(name):
-    """WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS was documented before it was retired on
-    2026-09-03, so somebody may still set it. It meant three different things
-    while it existed: this pack fetched over HTTP and read files, Go read files,
-    and Rust did nothing at all.
+    """WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS was documented before it was retired,
+    so somebody may still set it. It meant three different things while it
+    existed: this pack fetched over HTTP and read files, Go read files, and Rust
+    did nothing at all.
 
-    One variable per case rather than a loop, so a leftover from an earlier
+    One variable per case instead of a loop, so a leftover from an earlier
     iteration cannot be what the next one measures.
 
-    os.environ directly rather than monkeypatch: this arranges an input, and
+    os.environ directly and not monkeypatch: this arranges an input, and
     reaching for a patching fixture to do it blurs the line with mocking the code
     under test."""
     body = json.dumps(

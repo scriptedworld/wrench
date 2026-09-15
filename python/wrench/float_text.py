@@ -2,7 +2,7 @@
 
 FR-4.8. Positional decimal, never an exponent. The digits are the shortest
 decimal string that reads back as the same float, placed with the decimal point
-where it belongs rather than moved into an `e`. A whole number keeps a ``.0``,
+where it belongs instead of moved into an `e`. A whole number keeps a ``.0``,
 so a float never reads back as an integer.
 
 The rule carries no threshold on purpose. Every alternative needs a magnitude at
