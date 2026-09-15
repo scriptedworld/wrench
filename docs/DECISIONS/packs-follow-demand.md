@@ -23,7 +23,8 @@ language would be nice to support.
 | Python | toolbox's adapters and checkers, and skid | Built |
 | Rust | bolt, which is now a Rust implementation | Built |
 | Ruby | the estate's Ruby tooling as it is written | Built |
-| TypeScript | the estate's TypeScript tooling as it is written | Being built |
+| TypeScript | the estate's TypeScript tooling as it is written | Built, under `typescript/`, and outside the gate |
+| C++ | infobot's C++ port | Planned, clank `tasks/wrench/library/cpp/` |
 
 The rule is relaxed, because its cost premise no longer holds. The decision
 reasoned that a pack is expensive after it is written, being a second

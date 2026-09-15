@@ -101,7 +101,8 @@ the register against every source file, not only the Python pack. There is no
 | Python | toolbox's adapters and checkers | Built, under `python/` |
 | Rust | bolt | Built, suite level with the others |
 | Ruby | the estate's Ruby tooling as it is written | Built, under `ruby/`, and outside the gate |
-| TypeScript | the estate's TypeScript tooling as it is written | Being built |
+| TypeScript | the estate's TypeScript tooling as it is written | Built, under `typescript/`, and outside the gate |
+| C++ | infobot's C++ port | Planned, clank `tasks/wrench/library/cpp/` |
 
 `packs-follow-demand` says what decides when a pack gets written: whether the
 estate writes tools in that language. A waiting consumer is not required,

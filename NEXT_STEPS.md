@@ -126,6 +126,20 @@ decode path, which is why the mechanism is the work and the rules are not.
 
 A cold read of the prose sweep, which by its own design cannot be the writer.
 
+The voice review's leftovers. The sweep commits took most of it; checked
+2026-09-15, tracked source outside Markdown still carries 6 dated comments, 3
+`Measured`/`Verified` labels and about 18 comment lines in capitals, and the
+Markdown carries 47 bold spans. Rewriting the commit history it also scored is
+a separate decision and has not been taken.
+
+A pre-commit hook that calls a `just` recipe, the estate standard filed in
+silo's inbox as `pre-commit-runs-just-recipes-in-every-repository`. wrench
+already has one installed, `.git/hooks/pre-commit.local` linked to
+`bin/githooks/pre-commit`, and it runs the suppression checker directly.
+Conforming means a recipe that runs the checker and a hook that calls the
+recipe. How hooks are wired under the global `core.hooksPath` is silo's
+question and is still open there.
+
 A composite jig, whose premise the conversion to command tasks restores.
 
 Dropping the retired jig task fields from the jig schema is declined. Removing

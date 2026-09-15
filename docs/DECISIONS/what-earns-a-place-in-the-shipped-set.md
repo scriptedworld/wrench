@@ -76,6 +76,11 @@ An internal representation. One component writing a file it alone reads is
 free to change its form whenever it likes, and a schema there converts a private
 choice into a public promise for nothing.
 
+A tool's own configuration is the same case. qwark's rule set is written by a
+person and read by qwark alone, so its schema is qwark's and is handed to
+`compile_schema`. Shipping it would also put a wrench release between qwark and a
+rule file it cannot load, where an unloadable rule file means no Bash at all.
+
 A document whose only real invariant is referential integrity. JSON Schema
 cannot say "this string must equal one of the `name` values elsewhere in this
 document". So for a document whose defining property is that its references
