@@ -17,7 +17,7 @@ const fileMode = 0o644
 // temporary is renamed into place, so a reader sees the previous contents or
 // the new ones and never a half-written file. Beside the target matters: a
 // temporary elsewhere makes the move a copy across filesystems, which is not
-// atomic and defeats the point.
+// atomic.
 //
 // It creates no directories. A path whose parent is missing is an error, and
 // deciding that a directory should exist belongs to whoever chose the path.

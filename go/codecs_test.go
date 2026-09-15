@@ -10,8 +10,8 @@ import (
 )
 
 // The expected bytes below are asserted identically in all three suites. A table
-// that differs between packs is packs that differ, which is the whole argument
-// of docs/PATTERNS/holding-two-packs-level.md.
+// that differs between packs is packs that differ; the argument is in
+// docs/PATTERNS/holding-two-packs-level.md.
 
 func threeFormats() map[string]any {
 	return map[string]any{
@@ -88,9 +88,9 @@ func TestNegativeZeroIsSignedInJSONAndAnIntegerElsewhere(t *testing.T) {
 
 // COVERS: FR-4.10 | property
 func TestAnIntegerPastInt64WidensToAFloat(t *testing.T) {
-	// The band Go alone kept exact: go-yaml reaches for uint64 above int64, so
-	// (int64max, uint64max] arrived here as an exact integer while anything
-	// larger had already become a float64.
+	// The band only Go's YAML decoder holds exact: go-yaml reaches for uint64
+	// above int64, so (int64max, uint64max] arrives as an exact integer while
+	// anything larger has already become a float64.
 	for _, codec := range []struct {
 		name  string
 		codec wrench.Codec
@@ -237,8 +237,8 @@ func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
 			t.Errorf("yaml U+%04X wrote %q, want %q", c.point, yamlBytes, want)
 		}
 
-		// Reading it back is the half that was broken: two packs wrote files
-		// their own parser then refused.
+		// Reading it back is the half that breaks: a pack can write a file its
+		// own parser then refuses.
 		back, err := wrench.YAML.Decode(yamlBytes)
 		if err != nil {
 			t.Fatalf("yaml decode U+%04X: %v", c.point, err)

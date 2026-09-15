@@ -124,10 +124,10 @@ func TestTheShippedSetIsReachableWithoutTheSuffix(t *testing.T) {
 // COVERS: FR-3.7, FR-5.7 | regression
 func TestEveryShippedSchemaIsExported(t *testing.T) {
 	// A schema added to schemas/ and picked up by one pack but not the other is
-	// a divergence in the contract that nothing reports. It has happened: a
-	// fourth schema shipped, Go exported it, Python named three filenames in its
-	// source and did not. Each pack asserts against the directory, so both
-	// agreeing with the directory is what makes them agree with each other.
+	// a divergence in the contract that nothing reports: a fourth schema can
+	// ship and Go export it while Python, naming three filenames in its source,
+	// does not. Each pack asserts against the directory, so both agreeing with
+	// the directory is what makes them agree with each other.
 	declared := declaredIDs(t)
 
 	for id, file := range declared {
@@ -378,8 +378,8 @@ func consumerSchema(target string) string {
 // COVERS: FR-3.10 | positive
 func TestAConsumerSchemaMayReferenceAShippedOne(t *testing.T) {
 	// The case a consumer most wants: an adapter extending the envelope schema
-	// references it rather than copying it, and a copy is the drift FR-3.2
-	// exists to prevent.
+	// references it instead of copying it, and a copy is the drift FR-3.2
+	// forbids.
 	schema, err := wrench.CompileSchema("mine.schema.json",
 		strings.NewReader(consumerSchema("https://scriptedworld.github.io/wrench/definitions.schema.json")))
 	if err != nil {
@@ -400,9 +400,9 @@ func TestAConsumerSchemaMayReferenceAShippedOne(t *testing.T) {
 
 // COVERS: FR-3.10 | negative
 func TestASchemaMayReferenceNothingOutsideTheShippedSet(t *testing.T) {
-	// Measured before this existed: file:// and a bare absolute path both loaded
-	// that file off disk, so a schema's meaning depended on files outside it.
-	// Nothing was ever fetched over the network.
+	// Unguarded, file:// and a bare absolute path both load that file off disk,
+	// so a schema's meaning depends on files outside it. The Go binding never
+	// fetched over the network.
 	local := filepath.Join(t.TempDir(), "local.schema.json")
 	if err := os.WriteFile(local, []byte(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}`), 0o644); err != nil {
 		t.Fatalf("seeding: %v", err)
@@ -425,15 +425,13 @@ func TestASchemaMayReferenceNothingOutsideTheShippedSet(t *testing.T) {
 
 // COVERS: FR-3.10 | negative
 func TestTheEnvironmentCannotRestoreExternalReferences(t *testing.T) {
-	// This asserted the opposite until 2026-09-03, when the escape hatch was
-	// removed. It is kept, inverted, because the variable was documented and
-	// somebody may still set it: a refusal that quietly became permissive
-	// because an old name was still honoured is the failure worth pinning.
+	// The escape hatch is retired, but the variable was documented and somebody
+	// may still set it. A refusal that quietly turns permissive because an old
+	// name is still honoured is the failure this pins.
 	//
-	// Measured before removal: one variable meant three different things.
-	// Setting it let Python fetch over HTTP and read files, let Go read files
-	// only, and did nothing at all in Rust, whose bound crate never linked the
-	// resolving code.
+	// While it existed, one variable meant three different things. Setting it
+	// let Python fetch over HTTP and read files, let Go read files only, and did
+	// nothing at all in Rust, whose bound crate never linked the resolving code.
 	local := filepath.Join(t.TempDir(), "local.schema.json")
 	if err := os.WriteFile(local, []byte(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}`), 0o644); err != nil {
 		t.Fatalf("seeding: %v", err)
@@ -503,9 +501,9 @@ func manifestWith(variables string) string {
 
 // COVERS: FR-3.1, FR-3.4 | edge
 func TestAManifestVariableSaysWhichLayerSuppliedIt(t *testing.T) {
-	// Nothing in Go exercised this schema until a change to it broke the Python
-	// pack alone. A shipped schema no pack validates against is a shape the
-	// gate cannot hold either pack to.
+	// Without this, a change to the manifest schema can break one pack alone
+	// and go unnoticed in the other. A shipped schema no pack validates against
+	// is a shape the gate cannot hold either pack to.
 	accepted := manifestWith(
 		"  requirements:\n    value: ../REQUIREMENTS.md\n    from: file\n" +
 			"  all_paths:\n    value:\n      - a.go\n      - b.go\n    from: bolt\n")
@@ -581,8 +579,8 @@ func TestATimeLimitIsADecimalWithAUnit(t *testing.T) {
 		}
 	}
 
-	// `30` is the one a jig author actually writes, and it was accepted here
-	// and refused by the runner before the schema said anything.
+	// `30` is the one a jig author actually writes, and the runner refuses it,
+	// so the schema has to refuse it too.
 	refused := map[string]string{
 		"a bare number":     "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: 30\n",
 		"a list":            "tasks:\n  - name: c\n    command: go test ./...\n    time-limit: [30]\n",
@@ -602,8 +600,8 @@ func TestATimeLimitIsADecimalWithAUnit(t *testing.T) {
 
 // COVERS: FR-3.1, FR-3.4 | edge
 func TestEnvelopeEvidenceAndStatisticsAreObjects(t *testing.T) {
-	// Both carried a description and no type, so a producer could write either
-	// as a string, a list or a number and validation passed every time. The
+	// With a description and no type, a producer could write either as a
+	// string, a list or a number and validation would pass every time. The
 	// member shape stays open: constraining it would bind every producer to one
 	// runner's naming.
 	accepted := "success: true\nmetadata:\n  evidence:\n    alpha-1:\n      result: /tmp/a\n  statistics:\n    checked: 12\n"

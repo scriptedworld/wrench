@@ -101,10 +101,9 @@ func TestAValueWithNoCanonicalFormIsRefused(t *testing.T) {
 
 // COVERS: FR-2.9 | regression
 func TestATimestampDecodesToAStringSoItCanBeWrittenBack(t *testing.T) {
-	// YAML has a native timestamp type and JSON does not. Before this, an
-	// unquoted date decoded to a time.Time, reached the validator, which has no
-	// type for it, and then could not be encoded: wrench could read a file it
-	// could not write back.
+	// YAML has a native timestamp type and JSON does not. Left as a time.Time,
+	// an unquoted date reaches the validator, which has no type for it, and then
+	// cannot be encoded: wrench would read a file it cannot write back.
 	value, err := wrench.YAML.Decode([]byte("day: 2026-01-01\nstamp: 2026-01-01T07:32:00Z\n"))
 	if err != nil {
 		t.Fatalf("decoding: %v", err)
@@ -120,7 +119,7 @@ func TestATimestampDecodesToAStringSoItCanBeWrittenBack(t *testing.T) {
 		}
 	}
 
-	// The point of the coercion: what was read can be written.
+	// The coercion exists so that what was read can be written.
 	encoded, err := wrench.YAML.Encode(value)
 	if err != nil {
 		t.Fatalf("encoding what was just decoded: %v", err)

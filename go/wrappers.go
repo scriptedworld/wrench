@@ -5,10 +5,9 @@ package wrench
 // These add no behaviour. Each supplies one argument, so validation still sits
 // in the signature and the seam is unchanged in both directions.
 //
-// NAMED RATHER THAN INFERRED FROM THE SUFFIX. Choosing a parser by filename
-// makes behaviour depend on what a file is called, so renaming one would
-// silently change how it is read. FR-2.2 exists to remove exactly that
-// implicitness.
+// The format is named, never inferred from the suffix. Choosing a parser by
+// filename makes behaviour depend on what a file is called, so renaming one
+// would silently change how it is read. FR-2.2 removes that implicitness.
 
 // LoadYAMLFile reads a YAML file and validates it against schema.
 func LoadYAMLFile(path string, schema Schema, reader Reader) (any, error) {

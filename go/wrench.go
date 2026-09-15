@@ -17,9 +17,9 @@ package wrench
 // read, parsed or validated.
 //
 // These stay sentinel values so errors.Is keeps working, and gain Step so
-// errors.As reaches them through the Error interface. Before this they were
-// plain errors.New values, so a consumer catching "any wrench failure" missed
-// exactly the failures that mean it called wrench wrong.
+// errors.As reaches them through the Error interface. As plain errors.New
+// values, a consumer catching "any wrench failure" would miss exactly the
+// failures that mean it called wrench wrong.
 type usageError struct{ message string }
 
 func (e *usageError) Error() string { return e.message }

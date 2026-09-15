@@ -7,11 +7,11 @@ import (
 )
 
 // An empty container has one spelling, and it is the short one. The recursive
-// path never reaches this arm, so line coverage read it as covered while the
-// branch went untaken — found in the Python pack on 2026-09-04 when the gate
-// began judging branches, and asserted here because a pack agreeing about full
-// containers and differing about empty ones is exactly what a shared case set
-// exists to catch.
+// path never reaches this arm, so line coverage reads it as covered while the
+// branch goes untaken. Only branch coverage shows it, which is how it surfaced
+// in the Python pack. It is asserted here because packs that agree about full
+// containers can still differ about empty ones, and a shared case set is what
+// catches that.
 
 // COVERS: FR-4.6 | edge
 func TestJSONEmptyContainersAreShort(t *testing.T) {

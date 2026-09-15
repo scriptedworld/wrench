@@ -66,27 +66,27 @@ func (yamlCodec) Encode(value any) ([]byte, error) {
 // key that is not a string has no JSON equivalent and is refused rather than
 // coerced, because coercing invents a document nobody wrote.
 //
-// A TIMESTAMP IS THE ONE VALUE THAT IS COERCED, and it is the exception that
-// proves the rule. YAML has a native timestamp type and JSON does not, so an
-// unquoted 2026-01-01 decoded to a time.Time and the structure stopped being the
-// maps, lists and JSON scalars everything downstream assumes. It reached the
-// validator, which has no type for it, and the save call then refused to write
-// back a file the load call had just read.
+// A timestamp is the one value that is coerced. YAML has a native timestamp
+// type and JSON does not, so an unquoted 2026-01-01 decodes to a time.Time and
+// the structure stops being the maps, lists and JSON scalars everything
+// downstream assumes. Left alone, it reaches the validator, which has no type
+// for it, and the save call then refuses to write back a file the load call
+// has just read.
 //
 // RFC 3339 is lossless for the value and is what the timestamp was written as,
 // so the string carries everything the time.Time did. Refusing instead would
-// mean wrench cannot read an ordinary YAML file, and leaving it alone is what
-// broke the round trip.
+// mean wrench cannot read an ordinary YAML file.
 func normalise(value any) (any, error) {
 	switch v := value.(type) {
 	case time.Time:
 		return v.Format(time.RFC3339), nil
 	case uint64:
-		// THE ONE BAND WHERE GO KEPT AN EXACT INTEGER AND THE OTHER PACKS DID
-		// NOT. go-yaml reaches for uint64 when a positive integer will not fit
-		// int64, so values in (int64max, uint64max] arrived here exact while
-		// anything larger, and anything negative past the boundary, had already
-		// become a float64. Go's own JSON codec widens the whole band.
+		// This is the one band where go-yaml keeps an exact integer and the
+		// other packs do not. go-yaml reaches for uint64 when a positive integer
+		// will not fit int64, so values in (int64max, uint64max] arrive here
+		// exact while anything larger, and anything negative past the boundary,
+		// has already become a float64. Go's own JSON codec widens the whole
+		// band.
 		//
 		// Past int64 a number widens to a float in every pack and every codec,
 		// and the widening is visible: 18446744073709551615 comes back spelled

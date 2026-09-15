@@ -20,11 +20,11 @@ import (
 //
 // The form is `deno fmt` clean, and that is deliberate. bolt.wrench-quality.yaml
 // already runs `deno fmt --check` over schemas/*.json, so a second answer about
-// JSON layout would put two formatters in one repository. Measured 2026-08-28:
-// sorted, two-space, one-key-per-line JSON passes deno fmt unchanged. deno fmt
-// does not sort keys and collapses a short object onto one line, so it is a
-// formatter rather than a canonical form, and matching it is one direction
-// only: what wrench emits, deno accepts.
+// JSON layout would put two formatters in one repository. Sorted, two-space,
+// one-key-per-line JSON passes deno fmt unchanged. deno fmt does not sort keys
+// and collapses a short object onto one line, so it is a formatter and not a
+// canonical form, and matching it holds in one direction only: what wrench
+// emits, deno accepts.
 var JSON Codec = jsonCodec{}
 
 type jsonCodec struct{}
@@ -37,11 +37,10 @@ type jsonCodec struct{}
 // not: it makes every number a float64, so `1` and `1.0` arrive identical and a
 // whole file of integers reads back as floats.
 //
-// This was invisible while the encoder also spelled a whole float as `1`. Once
-// FR-4.8 gave a float its decimal point in every codec, a JSON integer decoded
-// here and written back came out as `1.0`, disagreeing with the other two packs
-// about the same bytes. The defect was always the decode; the encoder was
-// hiding it.
+// Without UseNumber, a JSON integer decoded here and written back comes out as
+// `1.0`, because FR-4.8 gives a float its decimal point in every codec, and the
+// pack then disagrees with the other two about the same bytes. An encoder that
+// spells a whole float as `1` hides that defect in the decode.
 func (jsonCodec) Decode(data []byte) (any, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
@@ -97,8 +96,8 @@ func jsonNumbers(value any) (any, error) {
 // it.
 func jsonNumber(n json.Number) (any, error) {
 	text := n.String()
-	// NEGATIVE ZERO IS A VALUE IN JSON AND NOT A SPELLING OF ZERO. JavaScript is
-	// the reference for what a JSON document means, and V8 reads `-0` as a
+	// Negative zero is a value in JSON, distinct from zero. JavaScript is the
+	// reference for what a JSON document means, and V8 reads `-0` as a
 	// signed zero: `Object.is(JSON.parse("-0"), -0)` is true and `1/x` is
 	// -Infinity. An integer zero cannot carry the sign, so this is the one
 	// literal with no decimal point that still decodes to a float. FR-4.11.

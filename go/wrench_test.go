@@ -10,9 +10,9 @@ import (
 	"github.com/scriptedworld/wrench/go"
 )
 
-// stubReader hands back bytes without touching a filesystem. Its existence is
-// the point of FR-2.5a: a reader takes the path, so a test replaces the whole
-// IO boundary rather than only the parse.
+// stubReader hands back bytes without touching a filesystem, which is what
+// FR-2.5a is for: a reader takes the path, so a test replaces the whole IO
+// boundary and not only the parse.
 type stubReader struct {
 	data    []byte
 	err     error

@@ -8,9 +8,9 @@ import (
 	wrench "github.com/scriptedworld/wrench/go"
 )
 
-// The three cases below are the same cases the Python and Rust suites run, and
-// the packs were measured against each other on 2026-09-03 before any of them
-// were written. A divergence here is a divergence in the contract.
+// The cases below are the same cases the Python and Rust suites run, and the
+// packs were measured against each other before any of them were written. A
+// divergence here is a divergence in the contract.
 
 const permissiveSchema = `{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object"}`
 
@@ -130,17 +130,17 @@ func TestEveryRefusedFormGivesTheSameSentence(t *testing.T) {
 
 // COVERS: FR-3.10 | negative
 func TestNoEnvironmentVariableOpensAReference(t *testing.T) {
-	// WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS was documented before it was retired on
-	// 2026-09-03, so somebody may still set it. It meant three different things
-	// while it existed: Python fetched over HTTP and read files, Go read files,
-	// and Rust did nothing at all.
+	// WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS was documented before it was retired, so
+	// somebody may still set it. It meant three different things while it
+	// existed: Python fetched over HTTP and read files, Go read files, and Rust
+	// did nothing at all.
 	seedReachableSchema(t)
 	body := `{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"file://` + reachablePath + `"}`
 
 	// A subtest each, because t.Setenv restores at the end of the test rather
 	// than at the end of an iteration: setting three names in one loop leaves
 	// all three set, and the second and third would report a failure the first
-	// one caused. Seen while proving these fail for the right reason.
+	// one caused.
 	for _, name := range []string{
 		"WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS",
 		"WRENCH_ALLOW_LOCAL_SCHEMA_REFS",

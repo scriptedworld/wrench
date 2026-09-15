@@ -81,17 +81,16 @@ func CompileSchema(name string, document io.Reader) (Schema, error) {
 
 // localOnly refuses every reference the compiler was not already given.
 //
-// Measured 2026-08-27: a $ref of "file:///tmp/x.schema.json" or of a bare
-// absolute path loaded that file off disk, so a schema's meaning depended on
-// files outside it and a consumer could reference a local copy of a shipped
-// schema instead of the shipped one, which is the drift FR-3.2 exists to
-// prevent.
+// Without it, a $ref of "file:///tmp/x.schema.json" or of a bare absolute path
+// loads that file off disk, so a schema's meaning depends on files outside it
+// and a consumer can reference a local copy of a shipped schema instead of the
+// shipped one. FR-3.2 forbids that drift.
 //
-// THE MESSAGE IS THE SAME SENTENCE IN EVERY PACK, because a consumer reading a
-// refusal should not be able to tell which language produced it. The three
-// bindings refuse by three different mechanisms — this loader, an absent
-// registry entry, and a crate feature that was never compiled — and each was
-// wording it in its own vocabulary.
+// The message is the same sentence in every pack, because a consumer reading a
+// refusal should not be able to tell which language produced it. The packs
+// refuse by different mechanisms (this loader, a registry holding only the
+// shipped set, a retriever) and each would otherwise word the refusal in its
+// own library's vocabulary.
 type localOnly struct{}
 
 func (localOnly) Load(url string) (any, error) {
@@ -138,8 +137,8 @@ func compile(name string, document io.Reader) (*jsonschema.Schema, error) {
 	}
 
 	// A caller may not redefine a shipped $id. Registering one twice would let a
-	// document decide what the envelope schema means, which is the one thing a
-	// shipped schema exists to fix.
+	// document decide what the envelope schema means, and fixing that meaning
+	// is what a shipped schema is for.
 	if _, shipped := shippedIDs()[name]; shipped {
 		return nil, fmt.Errorf("wrench: %s is a shipped schema and cannot be redefined", name)
 	}
@@ -149,7 +148,7 @@ func compile(name string, document io.Reader) (*jsonschema.Schema, error) {
 	}
 
 	// Returned bare. CompileSchema wraps this in a SchemaError whose message is
-	// already "compiling <name>", so a prefix here rendered it twice:
+	// already "compiling <name>", so a prefix here would render it twice:
 	// "wrench: compiling mine.json: wrench: compiling schema mine.json: ...".
 	// compileShipped keeps its own, because the lazy path wraps with no name.
 	return compiler.Compile(name)
@@ -182,8 +181,7 @@ func shipped(id string) Schema {
 
 // compileShipped registers every shipped schema before compiling the one asked
 // for, so one may reference another by its $id. A shape two files both need is
-// then written once instead of copied, which is the drift a shipped schema
-// exists to prevent.
+// then written once instead of copied, and cannot drift between copies.
 func compileShipped(id string) (*jsonschema.Schema, error) {
 	compiler, err := newCompiler()
 	if err != nil {
