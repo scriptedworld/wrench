@@ -1,9 +1,8 @@
 //! How a `$ref` is handled, and what a schema keyword means in each of its roles.
 //!
 //! The cases here are the cases the Go and Python suites run. The packs were
-//! measured against each other on 2026-09-03 before any of these were written,
-//! and a divergence here is a divergence in the contract rather than in one
-//! binding.
+//! measured against each other before any of these were written, and a
+//! divergence here is a divergence in the contract, not in one binding.
 
 use serde_json::{json, Value};
 use std::fs;
@@ -191,16 +190,16 @@ fn every_refused_form_gives_the_same_sentence() {
 // COVERS: FR-3.10 | negative
 #[test]
 fn no_environment_variable_opens_a_reference() {
-    // WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS was documented before it was retired on
-    // 2026-09-03, so somebody may still set it. It meant three different things
-    // while it existed: Python fetched over HTTP and read files, Go read files,
-    // and this pack did nothing at all — its bound crate never linked the
+    // WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS was documented before it was retired, so
+    // somebody may still set it. It meant three different things while it
+    // existed: Python fetched over HTTP and read files, Go read files, and this
+    // pack did nothing at all, because its bound crate never linked the
     // resolving code.
     //
-    // THAT LAST PART WAS NOT THE GUARANTEE IT READ AS. Cargo unifies features
-    // across the graph, so another crate enabling jsonschema/resolve-http
-    // enables it here. The retriever is what this asserts, and it holds whatever
-    // the rest of the build turned on.
+    // An unlinked feature is no guarantee. Cargo unifies features across the
+    // graph, so another crate enabling jsonschema/resolve-http enables it here.
+    // The retriever is what this asserts, and it holds whatever the rest of the
+    // build turned on.
     seed();
     let body = format!(
         r#"{{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"file://{REACHABLE}"}}"#

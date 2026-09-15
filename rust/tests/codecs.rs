@@ -1,8 +1,8 @@
 //! The JSON codec, and the tables both codecs share, asserted against the same
 //! tables as the Go and Python suites.
 //!
-//! A table that differs between packs is packs that differ, which is the whole
-//! argument of `docs/PATTERNS/holding-two-packs-level.md`.
+//! A table that differs between packs is packs that differ; the argument is in
+//! `docs/PATTERNS/holding-two-packs-level.md`.
 
 use std::cell::RefCell;
 
@@ -67,8 +67,8 @@ fn json_canonical_form() {
 #[test]
 fn negative_zero_is_signed_in_json_and_an_integer_elsewhere() {
     // JavaScript decides what a JSON document means, and V8 reads -0 as signed.
-    // serde_json already agrees: it routes -0 alone to a float while -1 stays
-    // an i64, so this pack needed no change for the JSON half.
+    // serde_json agrees on its own: it routes -0 alone to a float while -1
+    // stays an i64, so the JSON half needs nothing from this pack.
     let json = JSON.decode(b"{\"n\": -0}").expect("decode");
     assert!(json["n"].is_f64(), "JSON -0 came back {:?}", json["n"]);
     assert!(
@@ -90,8 +90,8 @@ fn negative_zero_is_signed_in_json_and_an_integer_elsewhere() {
 // COVERS: FR-4.10 | property
 #[test]
 fn an_integer_past_int64_widens_to_a_float() {
-    // Rust was already the reference for this in YAML: its decoder falls to f64
-    // where Go reached for uint64 and Python kept an unbounded int.
+    // Rust is the reference for this in YAML: its decoder falls to f64 where
+    // go-yaml reaches for uint64 and Python's parser gives an unbounded int.
     for (name, bytes) in [
         ("yaml", &b"n: 18446744073709551615\n"[..]),
         ("json", &b"{\"n\": 18446744073709551615}\n"[..]),
@@ -240,7 +240,7 @@ fn a_control_character_is_escaped_in_every_codec() {
             "yaml U+{point:04X}"
         );
 
-        // Reading it back is the half that was broken.
+        // Reading it back is the half that breaks.
         let back = wrench::YAML.decode(&encoded).unwrap();
         assert_eq!(back.get("n").and_then(|v| v.as_str()), Some(text.as_str()));
     }

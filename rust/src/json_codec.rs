@@ -7,13 +7,13 @@
 //! Keys are sorted for the reason the YAML codec sorts them: a mapping has no
 //! order of its own, so sorting is what makes two runs over the same structure
 //! produce the same bytes. `serde_json`'s `preserve_order` feature is
-//! deliberately NOT enabled, so its map is a `BTreeMap` and iterates sorted.
+//! deliberately not enabled, so its map is a `BTreeMap` and iterates sorted.
 //!
 //! The form is `deno fmt` clean, and that is deliberate.
 //! `bolt.wrench-quality.yaml` already runs `deno fmt --check` over
 //! `schemas/*.json`, so a second answer about JSON layout would put two
-//! formatters in one repository. Measured 2026-08-28 against Go and Python:
-//! byte-identical.
+//! formatters in one repository. The output is byte-identical to the Go and
+//! Python packs'.
 
 use std::io;
 
@@ -146,15 +146,15 @@ impl Formatter for CanonicalFormatter<'_> {
 
 /// Widens an integer past `i64` to a float, in place. FR-4.10.
 ///
-/// THE ONE BAND THIS PACK KEPT EXACT IN JSON. serde_json reaches for `u64` when
-/// a positive integer will not fit `i64`, so values in `(i64::MAX, u64::MAX]`
-/// decoded exactly here while anything larger, and anything negative past the
-/// boundary, had already become `f64`. The YAML codec never had it, because the
-/// YAML parser offers only `i64` or `f64`.
+/// serde_json reaches for `u64` when a positive integer will not fit `i64`, so
+/// without this, values in `(i64::MAX, u64::MAX]` decode exactly here while
+/// anything larger, and anything negative past the boundary, has already become
+/// `f64`. The YAML codec has no such band, because the YAML parser offers only
+/// `i64` or `f64`.
 ///
-/// It is the same shape as the defect the Go pack had in its YAML codec, from
-/// the other direction: each pack kept the band its own parser had a type for,
-/// so the two disagreed about the value while agreeing about everything else.
+/// Go's YAML codec has the same band from the other direction. A pack that
+/// keeps whatever band its own parser has a type for disagrees with the others
+/// about the value while agreeing about everything else.
 fn widen_past_i64(value: &mut Value) {
     match value {
         Value::Number(number) => {

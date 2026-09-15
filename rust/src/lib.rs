@@ -121,9 +121,9 @@ pub fn save_formatted_file(
 // These add no behaviour. Each supplies one argument to the two calls above, so
 // validation still sits in the signature and the seam is unchanged.
 //
-// NAMED RATHER THAN INFERRED FROM THE SUFFIX. Choosing a parser by filename
-// makes behaviour depend on what a file is called, so renaming one would
-// silently change how it is read. FR-2.2 exists to remove that implicitness.
+// The format is named, never inferred from the suffix. Choosing a parser by
+// filename makes behaviour depend on what a file is called, so renaming one
+// would silently change how it is read. FR-2.2 removes that implicitness.
 
 /// Load a YAML file, validated against `schema`.
 pub fn load_yaml_file(path: &str, schema: &dyn Schema, reader: &dyn Reader) -> Result<Value> {

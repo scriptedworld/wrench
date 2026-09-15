@@ -5,7 +5,7 @@
 //! bare. Quoting marks intent, so `no`, `1.20` and `null` survive a round trip
 //! as the strings they were.
 //!
-//! libyaml EMITS. The document is handed to it as events with the style named
+//! libyaml does the emitting. The document is handed to it as events with the style named
 //! on each scalar, and it decides layout, indentation, escaping and line
 //! breaks. Its escape table is already the one this pack wants. What is here
 //! is the four adapters and nothing that produces text.

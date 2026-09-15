@@ -15,10 +15,9 @@
 //! The cost is bounded: 326 characters for a subnormal near the bottom of the
 //! range, 311 for the largest finite double.
 //!
-//! **This pack was already right and is the reason the rule is spelled this
-//! way.** `Display` for `f64` is positional and shortest-round-trip, so the
-//! hand-written YAML codec here needed no change; what moved is that both
-//! codecs now ask one function rather than each spelling it for itself.
+//! The rule is spelled after what this pack already did. `Display` for `f64` is
+//! positional and shortest-round-trip, and both codecs ask this one function
+//! instead of each spelling a float for itself.
 //!
 //! NaN and the infinities cannot reach here: `serde_json::Number` refuses to
 //! hold them, so the value type rejects them before a codec is asked.

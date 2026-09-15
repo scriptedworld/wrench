@@ -4,22 +4,21 @@
 //! build time by `build.rs` and embedded. One copy is what stops a Go producer
 //! and a Rust producer drifting apart while both believe they conform.
 //!
-//! THE ID, NOT THE FILENAME, is what a schema is called in an error. A relative
+//! A schema is called by its id in an error, never by its filename. A relative
 //! filename resolves against whatever directory the process happened to start
 //! in, which puts a local absolute path into a message that travels inside an
 //! envelope.
 //!
-//! A SCHEMA MAY REFERENCE THE SHIPPED SET AND NOTHING ELSE, per FR-3.10, and
+//! A schema may reference the shipped set and nothing else, per FR-3.10, and
 //! this pack refuses twice over.
 //!
 //! `jsonschema` is declared with `default-features = false`, so `resolve-file`
-//! and `resolve-http` are not built into wrench's own dependency line. **That
-//! alone was never the guarantee it read as.** Cargo unifies features across the
-//! whole graph, so any other crate in a consumer's build that enables
-//! `jsonschema/resolve-http` enables it here, and nothing in this crate would
-//! know. The declaration keeps the HTTP client and TLS stack out of a build that
-//! does not otherwise ask for them, which is worth having, and it is not a
-//! refusal.
+//! and `resolve-http` are not built into wrench's own dependency line. That
+//! alone guarantees nothing. Cargo unifies features across the whole graph, so
+//! any other crate in a consumer's build that enables `jsonschema/resolve-http`
+//! enables it here, and nothing in this crate would know. The declaration keeps
+//! the HTTP client and TLS stack out of a build that does not otherwise ask for
+//! them, which is useful, but it is not a refusal.
 //!
 //! The refusal is [`LocalOnly`], a retriever that answers every reference the
 //! compiler was not already given with wrench's own message. It holds whatever
@@ -96,9 +95,9 @@ fn registry() -> &'static jsonschema::Registry<'static> {
 
 /// The one sentence every pack gives for a reference it will not follow.
 ///
-/// It names the reference as RESOLVED rather than as written, because a relative
+/// It names the reference as resolved, not as written, because a relative
 /// `$ref` resolves against the document's `$id` and the two can look nothing
-/// alike. Measured 2026-09-03: `/tmp/x.schema.json` under an `$id` of
+/// alike. `/tmp/x.schema.json` under an `$id` of
 /// `https://elsewhere.invalid/root.json` resolves to
 /// `https://elsewhere.invalid/tmp/x.schema.json`, and quoting what was written
 /// would send a reader looking for the wrong thing.
@@ -111,10 +110,9 @@ pub(crate) fn unresolved(uri: &str) -> String {
 
 /// Refuses every reference the compiler was not already given.
 ///
-/// THIS DOES NOT RELY ON A CARGO FEATURE BEING OFF, and that is the point.
-/// `default-features = false` keeps `resolve-http` and `resolve-file` out of
-/// wrench's own dependency line, but **Cargo unifies features across the whole
-/// graph**: any other crate in a consumer's build that enables
+/// This does not rely on a Cargo feature being off. `default-features = false`
+/// keeps `resolve-http` and `resolve-file` out of wrench's own dependency line,
+/// but Cargo unifies features across the whole graph: any other crate in a consumer's build that enables
 /// `jsonschema/resolve-http` enables it for this build too, and wrench never
 /// sees that happen. A retriever that always refuses makes the refusal a
 /// property of wrench rather than of what the rest of the graph asked for.
@@ -141,16 +139,14 @@ fn build(name: &str, document: &Value) -> Result<jsonschema::Validator, Error> {
     jsonschema::options()
         .with_registry(registry())
         .with_retriever(LocalOnly)
-        // THE NAME IS THE BASE WHERE THE DOCUMENT DECLARES NO `$id`, which is
-        // what the Go and Python packs already did and this one did not.
+        // The name is the base where the document declares no `$id`, as in the
+        // Go and Python packs.
         //
-        // Measured 2026-09-03 while writing the shared cases: a `$ref` of
-        // `/tmp/x.schema.json` in a schema with no `$id` failed here with the
-        // crate's own "No base URI is available" before [`LocalOnly`] was ever
-        // asked, so the refusal carried neither wrench's sentence nor the
-        // resolved reference. The other two resolved it against the name and
-        // refused it properly. A document declaring an `$id` is unaffected: the
-        // `$id` wins over this in every pack.
+        // Without a base, a `$ref` of `/tmp/x.schema.json` in a schema with no
+        // `$id` fails here with the crate's own "No base URI is available"
+        // before [`LocalOnly`] is ever asked, so the refusal carries neither
+        // wrench's sentence nor the resolved reference. A document declaring an
+        // `$id` is unaffected: the `$id` wins over this in every pack.
         .with_base_uri(name.to_string())
         .build(document)
         .map_err(|e| Error::Schema(format!("compiling schema {name}: {e}")))
@@ -188,11 +184,12 @@ impl Schema for Compiled {
 /// The shipped set are not special: anything in the ecosystem can attach a
 /// schema to its own structured files and hand it to the same two calls.
 ///
-/// A caller's schema MAY reference a shipped one by its `$id`. It may reference
+/// A caller's schema may reference a shipped one by its `$id`. It may reference
 /// nothing else, and there is no way to ask for more here: see the module note.
 ///
-/// A caller may not redefine a shipped `$id`, because a document deciding what
-/// the envelope schema means is the one thing a shipped schema exists to fix.
+/// A caller may not redefine a shipped `$id`, because that would let a document
+/// decide what the envelope schema means, and fixing that meaning is what a
+/// shipped schema is for.
 pub fn compile_schema(name: &str, document: &str) -> Result<Box<dyn Schema>, Error> {
     if documents().contains_key(name) {
         return Err(Error::Schema(format!(

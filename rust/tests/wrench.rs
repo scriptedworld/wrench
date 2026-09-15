@@ -1,9 +1,9 @@
 //! Tests for the Rust pack.
 //!
 //! The canonical cases come from `testdata/canonical/`, the same directories the
-//! Go and Python packs are held to. That is the point of them: implementations
-//! agreeing on the schema and disagreeing on the bytes is the failure a shared
-//! fixture set exists to catch, and no pack is the oracle for another.
+//! Go and Python packs are held to. A shared fixture set catches implementations
+//! that agree on the schema and disagree on the bytes, and no pack is the
+//! oracle for another.
 
 use std::cell::RefCell;
 use std::fs;
@@ -34,8 +34,8 @@ fn fixtures() -> Vec<String> {
     names
 }
 
-/// Bytes without a filesystem. Its existence is the point of FR-2.5a: a reader
-/// takes the path, so a test replaces the whole IO boundary.
+/// Bytes without a filesystem, which is what FR-2.5a is for: a reader takes the
+/// path, so a test replaces the whole IO boundary.
 struct Stub {
     data: Vec<u8>,
     fail: bool,
@@ -111,7 +111,7 @@ fn canonical_form_matches_the_shared_fixtures() {
             .encode(&value)
             .unwrap_or_else(|e| panic!("{case}: encoding: {e}"));
 
-        // STRUCTURE, NOT BYTES, per FR-5.5. This pack emits through libyaml,
+        // Structure, not bytes, per FR-5.5. This pack emits through libyaml,
         // which writes block sequences without indenting them under their key
         // and hard-codes that with no setting. So its bytes differ from the
         // fixture's, which Go and Python still match, and what the contract
@@ -168,11 +168,11 @@ fn canonical_form_is_a_fixed_point() {
                 .join("canonical.yaml"),
         )
         .expect("a golden");
-        // A FIXED POINT OF THIS PACK'S OWN OUTPUT, not of the shared fixture.
+        // A fixed point of this pack's own output, not of the shared fixture.
         // The property is that encoding is idempotent: emit once, and emitting
         // what that decodes to gives the same bytes. Held against the fixture
         // it would be asserting that this pack's layout matches Go's, which
-        // FR-5.5 stopped requiring and libyaml cannot do.
+        // FR-5.5 does not require and libyaml cannot do.
         let once = YAML
             .encode(&YAML.decode(&canonical).expect("decodes"))
             .expect("encodes");
@@ -396,8 +396,9 @@ fn a_consumer_schema_may_reference_a_shipped_one() {
 // COVERS: FR-3.10 | negative
 #[test]
 fn a_schema_may_reference_nothing_outside_the_shipped_set() {
-    // This pack gets FR-3.10 at compile time: jsonschema is declared without
-    // resolve-file and resolve-http, so there is no code that could fetch.
+    // jsonschema is declared without resolve-file and resolve-http, and the
+    // retriever refuses anyway in case another crate in the graph enables them.
+    // See the module note in src/schema.rs.
     for target in [
         "file:///tmp/local.schema.json",
         "/tmp/local.schema.json",
@@ -591,7 +592,7 @@ fn the_schemas_ship_as_files_beside_the_library() {
     }
 
     // The pack reads ../schemas and never a copy under rust/. A second copy is
-    // the drift FR-3.2 exists to prevent, and it would pass every other test.
+    // the drift FR-3.2 forbids, and it would pass every other test.
     assert!(
         !root().join("rust/schemas").exists(),
         "rust/schemas exists, so this pack carries a copy of its own"
@@ -602,9 +603,9 @@ fn the_schemas_ship_as_files_beside_the_library() {
 #[test]
 fn every_shipped_schema_is_exported() {
     // A schema added to schemas/ and picked up by one pack but not another is a
-    // divergence in the contract that nothing reports. It has happened: a
-    // fourth schema shipped, Go exported it, and Python named three filenames
-    // in its own source and did not. Each pack asserts against the directory,
+    // divergence in the contract that nothing reports: a fourth schema can
+    // ship, Go export it, and Python, naming three filenames in its own source,
+    // not. Each pack asserts against the directory,
     // so every pack agreeing with the directory is what makes them agree.
     let exported = wrench::shipped_ids();
 
@@ -726,8 +727,8 @@ fn a_jig_may_declare_it_stands_at_the_repository_root() {
 // COVERS: FR-3.1, FR-3.4 | edge
 #[test]
 fn a_manifest_variable_says_which_layer_supplied_it() {
-    // Nothing in Go exercised this schema until a change to it broke the Python
-    // pack alone. A shipped schema no pack validates against is a shape the
+    // Without this, a change to the manifest schema can break one pack alone
+    // and go unnoticed in the others. A shipped schema no pack validates against is a shape the
     // gate cannot hold any pack to.
     let accepted = manifest_with(
         "  requirements:\n    value: ../REQUIREMENTS.md\n    from: file\n\
@@ -859,8 +860,8 @@ fn a_time_limit_is_a_decimal_with_a_unit() {
         .unwrap_or_else(|e| panic!("{limit} was refused: {e}"));
     }
 
-    // `30` is the one a jig author actually writes, and it was accepted here
-    // and refused by the runner before the schema said anything.
+    // `30` is the one a jig author actually writes, and the runner refuses it,
+    // so the schema has to refuse it too.
     for (what, document) in [
         (
             "a bare number",
@@ -911,8 +912,8 @@ fn a_time_limit_is_a_decimal_with_a_unit() {
 // COVERS: FR-3.1, FR-3.4 | edge
 #[test]
 fn envelope_evidence_and_statistics_are_objects() {
-    // Both carried a description and no type, so a producer could write either
-    // as a string, a list or a number and validation passed every time. The
+    // With a description and no type, a producer could write either as a
+    // string, a list or a number and validation would pass every time. The
     // member shape stays open: constraining it would bind every producer to one
     // runner's naming.
     let accepted =
@@ -973,8 +974,8 @@ fn an_unusable_schema_fails_when_it_is_compiled() {
 fn a_validation_error_names_the_schema_by_id_not_by_local_path() {
     // The identifier lands in the error, the error lands in a reason, and a
     // reason travels as evidence. Naming a shipped schema by a relative
-    // filename resolved it against whatever directory the process started in,
-    // which put an absolute local path in front of every consumer.
+    // filename resolves it against whatever directory the process started in,
+    // which puts an absolute local path in front of every consumer.
     let error = load_formatted_file(
         "f.yaml",
         &wrench::ENVELOPE_SCHEMA,
