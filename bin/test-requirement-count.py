@@ -2,20 +2,19 @@
 """Every live requirement file reaches the traceability checker's denominator.
 
 A row the checker cannot parse is not reported missing: it is simply absent, and
-the run reports a clean pass over a contract with a hole in it. Measured in
-wrench 2026-08-29, adding a well-formed file with a two-letter suffix
-`FR-4.9aa` left the output at `41 of 41` and exit 0, identical to not adding it.
-That is filed upstream as an open request for a loud refusal in the checker
-itself.
+the run reports a clean pass over a contract with a hole in it. Adding a
+well-formed file with a two-letter suffix, `FR-4.9aa`, left the output at
+`41 of 41` and exit 0, identical to not adding it. A loud refusal in the checker
+itself is filed upstream as an open request.
 
-**This check closes the same class locally and does not depend on the grammar.**
-It compares two counts of the same set reached two different ways:
+This check closes the same class locally without depending on the grammar. It
+compares two counts of the same set reached two different ways:
 
     files on disk  ==  the checker's denominator + what it exempted
 
 so whatever the next unparseable id turns out to be, the arithmetic notices. The
-idea is the bolt session's, who reconciled 247 against 244 + 3 in their own tree
-after losing a gate reading to exactly this.
+idea comes from bolt, which reconciled 247 against 244 + 3 in its own tree after
+losing a gate reading to exactly this.
 
 Exits 0 when they agree and 1 when they do not, so it needs no adapter.
 """
@@ -28,7 +27,7 @@ import sys
 from pathlib import Path
 
 # The checker's own summary is the only place its denominator is stated. Reading
-# a number out of it is fine; reading a VERDICT out of it would not be, which is
+# a number out of it is fine; reading a verdict out of it would not be, which is
 # why the exit code is checked separately below.
 COUNTED = re.compile(r"\((\d+) of (\d+)\)")
 EXEMPT = re.compile(r"(\d+) open and exempt")
@@ -45,13 +44,13 @@ def main() -> int:
 
     checker = root / "bin" / "test-traceability.py"
     # No pragma here. bandit runs at base python/ and does not scan bin/, so one
-    # would suppress nothing while going unregistered in SUPPRESSIONS, which is
-    # the shape hard rule 4 exists to prevent. If the scan ever widens, the
-    # finding surfaces for a person to answer rather than being pre-empted.
+    # would suppress nothing while going unregistered in SUPPRESSIONS, against
+    # hard rule 4. If the scan ever widens, the finding surfaces for a person to
+    # answer.
     #
-    # KEEP THE SPELLING OFF THE START OF A COMMENT LINE. The register reads a
-    # line opening with the pragma as a bare one silencing everything, and it
-    # cannot tell prose from a directive. Caught here 2026-08-29 by the hook.
+    # Keep the pragma's spelling off the start of a comment line. The register
+    # reads a line opening with it as a bare pragma silencing everything, and it
+    # cannot tell prose from a directive.
     run = subprocess.run(
         [sys.executable, str(checker), "--requirements", str(requirements), str(root)],
         capture_output=True,

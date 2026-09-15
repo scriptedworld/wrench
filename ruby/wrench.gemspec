@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
 
   # The JSON Schema binding, chosen in
   # docs/DECISIONS/which-json-schema-library-each-pack-binds.md. Each pack binds
-  # its language's established implementation rather than implementing JSON
+  # its language's established implementation instead of implementing JSON
   # Schema itself, FR-5.2.
   spec.add_dependency "json_schemer", "~> 2.5"
 

@@ -5,13 +5,13 @@
 //! pack may embed them to link a single static binary, which is what bolt wants.
 //!
 //! Rust has no directory embed in the standard library and `include_str!` needs
-//! a literal path, so the directory is read HERE, at build time, and the list is
-//! generated. Adding a fifth schema needs no edit to any source file, and the
-//! binary still carries them.
+//! a literal path, so the directory is read here, at build time, and the list is
+//! generated. Adding a schema needs no edit to any source file, and the binary
+//! still carries them.
 //!
-//! A build script rather than the `include_dir` crate: this is a dozen lines and
-//! costs no dependency, and a pack whose whole argument is binding rather than
-//! implementing should not take one for a directory listing.
+//! A build script and not the `include_dir` crate: this is a dozen lines and
+//! costs no dependency, and a pack that exists to bind libraries instead of
+//! implementing things should not take one for a directory listing.
 
 use std::{env, fs, path::PathBuf};
 

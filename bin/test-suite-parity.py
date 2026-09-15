@@ -8,14 +8,14 @@ silently, and every suite stays green while it happens.
 
 This reads the `COVERS:` marks out of each declared suite and compares the sets.
 
-WHY IT CANNOT BE A PER-BASE TASK. The comparison is between bases by definition.
-A checker run once inside `go/` and once inside `python/` sees one suite each
-time and can only report that it covers what it covers. This has to stand where
-it can see all of them at once.
+It cannot be a per-base task, because the comparison is between bases. A checker
+run once inside `go/` and once inside `python/` sees one suite each time and can
+only report that it covers what it covers. This has to stand where it can see
+all of them at once.
 
-THIS IS WRENCH-SPECIFIC. It is not a common-quality checker and does not belong
-in toolbox: it compares suites against each other, which only a repository with a
-library per language has to do. wrench is about to have four such directories.
+It belongs to wrench and not to toolbox's common-quality checkers: comparing
+suites against each other is something only a repository with a library per
+language has to do.
 """
 
 from __future__ import annotations
@@ -29,10 +29,10 @@ from pathlib import Path
 # whatever a third language spells a comment as. The marker is the anchor, not
 # the comment syntax, so a new language needs no change here.
 #
-# THE KIND IS PART OF THE COMPARISON. Two suites both citing FR-3.1 says they
-# both touched it, not that they test the same thing: one asserting the positive
-# path and the other the negative one is a divergence that an id-only comparison
-# calls level. Measured in wrench, that hid three of them.
+# The kind is part of the comparison. Two suites both citing FR-3.1 have both
+# touched it, which does not mean they test the same thing: one asserting the
+# positive path and the other the negative one is a divergence that an id-only
+# comparison calls level. In wrench an id-only comparison hid three of them.
 COVERS = re.compile(r"COVERS:\s*([^|\n]+)\|\s*(\w+)")
 
 # `| FR-6.1 | ... | [A] |` and the optional scope naming the suites expected to
@@ -40,9 +40,8 @@ COVERS = re.compile(r"COVERS:\s*([^|\n]+)\|\s*(\w+)")
 #
 # One bracket, and no `|` inside it. toolbox's test-traceability.py takes a row's
 # marker to be its last bracketed cell and matches `^\[[^\]]*\]$`, so a second
-# bracket reads as no marker at all and a `|` splits the cell in two. Both were
-# tried and both broke that checker quietly, which is the argument for the
-# spelling being awkward rather than pretty.
+# bracket reads as no marker at all and a `|` splits the cell in two. Both
+# break that checker quietly, which is why the spelling is awkward.
 ROW = re.compile(r"^\|\s*(FR-[0-9A-Za-z.]+)\s*\|(.*)\|\s*(\[[^|\]]*\])\s*\|\s*$")
 
 # A scope clause is `suites` or `suites:kinds`, both comma-separated:
@@ -51,7 +50,7 @@ ROW = re.compile(r"^\|\s*(FR-[0-9A-Za-z.]+)\s*\|(.*)\|\s*(\[[^|\]]*\])\s*\|\s*$"
 #     [A go,python:edge,negative]   only those two kinds are, and the rest of
 #                                   the row is expected everywhere
 #
-# THE KIND HALF IS NOT DECORATION. A requirement can be discharged by every pack
+# The kind half matters. A requirement can be discharged by every pack
 # for one kind and by a subset for another, and wrench has one: FR-4.1's property
 # case is covered by all three packs, while its edge and negative cases test
 # refusing a value the Rust type system cannot construct. Scoping the whole row
@@ -68,28 +67,23 @@ SCOPE = re.compile(
 # covered. Every `##` heading resets that state, so a section following a retired
 # one is live again.
 #
-# THESE TWO SPELLINGS MATCH toolbox's test-traceability.py EXACTLY, and that is
-# the point rather than a coincidence. Both checkers read the same document and
-# an id live for one and retired for the other is the same class of defect this
-# repository exists to catch, one tier up.
+# These two spellings match toolbox's test-traceability.py exactly, on purpose.
+# Both checkers read the same document, and an id live for one and retired for
+# the other is the same class of defect wrench exists to catch, one tier up.
 #
-# It was measured, not anticipated. This checker used to split the text at the
-# first `## Retired` and treat everything after it as retired, which disagreed
-# with the traceability checker for any row under a LATER heading. Reproduce with
-# a file holding `## Retired`, a row, then `## Live again` and a second row cited
-# by one suite and not another:
+# Splitting the text at the first `## Retired` and treating everything after it
+# as retired disagrees with the traceability checker for any row under a later
+# heading. Given a file holding `## Retired`, a row, then `## Live again` and a
+# second row cited by one suite and not another, a split gives:
 #
 #     parity        second row retired, skipped, "held level",  EXIT 0
 #     traceability  second row live, uncovered,                 EXIT 1
 #
-# The dangerous half is that this checker was the one reporting the pass, on a
-# divergence it exists to find. It was latent in wrench only because
-# `## Retired` was the last section of a single REQUIREMENTS.md, which is no
-# longer how this repository stores its contract: `docs/REQUIREMENTS/` is one
-# file per requirement and retirement is carried by a `.retired` name. The
-# heading still has to be read correctly for every adopter that has not split.
-#
-# NOTHING TESTS THIS FILE, which is how that survived.
+# and this checker reports a pass on the divergence it exists to find. wrench's
+# own `docs/REQUIREMENTS/` is one file per requirement with retirement carried
+# by a `.retired` name, but the heading still has to be read correctly for
+# every adopter keeping a single REQUIREMENTS.md.
+# testdata/checkers/test_suite_parity.py holds this behaviour.
 HEADING = re.compile(r"^##\s+(?P<title>.+?)\s*$")
 RETIRED_HEADING = re.compile(r"^retired\b", re.IGNORECASE)
 
@@ -224,11 +218,10 @@ def main() -> int:
 
     ids, scopes, kind_scopes = declared(args.requirements)
 
-    # REFUSING TO PASS ON NOTHING. Every cited pair whose id is not live is
-    # skipped as the traceability checker's business, so an empty set of ids
-    # skips everything and reports the suites level. That is a green produced by
-    # finding no contract at all, which is what a mistyped path or a directory
-    # this checker cannot read looks like.
+    # Refuse to pass on nothing. Every cited pair whose id is not live is skipped
+    # as the traceability checker's business, so an empty set of ids skips
+    # everything and reports the suites level. A mistyped path or an unreadable
+    # directory looks exactly like that.
     if not ids:
         print(
             f"parity: {args.requirements} declares no live requirements; "
@@ -276,8 +269,8 @@ def main() -> int:
                 f"but not in {', '.join(missing)}"
             )
 
-    # A pair cited by a suite it is not scoped to is the declaration being wrong
-    # rather than a test being missing, and it is worth saying differently.
+    # A pair cited by a suite it is not scoped to means the declaration is wrong,
+    # not that a test is missing, so it gets its own message.
     for name, covered in sorted(suites.items()):
         for identifier, kind in sorted(covered):
             expected = declared_scope(identifier, kind)

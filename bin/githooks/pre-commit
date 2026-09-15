@@ -6,7 +6,7 @@
 # the pragma would land, which is the only point at which it cannot be
 # forgotten.
 #
-# INSTALL, once per checkout, from the repository root:
+# Install once per checkout, from the repository root:
 #
 #     ln -sf ../../bin/githooks/pre-commit .git/hooks/pre-commit.local
 #
@@ -19,21 +19,19 @@
 # `$(git rev-parse --git-dir)/hooks/pre-commit.local` if it is executable, which
 # is what makes a per-repository hook possible at all.
 #
-# THIS REPOSITORY USED TO SET core.hooksPath ITSELF, before that dispatch
-# existed, and forwarded commit-msg beside this file so the no-AI-attribution
-# gate kept running. Both are gone: the override shadowed the global directory,
-# so anything added there stopped running here silently. Do not reintroduce it.
+# Do not set core.hooksPath in this repository. A local override shadows the
+# global directory, so the no-AI-attribution commit-msg hook and anything added
+# there later would silently stop running here.
 set -uo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 
 checker="$root/bin/no-unregistered-suppression.py"
 
-# THE MESSAGE BELOW ASSERTS A CAUSE, SO ESTABLISH IT FIRST. Any non-zero exit
-# would otherwise print a lecture about registering a suppression: a missing
-# python3, a checker that crashed, a partial checkout. Telling somebody to
-# register a pragma they never wrote sends them looking in the wrong place, and
-# that is this hook's fault rather than theirs.
+# The refusal message below asserts a cause, so establish it first. Otherwise
+# any non-zero exit (a missing python3, a crashed checker, a partial checkout)
+# tells somebody to register a pragma they never wrote and sends them looking in
+# the wrong place.
 if [ ! -f "$checker" ]; then
     echo "pre-commit: cannot run, $checker is missing." >&2
     exit 1

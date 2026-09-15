@@ -1,42 +1,34 @@
 # The Rust half for wrench/rust.
 #
-# ================== THIS IS NOT templates/rust-library ======================
+# This file is not rendered from templates/rust-library. That is a Copier
+# template, and rendering it into this pack would scaffold `Cargo.toml`,
+# `src/lib.rs`, `tests/` and `deny.toml` over real code.
 #
-# `templates/rust-library` is a Copier template. Rendering it into this pack
-# would scaffold `Cargo.toml`, `src/lib.rs`, `tests/` and `deny.toml` OVER real
-# code. wrench was right not to run it.
+# A lang.just for an existing pack is a different artefact from a template that
+# creates one. Where this differs from what the template would have written,
+# checked against this pack:
 #
-# **A lang.just for an existing pack is a different artefact from a template
-# that creates one**, and nothing in the factory produced the first until now.
-# That gap is why `rust/` had no Justfile, and it is half of why the root
-# delegator ran zero suites: go sorts first and is also absent, which masked it.
-#
-# What differs from what the template would have written, all measured against
-# this pack rather than assumed:
-#
-#   no deny.toml here, so no `cargo deny check`. The template ships one; this
-#   pack has none and inventing a licence policy for somebody else's crate is
+#   No deny.toml here, so no `cargo deny check`. The template ships one; this
+#   pack has none, and inventing a licence policy for somebody else's crate is
 #   not a Justfile's business. Add the task when the pack adds the file.
 #
 #   `build.rs` regenerates the schema embedding from `../schemas` on every
-#   build, so `clean` running `cargo clean` costs a regeneration rather than
-#   losing anything. Harmless, and worth knowing before wondering why a clean
-#   build is slower here.
+#   build, so `clean` running `cargo clean` costs a regeneration and loses
+#   nothing. That is also why a clean build is slower here.
 #
 #   `tests/compile-fail/` is trybuild, which runs the compiler on files that
-#   are MEANT to fail and compares stderr against a checked-in expectation.
+#   are meant to fail and compares stderr against a checked-in expectation.
 #   `cargo test` runs it like any other test. It is named here because a
-#   failure there reads as a compiler error rather than a test failure.
+#   failure there reads as a compiler error, not a test failure.
 #
-# THE JIGS ARE AT THE REPOSITORY ROOT, as they are for the python pack, so
+# The jigs are at the repository root, as they are for the python pack, so
 # every bolt call carries `--config-dir ..`. base's `_verdict` is variadic and
 # takes it.
 #
-# THE ROOT JIG ALSO RUNS THIS PACK, as `cargo test --manifest-path
-# rust/Cargo.toml`. That is not duplication to remove: the root jig gates all
-# three packs together and holds their suites level, and this file is what a
-# person runs while working in `rust/`.
-# ===========================================================================
+# The root jig also runs this pack, as `cargo test --manifest-path
+# rust/Cargo.toml`. Keep both: the root jig gates all three packs together and
+# holds their suites level, and this file is what a person runs while working
+# in `rust/`.
 
 # everything: quality, tests, coverage, secrets
 checks:
@@ -54,23 +46,23 @@ _cargo-lint:
 test:
     cargo test
 
-# A LIBRARY IS ITS DOCUMENTATION, so a broken intra-doc link is a defect rather
-# than a blemish: it is a piece of the contract pointing at nothing.
+# A library is its documentation, so a broken intra-doc link is a defect: a
+# piece of the contract pointing at nothing.
 
 # the documentation, with a broken intra-doc link failing the build
 doc:
     RUSTDOCFLAGS="-D warnings" cargo doc --no-deps
 
-# COVERAGE IS JUDGED PER FILE, which is hard rule 5. There is no entry point to
-# reach by running a binary, because this pack is a library with no main.rs, so
-# every line is reachable from an ordinary test.
+# Coverage is judged per file, which is hard rule 5. This pack is a library with
+# no main.rs, so there is no binary entry point to measure and every line is
+# reachable from an ordinary test.
 #
-# DO NOT SET THE THRESHOLD TO 100. At exactly 100 the check exits 1 with a
+# Do not set the threshold to 100. At exactly 100 the check exits 1 with a
 # report showing every file at 100.00% and prints nothing on stderr, so a pack
 # that met the bar fails silently and reads as broken tooling.
 #
-# 80 IS A PLACEHOLDER. The estate declares no Rust coverage minimum anywhere,
-# and this pack's real floor is wrench's to set.
+# 80 is a placeholder. The estate declares no Rust coverage minimum anywhere,
+# and this pack's real floor is still to be set.
 
 # the suite with coverage, and the minimum enforced per file
 coverage:
@@ -97,10 +89,10 @@ format:
 build:
     cargo build --all-targets
 
-# the .crate a registry would serve. `cargo package` also VERIFIES by building
+# the .crate a registry would serve. `cargo package` also verifies by building
 # what it packed, which catches a crate that only compiles because of a file
 # the package would not carry. That matters here: build.rs reads ../schemas,
-# which is OUTSIDE this pack, so packaging is the check that says whether this
+# which is outside this pack, so packaging is the check that says whether this
 # crate is self-contained.
 
 # whatever this language distributes

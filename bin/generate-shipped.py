@@ -9,7 +9,7 @@ every build, so its copy cannot be stale.
     generate-shipped.py --check    exit 1 if any is stale, and say which
 
 The generated files are committed, so `--check` in the gate is the only thing
-standing between them and the drift FR-3.2 exists to prevent. It compares bytes
+keeping them from the drift FR-3.2 forbids. It compares bytes
 against a fresh run, catching an edited schema, an added one, a removed one and
 a hand-edited generated file alike.
 """

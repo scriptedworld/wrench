@@ -8,44 +8,43 @@ version = "0.4.0"
 description = "Reads, writes and validates the form of the ecosystem's structured files"
 requires-python = ">=3.12"
 # `license-files` puts LICENSE and NOTICE in the built distribution, so a wheel
-# carries the terms rather than pointing at a repository somebody may not have.
+# carries the terms instead of pointing at a repository somebody may not have.
 # The identifier alone says which licence; it does not ship it.
 #
 # Both are symlinks to the repository root, because PEP 639 resolves these globs
 # inside the project directory and `../LICENSE` is not permitted. A symlink keeps
-# ONE copy of the terms, which is the same reason the schemas are not copied per
-# pack: a second copy is a thing that drifts.
+# one copy of the terms, for the same reason the schemas are not copied per pack:
+# a second copy drifts.
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 
 # All three are imported by name and expected to come from the platform.
 # Declaring them here is for a resolver that has one; FR-6.2 and FR-6.2a say the
-# pack depends on the names being importable rather than on a resolver having
-# run, which is what the bootstrap window needs.
+# pack depends on the names being importable, not on a resolver having run,
+# which is what the bootstrap window needs.
 #
 # `referencing` is what resolves a $ref from one shipped schema to another. It
 # is jsonschema's own dependency from 4.18 on, and Debian's python3-jsonschema
 # pulls python3-referencing, so it is named rather than assumed.
 dependencies = [
-    # ruamel rather than PyYAML, swapped 2026-09-08. It is the one Python YAML
-    # library whose emitter takes the scalar style per node, which is the
-    # quoting adapter, and quoting is what keeps `no`, `1.20` and `10` the
-    # strings and keys they were. That hook is what let the 192-line
-    # hand-written emitter go: with it, the library's output is byte-identical
-    # to what the emitter produced, and the shared fixtures did not move.
+    # ruamel and not PyYAML. It is the one Python YAML library whose emitter
+    # takes the scalar style per node, which is the quoting adapter, and
+    # quoting is what keeps `no`, `1.20` and `10` the strings and keys they
+    # were. With that hook the library's output is byte-identical to the
+    # shared fixtures, so the pack needs no hand-written emitter.
     # It ships its own type information, so no stub package is declared.
     "ruamel.yaml>=0.18",
     "jsonschema",
     "referencing",
 ]
 
-# The tools the gate runs against this pack, declared here rather than left to
+# The tools the gate runs against this pack, declared here instead of left to
 # whatever is on PATH. `mypy` alone cannot resolve `yaml`, `jsonschema` or
-# `referencing` — measured 2026-09-04, six errors from `consumer-types`, none of
-# them about wrench's code — and a `uv tool` installation of pytest cannot import
-# the pack it is testing. Both are the same fault: a tool installed apart from
-# the thing it is pointed at.
-# WHAT COVERAGE IS ABOUT. Without this it measures the suite as well as the
+# `referencing` (six errors from `consumer-types`, none of them about wrench's
+# code), and a `uv tool` installation of pytest cannot import the pack it is
+# testing. Both are the same fault: a tool installed apart from the thing it is
+# pointed at.
+# What coverage measures. Without this it measures the suite as well as the
 # pack, and a test file's own branches are not a guarantee anyone wants: the
 # autouse fixture in `tests/test_references.py` reported 50% of branches taken
 # and the number meant nothing. toolbox scopes its own the same way.
@@ -82,18 +81,16 @@ packages = ["wrench"]
 
 # PEP 561. The pack is annotated and, without this marker, none of it is visible
 # to a consumer's type checker: mypy reports `Cannot find implementation or
-# library stub for module named "wrench"` and stops there. Measured 2026-08-28
-# from skid, which imports wrench in four places and got four errors that were
-# not about skid's code.
+# library stub for module named "wrench"` and stops there. skid imports wrench
+# in four places and got four errors that were not about skid's code.
 #
-# The marker is an empty file that does nothing locally, which is exactly why it
-# is easy to lose in a packaging change, so `package-data` names it rather than
-# leaving it to be picked up.
+# The marker is an empty file that does nothing locally, which makes it easy to
+# lose in a packaging change, so `package-data` names it explicitly.
 [tool.setuptools.package-data]
 wrench = ["py.typed"]
 
-# Ruff does everything it can; pylint does only what ruff cannot. That split is
-# what the shared jig's header describes and never configured.
+# Ruff does everything it can; pylint does only what ruff cannot. The shared
+# jig's header describes that split without configuring it, so it is set here.
 [tool.ruff]
 line-length = 150
 
@@ -108,7 +105,7 @@ ignore = [
     "EM", "TRY003",      # exception message style; these errors are read by people
     "D203", "D213",      # each contradicts a rule kept below
     "FBT",               # boolean arguments; the interfaces are fixed by the contract
-    # Docstring LAYOUT, not coverage. D100-D107 stay on, which is the half that
+    # Docstring layout, not coverage. D100-D107 stay on, which is the half that
     # asks whether a docstring exists. D401 wants an imperative first line and
     # the writing standard wants what is true: "A mapping, one key to a line".
     "D205", "D209", "D401", "D403",
@@ -139,14 +136,14 @@ enable = [
     "arguments-differ", "abstract-method", "attribute-defined-outside-init",
     "inconsistent-return-statements",
 ]
-# Deliberately NOT enabled: too-few-public-methods and too-many-instance-attributes
+# Deliberately not enabled: too-few-public-methods and too-many-instance-attributes
 # are single-file design heuristics, not whole-program analysis, so they fail the
 # test this list is built on. protected-access is ruff's SLF001.
 
 [tool.pylint.MAIN]
 ignore-paths = ['^\.ephemera/.*', '^bin/.*', '^adapters/.*', '^\.venv/.*']
 
-# INSTALL THIS EDITABLE. The schemas are read from `schemas/` at the repository
+# Install this editable. The schemas are read from `schemas/` at the repository
 # root, two levels above this package, so a copied install would leave the pack
 # looking for files that are not beside it. Editable keeps one copy of the
-# schemas, which is the whole of FR-3.2.
+# schemas, which is all FR-3.2 asks.

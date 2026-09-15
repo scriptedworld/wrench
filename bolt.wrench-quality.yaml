@@ -2,19 +2,20 @@
 #
 #     bolt wrench-quality .
 #
-# WHY THIS IS WRENCH'S OWN AND NOT THE SHARED JIGS. toolbox's bolt.*-std-quality
-# files are still in the retired format: they carry `version: 1`, `id:`, `tags:`
-# and `result_command:`, none of which wrench's own jig.schema.json accepts. So
-# wrench cannot adopt them until those jigs are ported to the current schema,
-# and waiting for that meant gating nothing at all.
+# wrench has its own gate because toolbox's bolt.*-std-quality files are still
+# in the retired format: they carry `version: 1`, `id:`, `tags:` and
+# `result_command:`, none of which wrench's own jig.schema.json accepts. wrench
+# cannot adopt them until those jigs are ported to the current schema, and
+# waiting would have meant gating nothing.
 #
-# This runs a project's own checks in the meantime. It is not a substitute for
-# the shared standard, and the destination is still four jig tasks, each
-# language paired with common at its own base. Read that before extending this.
+# This runs the project's own checks in the meantime. It does not replace the
+# shared standard, and the destination is still four jig tasks, each language
+# paired with common at its own base. Keep that in mind before extending this.
 #
-# ORDERED CHEAPEST FIRST, so a failure surfaces before the slow checks run.
+# Tasks are ordered cheapest first, so a failure surfaces before the slow checks
+# run.
 #
-# EVERY TASK BUT THE TWO COMPOSED ONES EXITS NON-ZERO ON ITS OWN FAILURE, which
+# Every task but the two composed ones exits non-zero on its own failure. That
 # is deliberate: an adapter is a second thing to keep working, and `gofmt -l` is
 # the only tool that would have needed one. `test -z` gives it an exit status
 # instead.
@@ -27,17 +28,16 @@
 version: 1.0.0
 
 # `uv` runs the Python tasks, because the pack's tools are declared in
-# `python/pyproject.toml` rather than installed globally. `cargo` and `rustfmt`
-# were invoked by `rust-test` and `rust-format` and named nowhere, which is the
-# failure `requires` exists to prevent: a run that gets several tasks in before
-# discovering a missing tool cannot start.
+# `python/pyproject.toml` and not installed globally. Every tool a task invokes
+# belongs here, `cargo` and `rustfmt` included, so a missing one stops the run
+# before it starts instead of several tasks in.
 requires: [go, gofmt, python3, jq, deno, bolt, mypy, uv, cargo, rustfmt]
 
 definitions:
-  # A DIRECTORY, one file per requirement, nested by category. Both checkers
-  # take either a file or a tree; wrench split its single REQUIREMENTS.md so
-  # that retirement is carried by a filename rather than by a `## Retired`
-  # heading whose switch reaches every row below it in the same file.
+  # A directory, one file per requirement, nested by category. Both checkers
+  # take either a file or a tree. One file per requirement means retirement is
+  # carried by a filename, where a `## Retired` heading in a single file would
+  # silently retire every row below it.
   requirements: docs/REQUIREMENTS
 
   # Output and artefact directories, which no analysis task may scan. None of
@@ -45,18 +45,17 @@ definitions:
   # a tool recreates whenever it runs.
   #
   # Scanning them turns the gate red for reasons unrelated to the code, and the
-  # message names the artefact rather than the cause. Measured here: a scratch
-  # `.go` file under `.ephemera` fails `go-format`, and a stale `python/build/`
-  # gives mypy a duplicate module and pylint a duplicate-code hit, three red
-  # tasks between them and nothing wrong with the repository.
+  # message names the artefact instead of the cause. A scratch `.go` file under
+  # `.ephemera` fails `go-format`, and a stale `python/build/` gives mypy a
+  # duplicate module and pylint a duplicate-code hit: three red tasks and
+  # nothing wrong with the repository.
   #
   # Go's own `./...` already skips a directory whose name begins with a dot, so
   # `go vet` and `go test` need nothing. `gofmt` is a plain file walk and does.
   #
   # Every dot-directory, anything named for a cache, and the four output names.
-  # Stated as a class rather than a list of the ones that have bitten, because
-  # the next tool brings its own directory and naming it after the fact means
-  # meeting the failure first.
+  # It is written as a class and not as a list of the ones that have bitten,
+  # because the next tool brings its own directory.
   artefacts_regex: (^|/)(\.[^/]+|build|dist|out|target|[^/]*cache[^/]*|[^/]+\.egg-info)/
 
 tasks:
@@ -73,10 +72,9 @@ tasks:
 
   - name: json-formatted
     description: every JSON file is formatted, and formatting preserves how it was written
-    # deno rather than `jq --indent 2`, which is a processor and not a formatter:
+    # deno and not `jq --indent 2`, which is a processor and not a formatter:
     # it strips the blank lines grouping a schema and explodes short inline
-    # arrays, so enforcing it would make a hand-written schema worse. Measured
-    # 2026-08-27.
+    # arrays, so enforcing it would make a hand-written schema worse.
     command: deno fmt --check {each_path}
     matching: ["**/*.json"]
     excluding: [".ephemera/**", "**/node_modules/**"]
@@ -91,34 +89,32 @@ tasks:
 
   - name: schema-valid-by-an-independent-implementation
     description: the shipped schemas are valid 2020-12 according to something that is not wrench
-    # THE WHOLE POINT IS THAT THIS IS NOT WRENCH. Both packs compiling their own
-    # schemas cannot catch both bindings misreading the specification the same
-    # way, and nothing outside wrench had ever read these files.
+    # The validator here must not be wrench. The packs compiling their own
+    # schemas cannot catch every binding misreading the specification the same
+    # way.
     #
-    # ajv, in JavaScript, which no pack binds. The rule is that a pack and the
-    # gate's independent validator may never bind the same library: Go's
-    # santhosh-tekuri, Python's jsonschema and Rust's jsonschema crate are all
-    # already ours.
+    # ajv, in JavaScript, which no pack binds. A pack and the gate's independent
+    # validator may never bind the same library: Go's santhosh-tekuri, Python's
+    # jsonschema and Rust's jsonschema crate are all already wrench's.
     #
-    # This is one implementation, and one is not the shape the check ends up.
-    # The gate asks every validator wrench binds and requires them to agree,
-    # plus at least one implementation no pack binds, so unanimity cannot
-    # quietly become unanimity among wrench's own bindings. The rest of that is
-    # unwritten, so ajv is the only implementation asked today. The argument is
-    # in docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md,
-    # and asking a second independent implementation is the remaining work.
+    # The intended check asks every validator wrench binds, requires them to
+    # agree, and adds at least one implementation no pack binds, so unanimity
+    # cannot quietly become unanimity among wrench's own bindings. Only ajv is
+    # asked so far; a second independent implementation is the remaining work.
+    # The argument is in
+    # docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md.
     #
     # Run through deno, which is installed and declared, so this needs no global
-    # npm install and no package.json in a repository that has no JavaScript.
-    # deno caches the package, so only a cold cache reaches the network.
+    # npm install and no package.json. deno caches the package, so only a cold
+    # cache reaches the network.
     #
-    # Not `jq` or `yq`: both are processors, not validators. Measured 2026-08-27,
+    # Not `jq` or `yq`: both are processors, not validators, and
     # `jq -n 'builtins | map(select(test("schema")))'` returns [].
     #
-    # bin/check-schemas.ts rather than ajv-cli. The library is first class, at
-    # 377 million downloads a week and released 2026-04-24. Its CLI is not:
-    # ajv-cli 5.0.0 was last released 2023-04-28. Fifteen lines here beats a
-    # three-year-stale wrapper, and reading schemas/ as a directory means a fifth
+    # bin/check-schemas.ts and not ajv-cli. The library is actively maintained,
+    # at 377 million downloads a week and released 2026-04-24. Its CLI is not:
+    # ajv-cli 5.0.0 was last released 2023-04-28. Fifteen lines here beat a
+    # three-year-stale wrapper, and reading schemas/ as a directory means a new
     # schema is checked without editing anything.
     command: deno run --allow-read --allow-net bin/check-schemas.ts
 
@@ -140,10 +136,10 @@ tasks:
     description: the Go pack, uncached
     command: cd go && go test -count=1 ./...
 
-  # `uv run --project python` FOR THE ENVIRONMENT, cwd stays the repository root
-  # FOR THE SCHEMAS. The pack's dependencies and its test tools are declared in
-  # `python/pyproject.toml`, and a bare `python3 -m pytest` resolves neither:
-  # measured 2026-09-04, `No module named pytest`, and the task had never run.
+  # `uv run --project python` supplies the environment, and cwd stays the
+  # repository root so the schemas resolve. The pack's dependencies and its test
+  # tools are declared in `python/pyproject.toml`, and a bare
+  # `python3 -m pytest` resolves neither: it fails with `No module named pytest`.
   - name: python-test
     description: the Python pack, run from the repository root so it finds schemas/
     command: PYTHONPATH=python uv run --project python python -m pytest python/tests -q
@@ -154,9 +150,9 @@ tasks:
 
   - name: rust-format
     description: every Rust file is rustfmt-clean
-    # Go and Python were format-gated and Rust was not, so the pack drifted to
-    # 33 diffs across 8 files without anything saying so. cargo fmt --check
-    # exits non-zero on a diff, unlike gofmt -l, so its status is the answer.
+    # Without this the Rust pack drifts silently; it reached 33 diffs across 8
+    # files before it was gated. cargo fmt --check exits non-zero on a diff,
+    # unlike gofmt -l, so its status is the answer.
     command: cargo fmt --manifest-path rust/Cargo.toml --check
 
   # ---- the shared standard, per pack at its own base -----------------------
@@ -164,21 +160,20 @@ tasks:
   # The Go and Python packs each have a base of their own. Rust has no shared
   # standard yet.
   #
-  # COMPOSITION IS A COMMAND TASK PLUS AN ADAPTER. Nested `jig:` tasks are
+  # Composition is a command task plus an adapter. Nested `jig:` tasks are
   # retired at bolt `f3304d8`, so a jig wanting another jig run over a
   # subdirectory writes an ordinary command whose program is bolt.
   #
-  # `adapters/common/bolt-result.py` is what makes that a verdict rather than a
-  # transcript. bolt exits 0 whenever it carried a run out, so the generic
-  # exit-code adapter reads a failing child as a pass: measured by toolbox on
-  # one failing child, `success=True` without the adapter and `success=False`
-  # with it.
+  # `adapters/common/bolt-result.py` turns that into a verdict. bolt exits 0
+  # whenever it carried a run out, so the generic exit-code adapter reads a
+  # failing child as a pass: one failing child gives `success=True` without the
+  # adapter and `success=False` with it.
   #
-  # THREE THINGS EACH COST A RUN TO LEARN. Flags come before positionals, or
-  # bolt prints usage to stderr and the task fails as a bolt error rather than
-  # as anything about the jig. The child gets `{work_dir}/child` of its own,
+  # Three details that each cost a run to learn. Flags come before positionals,
+  # or bolt prints usage to stderr and the task fails as a bolt error with
+  # nothing said about the jig. The child gets its own `{work_dir}/child`,
   # because bolt refuses a directory already holding a run and the Go build
-  # rewrites the earlier verdict while refusing. And the adapter reads the LAST
+  # rewrites the earlier verdict while refusing. And the adapter reads the last
   # line of the child's stdout, which is the result path under both builds.
 
   - name: python-common
@@ -201,32 +196,31 @@ tasks:
     description: every test cites what it discharges, and every settled requirement has one
     command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} .
 
-  # ONE TASK PER PACK, AND THE ROOT TASK ABOVE DOES NOT REPLACE THEM. The root
-  # run asks whether an id is cited ANYWHERE under it, so a row covered in Go
-  # alone passes it, and a pack silently holding none of a requirement is
-  # invisible. `suite-parity` catches that by comparing the suites to each
-  # other, which leaves its own gap: three packs that all miss the same row
-  # agree, and agreeing is what it checks.
+  # One task per pack, and the root task above does not replace them. The root
+  # run asks whether an id is cited anywhere under it, so a row covered in Go
+  # alone passes it, and a pack holding none of a requirement goes unseen.
+  # `suite-parity` catches that by comparing the suites to each other, which
+  # leaves its own gap: three packs that all miss the same row agree, and
+  # agreement is what it checks.
   #
-  # A scoped run closes both. Each pack is held to the requirements themselves
-  # rather than to the union of its siblings or to its siblings' agreement, and
-  # the envelope carries a verdict per pack instead of one that could have come
-  # from any of them.
+  # A scoped run closes both. Each pack is held to the requirements themselves,
+  # not to the union of its siblings or to their agreement, and the envelope
+  # carries a verdict per pack instead of one that could have come from any of
+  # them.
   #
   # `--scope` holds a tree to the rows naming it plus the rows naming no tree,
   # so the three lowercase markers under `reaching-the-library/` are this run's
   # business in Python and nobody else's. It reads the row half of the same
   # clause `test-suite-parity.py` reads for kinds; neither holds a second copy
   # of which rows are exempt.
-  # THE NAME AND THE PATH ARE TWO ARGUMENTS, not one written twice. `--scope go`
+  # The name and the path are two arguments, not one written twice. `--scope go`
   # says which rows this run is held to; `--dir ./go` says which tree to read.
-  # They match here because wrench's packs sit in directories named after its
-  # suites, which is this repository's layout rather than a rule: a pack under
-  # `packs/go/` would read `--scope go --dir packs/go`.
+  # They match here only because wrench's packs sit in directories named after
+  # its suites: a pack under `packs/go/` would read `--scope go --dir packs/go`.
   #
-  # Named rather than positional for that reason. `--scope go go` is correct and
-  # reads as one word repeated, which is a question every reader has to answer
-  # once. The positional still works and the root task above still uses it.
+  # The path is passed by name for that reason. `--scope go go` is correct but
+  # reads as one word repeated. The positional still works and the root task
+  # above still uses it.
   - name: traceability-go
     description: the Go pack covers every requirement it is expected to
     command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} --scope go --dir ./go
@@ -239,27 +233,26 @@ tasks:
     description: the Rust pack covers every requirement it is expected to
     command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} --scope rust --dir ./rust
 
-  # A requirement the traceability checker cannot PARSE is absent from its
-  # denominator rather than reported missing, so the run passes cleanly over a
-  # contract with a hole in it. Measured 2026-08-29: a well-formed file with a
-  # two-letter suffix left the output at `41 of 41` and exit 0, identical to not
-  # adding it at all.
+  # A requirement the traceability checker cannot parse is left out of its
+  # denominator instead of reported missing, so the run passes cleanly over a
+  # contract with a hole in it. A well-formed file with a two-letter suffix left
+  # the output at `41 of 41` and exit 0, identical to not adding it at all.
   #
   # This compares the files on disk against what the checker managed to read, so
   # it does not depend on the id grammar and catches whatever the next
-  # unparseable row turns out to be. The idea is the bolt session's.
+  # unparseable row turns out to be. The idea comes from bolt.
   - name: requirement-count
     description: every live requirement file reaches the traceability checker
     command: python3 {config_dir}/bin/test-requirement-count.py
 
-  # `python-common` ABOVE ALREADY RUNS THE SUPPRESSION REGISTER, and at base
-  # `python/`, so `bin/`, the Go pack and the Rust pack are outside its scan by
-  # construction. Measured 2026-08-29: that run reads 9 files, and a `//nolint`
-  # written into a Go file at the root passes it at exit 0.
+  # `python-common` above already runs the suppression register, but at base
+  # `python/`, so `bin/`, the Go pack and the Rust pack are outside its scan.
+  # That run reads 9 files, and a `//nolint` written into a Go file at the root
+  # passes it at exit 0.
   #
   # This runs the same checker over the whole tree, 41 files. It is the gate's
   # half of hard rule 4; `bin/githooks/pre-commit` is the other half and refuses
-  # the commit rather than waiting for somebody to run the gate.
+  # the commit without waiting for somebody to run the gate.
   - name: suppressions-everywhere
     description: no suppression pragma in any language that SUPPRESSIONS misses
     command: python3 {config_dir}/bin/no-unregistered-suppression.py
@@ -272,55 +265,51 @@ tasks:
     # consumer traded `cannot find wrench` for `wrench is untyped in 22 places`.
     #
     # Two halves, because either alone passes in that state. The checker's own
-    # docstring carries why the consumer half has to run against an install
-    # rather than against the source tree.
+    # docstring says why the consumer half has to run against an install and
+    # not against the source tree.
     #
     # Through `uv run --project python` so the `mypy` this invokes is the pack's,
     # with `types-PyYAML`, `types-jsonschema` and `referencing` resolvable. A
-    # PATH mypy reports six errors about libraries rather than about wrench.
+    # mypy from PATH reports six errors about libraries and none about wrench.
     command: uv run --project python python3 {config_dir}/bin/check-consumer-types.py
 
   - name: shipped-schemas-are-current
     description: the Go and Python packs carry byte for byte what schemas/ holds
     # The Go and Python packs carry the schemas as generated source, so each is
-    # a second copy of every schema and FR-3.2 exists to stop exactly that
-    # drifting. This is what makes the copy safe: edit a schema without
-    # regenerating and the gate says which file is stale.
+    # a second copy of every schema, and FR-3.2 forbids that copy drifting.
+    # Edit a schema without regenerating and this task says which file is
+    # stale.
     #
     # Rust is absent on purpose. `rust/build.rs` regenerates on every build, so
     # its copy cannot be stale and there is nothing here to check.
     command: python3 {config_dir}/bin/generate-shipped.py --check
 
-  # `retired-rows-are-deliberate` STOOD HERE AND IS GONE, at the split. It
-  # pinned the count of rows below `## Retired` in a single REQUIREMENTS.md,
-  # because that heading was the file's last section and a row appended to the
-  # end was silently retired rather than added. Retirement is now carried by a
-  # filename, so there is no heading, no switch and no below-this-line, and the
-  # hazard is gone by construction rather than watched by a number somebody has
-  # to remember to edit.
+  # No task counts retired rows. With retirement carried by a filename there is
+  # no `## Retired` heading for an appended row to fall under by accident.
 
   - name: suite-parity
     description: every pack's suite covers the same tests
-    # Compares the suites AGAINST EACH OTHER, so it stands at the root and cannot
-    # become a per-language task. Adding a pack means adding a --suite here.
+    # Compares the suites against each other, so it stands at the root and
+    # cannot become a per-language task. Adding a pack means adding a --suite
+    # here.
     command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='go/*_test.go' --suite python='python/tests/*.py' --suite rust='rust/tests/*.rs' .
 
-  # THE CHECKER ABOVE IS THE ONE THING NOTHING ELSE CHECKS. It decides whether
-  # three suites agree, and until 2026-08-28 it could report `exit 0` on a real
-  # divergence: it split its requirements text at the first `## Retired` and
-  # treated the rest of the file as gone, where test-traceability.py resets at
-  # every heading. Same file, two answers, and the pass came from this side.
+  # Nothing else checks the checker above. It decides whether three suites
+  # agree, and it once reported `exit 0` on a real divergence by splitting its
+  # requirements text at the first `## Retired` and treating the rest of the
+  # file as gone, where test-traceability.py resets at every heading. These
+  # tests keep the two reading a file the same way.
   #
-  # WHY THE TESTS ARE UNDER testdata/ AND NOT BESIDE A SUITE. They must contain
+  # The tests live under testdata/ and not beside a suite because they contain
   # `COVERS:` marks as fixture data, and this checker greps that string out of
-  # every file matching a suite glob. Measured: a file in a python suite whose
-  # only mention of FR-9.2 was inside a string turned a reported divergence into
-  # a pass. `testdata/` is in test-traceability.py's SKIP_DIRS and matches no
+  # every file matching a suite glob. A file in a python suite whose only
+  # mention of FR-9.2 was inside a string turned a reported divergence into a
+  # pass. `testdata/` is in test-traceability.py's SKIP_DIRS and matches no
   # suite glob, so it is the one directory both checkers ignore.
   #
-  # Run explicitly by path because that is not a directory pytest would find.
+  # Run explicitly by path because pytest would not find that directory.
   # `--no-project` because these tests import the standard library and nothing
-  # else — they drive the checkers as subprocesses — so the pack's environment
+  # else (they drive the checkers as subprocesses), so the pack's environment
   # would be the wrong one and the root has no project of its own.
   - name: checker-tests
     description: wrench's own parity checker does what it claims

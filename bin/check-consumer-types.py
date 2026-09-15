@@ -1,31 +1,29 @@
 #!/usr/bin/env python3
 """Check that the Python pack is typed, and that a consumer can see that.
 
-Two checks, because passing the first and failing the second is the state the
-pack was already in once: the marker said "this package is typed" while the
-public API carried no annotations at all.
+Two checks, because a package can pass the first and fail the second: the marker
+says "this package is typed" while the public API carries no annotations.
 
     mypy --strict over python/wrench          the pack annotates itself
     mypy --strict over testdata/consumer      a consumer resolves those types
 
-THE SECOND ONE HAS TO RUN AGAINST AN INSTALL. mypy honours `py.typed` for a
+The second one has to run against an install. mypy honours `py.typed` for a
 package it finds as an installed distribution and ignores it for source found on
 MYPYPATH, so checking the consumer against the source tree passes whether or not
-the marker exists. Measured: with `py.typed` deleted, the MYPYPATH form still
-reported success and only the installed form reported
+the marker exists. With `py.typed` deleted, the MYPYPATH form still reports
+success and only the installed form reports
 
     Skipping analyzing "wrench": module is installed, but missing library stubs
     or py.typed marker
 
-which is the error skid hit from outside. Installing also puts the packaging
-config under test, since the marker reaches site-packages only if
+which is the error a consumer such as skid sees. Installing also puts the
+packaging config under test, since the marker reaches site-packages only if
 `[tool.setuptools.package-data]` carries it.
 
-THE VENV MUST NOT SEE SYSTEM SITE-PACKAGES. wrench is installed editable there,
+The venv must not see system site-packages. wrench is installed editable there,
 and an editable install resolves to this very source tree, so mypy reads the
-package as source and the marker stops mattering again. Measured: with
-`--system-site-packages` the check passed with `py.typed` deleted, which is the
-one thing it exists to catch.
+package as source and the marker stops mattering again. With
+`--system-site-packages` the check passes with `py.typed` deleted.
 
 So a wheel is built first, with the interpreter running this script, and a clean
 venv installs that. Nothing reaches the network: the build backend comes from
@@ -83,9 +81,9 @@ def main() -> int:
     try:
         # Built from a copy, because setuptools reuses `python/build/` and a
         # stale one puts files in the wheel that the source no longer has.
-        # Measured: with `py.typed` deleted, a build reusing that tree still
-        # produced a wheel carrying it, so the check passed on a marker the
-        # repository had stopped shipping.
+        # With `py.typed` deleted, a build reusing that tree still produces a
+        # wheel carrying it, so the check would pass on a marker the repository
+        # no longer ships.
         source = workspace / "source"
         shutil.copytree(
             PACK,

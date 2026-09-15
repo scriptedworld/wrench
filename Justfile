@@ -1,39 +1,32 @@
 # wrench: the delegation layer.
 #
-# THIS FILE IS BESPOKE AND NO TEMPLATE WRITES IT. Settled by our user,
-# silo c564005: a project that holds several packs gets a delegating Justfile
-# that calls the constituent packs' Justfiles. What it delegates to differs per
-# repository, which is exactly the kind of thing a template should not guess.
+# No template writes this file. A project that holds several packs gets a
+# delegating Justfile that calls each pack's own Justfile (silo c564005), and
+# what it delegates to differs per repository, so a template should not guess.
 #
-# So it does NOT import just/base.just, and it defines the ten itself. Each pack
-# is an ordinary single-language project with its own Justfile from the
-# templates, and nothing about them knows they are inside wrench.
+# It does not import just/base.just and defines the ten recipes itself. Each
+# pack is an ordinary single-language project with its own Justfile from the
+# templates, and nothing in them knows they sit inside wrench.
 #
-# THE TWO-WORD INTERFACE HOLDS ALL THE WAY UP. `just checks` here means every
-# pack's checks, so a person moving between wrench and any other tree types the
-# same words and never learns wrench is different. That is the property worth
-# having and it is why this file carries all ten names rather than only the ones
-# that delegate.
+# The two-word interface holds all the way up. `just checks` here means every
+# pack's checks, so somebody moving between wrench and any other tree types the
+# same words. That is why this file carries all ten names, including the ones
+# that do not delegate.
 #
-# ================== TWO MEASURED FACTS THIS FILE RESTS ON ==================
+# Two things about just that this file depends on:
 #
-# 1. `just -f go/Justfile test` ALREADY RUNS WITH THE WORKING DIRECTORY SET TO
-#    THAT JUSTFILE'S DIRECTORY. No `cd`, no `--working-directory`. All four
+# 1. `just -f go/Justfile test` already runs with the working directory set to
+#    that Justfile's directory, with no `cd` or `--working-directory`. All four
 #    forms tested behaved identically, so a delegating recipe is one line and
 #    relative paths inside the called recipe resolve against its own pack.
 #
-# 2. THE NAIVE LOOP EXITS 0 WHEN A PACK FAILS. A plain
-#    `@for p in ...; do just -f $p/Justfile test; done` continues past the
-#    failure and the root reports success, which is the estate's signature
-#    hazard arriving in the delegation pattern. Measured: python failed, the
-#    loop carried on, root exit=0.
+# 2. A plain `@for p in ...; do just -f $p/Justfile test; done` exits 0 when a
+#    pack fails: python failed, the loop carried on, and the root exited 0.
+#    Every recipe below is a shebang recipe with `set -euo pipefail` instead,
+#    which exits 1 on a failing pack, exits 0 when all pass, and stops at the
+#    pack that failed.
 #
-#    Every recipe below is therefore a shebang recipe with `set -euo pipefail`.
-#    Verified: exit 1 on a failing pack, exit 0 when all pass, and it stops at
-#    the pack that failed rather than running the rest.
-#
-#    DO NOT REWRITE THESE AS `@for` ONE-LINERS. That is the defect.
-# ===========================================================================
+#    Do not rewrite these as `@for` one-liners.
 
 PACKS := "go python rust"
 
@@ -41,20 +34,15 @@ default:
     @just --list
 
 # _each runs one recipe name across every pack that has a Justfile, stopping at
-# the first pack that HAS one and fails.
+# the first pack that has one and fails.
 #
-# AN ABSENT PACK IS AN ABSENCE, NOT A FAILURE, and conflating the two made the
-# order of PACKS decide whether any work happened at all. Measured by wrench: go
-# sorts first, wrench has no go/Justfile, so `just test` stopped there and ran
-# ZERO suites while reporting a correct exit 1. It reported honestly and did
-# nothing.
+# A pack with no Justfile is skipped, not failed. Treating it as a failure lets
+# the order of PACKS decide whether any work happens: go sorts first, and with
+# no go/Justfile `just test` stopped there, ran no suites at all, and exited 1.
+# Reordering PACKS would only hide that, so the order decides nothing.
 #
-# Reordering to put an adopted pack first fixes the symptom and has to be undone
-# later, so this skips what is absent instead. Order now decides nothing.
-#
-# AND RUNNING NOTHING IS ITS OWN FAILURE. If no pack has a Justfile this exits 1
-# saying so, rather than succeeding over an empty loop. A gate that ran nothing
-# must not report green: scanning nothing and finding nothing are one green.
+# Running nothing is a failure of its own. If no pack has a Justfile this exits
+# 1 and says so, because a gate that ran nothing must not report green.
 _each recipe:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -85,14 +73,13 @@ checks:
     @just _each checks
     @just _parity
 
-# THE PARITY CHECK IS WRENCH'S ALONE and belongs at the root because it is the
-# only thing that reads all three packs at once. `bin/test-suite-parity.py`
-# fails when one pack's suite covers something another's does not, which is what
-# "in parallel and in sync" is enforced by rather than hoped for.
+# The parity check belongs to wrench alone and sits at the root because it is
+# the only thing that reads all three packs at once. `bin/test-suite-parity.py`
+# fails when one pack's suite covers something another's does not, which is how
+# "in parallel and in sync" gets enforced.
 #
-# It is separate from `_each checks` because no pack can run it: a pack that
-# could would have to know about its siblings, which is what this layer exists
-# to prevent.
+# It is separate from `_each checks` because no pack can run it without knowing
+# about its siblings, and the packs are kept from knowing.
 _parity:
     ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
         --suite go='go/*_test.go' \
@@ -127,11 +114,11 @@ dist:
 install:
     @just _each install
 
-# A CLEAN RECIPE MUST NOT REMOVE ANYTHING ANOTHER PROCESS EXECUTES, and at this
-# level that includes not reaching into the packs by hand. Each pack's own clean
+# A clean recipe must not remove anything another process executes, and at this
+# level that means not reaching into the packs by hand. Each pack's own clean
 # knows what it may remove; this one adds only what belongs to the root.
 #
-# schemas/ and testdata/ are NEVER removed. They are shared by every pack and
+# schemas/ and testdata/ are never removed. They are shared by every pack and
 # belong to none, and rust/build.rs regenerates its embedding from schemas/ on
 # every build.
 

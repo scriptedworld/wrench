@@ -4,20 +4,20 @@
 Hard rule 4: a pragma needs a person to have answered why before it is written,
 and it is then registered.
 
-**This exists because `common-quality` runs at each pack's own base.** Pointed at
-`python/`, it reads eleven files, so `bin/`, the Go pack and the Rust pack are
-unchecked by construction and a pragma written in any of them is silent. This
-runs the same checker over the whole tree, which is forty-six.
+`common-quality` runs at each pack's own base. Pointed at `python/`, it reads
+eleven files, so `bin/`, the Go pack and the Rust pack go unchecked and a pragma
+written in any of them is silent. This runs the same checker over the whole
+tree, which is forty-six files.
 
-That is not hypothetical. Two `nosec` pragmas were once written into `bin/` by
-reflex and nothing objected; removing them, the replacement comment wrapped so
-the spelling landed at the start of a comment line, and the register read the
-prose as a bare pragma silencing the file. Neither was noticed by any check.
+Two `nosec` pragmas once went into `bin/` by reflex and nothing objected. When
+they were removed, the replacement comment wrapped so the spelling landed at the
+start of a comment line, and the register read the prose as a bare pragma
+silencing the file. No check noticed either.
 
-**It runs toolbox's register rather than reimplementing it.** A first attempt did
-reimplement it and was wrong within minutes: the pattern matched the word inside
-prose, and it reported the register's own docstring. The real one already reads
-every language and only counts a pragma where one would take effect.
+It runs toolbox's register instead of reimplementing it. A reimplementation was
+wrong within minutes: its pattern matched the word inside prose and reported the
+register's own docstring. The real one already reads every language and only
+counts a pragma where one would take effect.
 
 Exits 0 when every pragma is registered and 1 when one is not, so it needs no
 adapter and runs as a pre-commit hook as readily as a gate task.
@@ -40,11 +40,9 @@ def main() -> int:
         print(f"no register at {register}")
         return 1
 
-    # The register is passed as it is tracked. It used to be rewritten into a
-    # second frame first, because the checker keyed paths relative to whatever
-    # base it was scanning, so one register could not satisfy a pack-based run
-    # and a root run at once. Since toolbox bed07d2 both sides resolve against
-    # the repository, and the translation would double the prefix.
+    # The register is passed as it is tracked, with no path translation. Since
+    # toolbox bed07d2 both the register and the scan resolve paths against the
+    # repository, so rewriting them relative to a base would double the prefix.
     run = subprocess.run(
         [sys.executable, str(checker), "--register", str(register), str(root)],
         capture_output=True,

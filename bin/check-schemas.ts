@@ -2,16 +2,15 @@
 //
 //     deno run --allow-read --allow-net bin/check-schemas.ts
 //
-// WHY THIS EXISTS. Both packs compile their own schemas, which cannot catch both
-// bindings misreading the specification the same way. Nothing outside wrench had
-// ever read these files. ajv is neither Go's santhosh-tekuri nor Python's
-// jsonschema, so it is a second opinion.
+// The packs compile their own schemas, which cannot catch every binding
+// misreading the specification the same way. ajv is none of Go's
+// santhosh-tekuri, Python's jsonschema or Rust's jsonschema crate, so it is a
+// second opinion.
 //
-// WHY A SCRIPT RATHER THAN ajv-cli. The library is first class: 377 million
-// downloads a week and released 2026-04-24, measured 2026-08-27. Its CLI is not:
-// ajv-cli 5.0.0 was last released 2023-04-28, over three years earlier. A gate
-// task should not depend on an unmaintained wrapper when the wrapper is fifteen
-// lines, so wrench keeps the fifteen lines and binds the maintained library.
+// A script and not ajv-cli, because the library is maintained and its CLI is
+// not: ajv has 377 million downloads a week and was released 2026-04-24, while
+// ajv-cli 5.0.0 was last released 2023-04-28. A gate task should not depend on
+// an unmaintained wrapper when the wrapper is fifteen lines.
 //
 // Run through deno, which is installed and declared, so this needs no global npm
 // install and no package.json in a repository with no other JavaScript. deno
@@ -21,7 +20,7 @@ import Ajv2020 from "npm:ajv@8/dist/2020.js";
 const SCHEMA_DIR = "schemas";
 
 // strict: false because wrench's schemas use union types deliberately, and ajv's
-// strict mode is a style opinion rather than a validity check. allErrors so one
+// strict mode is a style opinion, not a validity check. allErrors so one
 // run reports every problem instead of the first.
 const ajv = new Ajv2020({ strict: false, allErrors: true });
 
