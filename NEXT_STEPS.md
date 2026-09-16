@@ -4,32 +4,16 @@ Open questions and the context behind them.
 
 ## Open, and each is specified enough to start
 
-### The Ruby pack is built and nothing holds it to anything
-
-Four gaps, and the first two are the ones that make the rest reachable:
-
-- Its suite reads a file no clone has. `ruby/test/test_wrench.rb` loads
-  `.ephemera/parity-tree.json`, and `.ephemera/` is gitignored, so `git archive
-  HEAD` carries the suite and not the tree it needs. The shared parity tree
-  belongs beside the other fixtures if every pack is to be measured against it.
-- No task runs it. `PACKS` in the `Justfile` is `go python rust`, and
-  `bolt.wrench-quality.yaml` has no Ruby task, so `just test` and the gate both
-  pass without compiling a line of it.
-- The parity check reports 55 divergences when `--suite
-  ruby='ruby/test/*.rb'` is added: 16 `COVERS:` marks against the 67 the other
-  three hold level. Those are tests to write, not scope markers to add.
-- It exposes no `Schemas`. FR-5.7 says every pack exposes the same set, and
-  this one carries none: a caller compiles what it hands over. Go and Python
-  reach the set through a generated file and Rust through `build.rs`, so the
-  question is which of the two shapes Ruby takes.
-
 ### The fixture set still compares bytes
 
 FR-5.5 asks that any pack's output decode to the same value in every other pack,
-and `testdata/canonical/` asks each pack to reproduce one golden file. Three
-packs meet the stricter test and the fourth is not in it. Re-basing the set on
-structures is what the contract change leaves undone, and it is the mechanism
-that would hold four packs level instead of three.
+and `testdata/canonical/` asks each pack to reproduce one golden file. All three
+packs meet the stricter test. Re-basing the set on structures is what the
+contract change leaves undone, and it is the mechanism that would hold a fourth
+pack level without every pack writing the same bytes.
+
+`testdata/parity-tree.json` is the 53-key tree the packs were measured against
+across codecs, and nothing reads it yet.
 
 ### The Go pack has no tags, so every consumer gets a pseudo-version
 
@@ -48,47 +32,6 @@ conventional start and puts the three packs on different numbers for the same
 surface, which is the thing the shared version was for.
 
 Tag form is `go/vX.Y.Z`, because the module lives in a subdirectory.
-
-### The Python pack writes two characters it then refuses to read
-
-Encoding `{"v": <char>}` through each pack and decoding its own output:
-
-    character              Go         Python     Rust       Ruby
-    U+0085, U+FEFF         escaped    escaped    escaped    escaped
-    U+200B, U+00E9         raw        raw        raw        raw
-    U+FFFE, U+FFFF         escaped    RAW        raw        escaped
-    U+1FFFE                escaped    raw        raw        escaped
-    U+1F600 (an emoji)     escaped    raw        raw        escaped
-
-Every cell round trips within its own pack except the two in capitals, where
-`YAML.decode(YAML.encode(v))` raises `ParseError`. That is FR-4.2 failing
-outright, and it is the whole of the defect. Rust emits the same bytes and reads
-them back, yaml-rust2 being the more permissive reader, so no comparison between
-packs would find it either.
-
-The pack's own emitter is what does it. It writes the character as its raw
-three bytes inside the quotes, where an escape is what the reader accepts, so
-the encode side and the decode side of one pack disagree about the same
-document. Handing emission to a library that escapes it closes this, which is
-where `packs-agree-on-structure-not-on-bytes` was already pointing.
-
-The escaping divergence in the rest of the table is not a defect. FR-5.5 holds
-the packs to structure and not to bytes, and an escaped emoji and a raw one
-decode to the same character. What it costs is diff noise when two packs
-rewrite one file, which is the cost `packs-agree-on-structure-not-on-bytes`
-accepted.
-
-Nothing detected the round-trip fault, and the reason is structural. Every one
-of the twelve fixtures in `testdata/canonical/` is pure ASCII, and a fixture set
-cannot disagree about a character it does not contain. The fix is a fixture per
-case, written before the emitters move and not after.
-
-**Fixing it changes the bytes the Python pack writes, and one consumer pins
-them.** infobot's FR-1.11p asserts the exact bytes of wrench's output against
-the pack that produces them, and its FR-1.11o requires a change to that form to
-be announced before it lands. Packs no longer having to match each other does
-not release a pack from the reader it already has, so this needs a version bump
-here and a word to infobot first.
 
 ### A document names its own schema, cross-checked and not trusted
 

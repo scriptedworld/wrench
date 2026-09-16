@@ -20,10 +20,10 @@ override and which no parameter reaches. `repr` chooses an exponent on a
 threshold of its own, so it disagrees with this pack's YAML codec and with the
 other packs. FR-4.8 states one spelling.
 
-In effect the walk is a float adapter, and the Ruby pack shows the smaller
-version: it hands the library a pre-spelled fragment through `to_json` and
-keeps every other decision. Python has no equivalent seam, which is why this
-one is shaped as it is, and a reason to keep looking for one.
+In effect the walk is a float adapter. A library exposing a per-value hook
+takes a smaller version, where a pre-spelled fragment is handed over and every
+other decision stays the library's. Python has no equivalent seam, which is why
+this one is shaped as it is, and a reason to keep looking for one.
 `docs/DECISIONS/packs-agree-on-structure-not-on-bytes.md` is the rule it
 answers to.
 

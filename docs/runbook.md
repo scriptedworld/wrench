@@ -1,6 +1,6 @@
 # Runbook
 
-Binding wrench into a Go, Python, Rust or Ruby project, what each pack is built
+Binding wrench into a Go, Python or Rust project, what each pack is built
 on, and where their output has to agree.
 
 Setting the repositories up for the first time is covered once, in
@@ -27,10 +27,6 @@ paths assume the sibling layout; use absolute ones if your checkout differs.
 
     [dependencies]
     wrench = { version = "0.4.0", path = "../wrench/rust" }
-
-**Ruby**
-
-    gem "wrench", path: "../wrench/ruby"
 
 ## Use it
 
@@ -70,15 +66,6 @@ ready-made reader and writer for an ordinary file.
 `wrench::schemas` carries the shipped schemas; `wrench::compile_schema` builds
 one from text.
 
-**Ruby**
-
-    schema = Wrench.compile_schema("envelope", JSON.parse(File.read(schema_file)))
-    value = Wrench.load_formatted_file(path, schema, Wrench::YAML, Wrench::LOCAL_FILE)
-
-This pack carries no schemas of its own, so a caller reads the file it wants out
-of `schemas/` and compiles it. `Wrench.load_yaml_file` and the other three
-wrappers are there as in every pack.
-
 A schema says what the document may contain. The reader and writer are where
 bytes come from, which is what lets a caller test without a filesystem.
 
@@ -87,13 +74,13 @@ bytes come from, which is what lets a caller test without a filesystem.
 The packs are not ports of each other. Each binds its own parsers and its own
 JSON Schema validator, and each was written from the same contract.
 
-| | Go | Python | Rust | Ruby |
-|---|---|---|---|---|
-| schema | `santhosh-tekuri/jsonschema/v6` | `jsonschema` + `referencing` | `jsonschema` 0.52 | `json_schemer` |
-| YAML | `go.yaml.in/yaml/v3` | `PyYAML` | `yaml-rust2` | Psych |
-| JSON | `encoding/json` | `json` | `serde_json` | `json` |
+| | Go | Python | Rust |
+|---|---|---|---|
+| schema | `santhosh-tekuri/jsonschema/v6` | `jsonschema` + `referencing` | `jsonschema` 0.52 |
+| YAML | `go.yaml.in/yaml/v3` | `ruamel.yaml` | `yaml-rust2` reads, `libyaml-safer` writes |
+| JSON | `encoding/json` | `json` | `serde_json` |
 
-Twelve independent implementations across four languages. None of them agrees
+Independent implementations across three languages. None of them agrees
 with the others about how to spell an ordinary value, and none raises an error
 about it.
 
@@ -133,17 +120,16 @@ written as the word, not as an empty value.
 Layout is not part of it. Two packs may indent a list differently or wrap a
 long line in different places. What they are held to is that any pack's output
 decodes to the same value in every other pack, because no canonical form exists
-that all four languages' YAML libraries can emit.
+that every language's YAML library can emit.
 
 Intent is not what holds it true. A shared fixture set in `testdata/canonical/`
 is read by the Go, Python and Rust packs, and the suite-parity check refuses to
 pass over an emptiness: pointed at a glob matching no files it exits 2 rather
-than reporting success. The Ruby pack is in neither yet, so treat its output as
-measured, not gated.
+than reporting success.
 
 ## How this repository gates itself, if yours has several packs
 
-wrench is one repository holding four independent libraries, so the gate runs at
+wrench is one repository holding three independent libraries, so the gate runs at
 two levels and the split is deliberate.
 
 Each pack gates itself. `just checks` runs `_each checks`, and every pack runs
@@ -159,9 +145,9 @@ is there so that no pack does.
     just test          the suite in every pack
     just coverage      the same, with coverage
 
-**A pack the recipes do not name is a pack that silently passes.** `PACKS` in
-the `Justfile` is `go python rust`, so every recipe above runs nothing Ruby and
-exits 0 having done so. Whatever fans out in your own repository, make the list
+**A pack the recipes do not name is a pack that silently passes.** A directory
+missing from `PACKS` in the `Justfile` is never run, and every recipe exits 0
+having run nothing of it. Whatever fans out in your own repository, make the list
 it fans over fail loudly when a directory is missing from it.
 
 The coordination lives in the Justfile, not the jig. Bolt can compose

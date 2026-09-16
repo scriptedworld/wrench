@@ -22,6 +22,11 @@ covering the 2020-12 dialect wrench declares.
 | Rust | `jsonschema`, `default-features = false` | yes | Measured, below |
 | TypeScript | `ajv` | yes | Run against wrench's schemas |
 | Ruby | `json_schemer` 2.5.0 | yes | The gem's own summary |
+| C++ | jsoncons 1.3.2, to be measured | yes | Declared, and in use by infobot |
+
+The Ruby and TypeScript rows are the survey, not bindings. Both packs were
+removed on 2026-09-16 and the rows stay because the survey is what a later pack
+in either language starts from.
 
 A library is not why a pack does or does not get built. Ruby was dropped and
 restored, and `json_schemer` was solid throughout: 76,948,643 total downloads,

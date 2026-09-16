@@ -22,9 +22,14 @@ language would be nice to support.
 | Go | `bolt.go`, the previous Go implementation | Built |
 | Python | toolbox's adapters and checkers, and skid | Built |
 | Rust | bolt, which is now a Rust implementation | Built |
-| Ruby | the estate's Ruby tooling as it is written | Built |
-| TypeScript | the estate's TypeScript tooling as it is written | Built, under `typescript/`, and outside the gate |
 | C++ | infobot's C++ port | Planned, clank `tasks/wrench/library/cpp/` |
+
+Ruby and TypeScript packs were written and removed on 2026-09-16. Both were
+built on the relaxed rule below, before anything in the estate was written in
+either language, and neither was wanted yet. `ruby/` is at `8d5714c` and
+`typescript/` at `67757b0`. The rule that a pack waits for something that needs
+it is what this records, and building two that nothing needed is what it
+now has as its own example.
 
 The rule is relaxed, because its cost premise no longer holds. The decision
 reasoned that a pack is expensive after it is written, being a second
@@ -33,14 +38,15 @@ carrying a hand-written emitter per format. It is not true of what a pack is
 now.
 
 `packs-agree-on-structure-not-on-bytes` retired the emitters. A pack is its
-language's libraries, the four adapters, the error family and the two calls: the
-Ruby pack is 535 lines of library and 186 of suite. The calls, the seams and the error
+language's libraries, the four adapters, the error family and the two calls, and
+the Ruby pack was 535 lines of library and 186 of suite before it was removed.
+The calls, the seams and the error
 kinds are fixed by the contract and do not move, so the only thing that reaches
 a pack afterwards is a new or changed schema.
 
 So the question is now whether this is a language the estate writes tools in.
 A library is still never why a pack does or does not get built, which is what
-the Ruby round trip established: it was doubted because `json_schemer` sounded
+the Ruby round trip established: `json_schemer` was doubted for sounding
 unsupported, and measuring showed it is not.
 
 Toolbox's checkers and adapters are not fixed to Python. Any of Go, Python, Rust

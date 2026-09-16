@@ -37,9 +37,9 @@ reads those files, so the exempt list lives in one place. **Never add a scope
 marker to silence a failure**: it is for a row a pack cannot discharge, and a row
 merely untested in one pack is exactly what the check is there to find.
 
-Adding a pack means adding a `--suite` for it, and the Ruby pack is the standing
-example of what happens otherwise: it is not named in the command, so nothing
-compares it to anything, and adding it reports 55 divergences.
+Adding a pack means adding a `--suite` for it in the same change. A pack the
+command does not name is compared to nothing, and its suite can cover a
+fraction of the rows while the check passes.
 
 ## Changing a schema
 
@@ -50,7 +50,7 @@ in the others.
 1. Edit the file in `schemas/`. That is the single copy; no pack keeps its own.
 2. Ask which packs exercise it, and read the answer instead of assuming:
 
-       grep -rn '<SchemaName>' go/*_test.go python/tests/ rust/tests/ ruby/test/
+       grep -rn '<SchemaName>' go/*_test.go python/tests/ rust/tests/
 
    A pack that prints nothing does not test that schema. Its green run will not
    report your change either way, so add the test before you rely on it.
@@ -63,7 +63,6 @@ in the others.
        (cd go && go test -count=1 -run '<Name>' -v ./...)
        PYTHONPATH=python python3 -m pytest python/tests -q -k '<name>' -v
        cargo test --manifest-path rust/Cargo.toml <name>
-       (cd ruby && ruby -Ilib -Itest test/test_wrench.rb -n '/<name>/')
 
 5. `bolt` builds against this working tree through a `replace` directive, so a
    schema reshape breaks bolt at its HEAD. Extending a schema is free; changing
@@ -90,8 +89,7 @@ when verifying one yourself, prefer `go test` over anything already compiled.
 
 Put the file in `schemas/` with an `$id`, and nothing else is needed: each pack
 reads the directory rather than a list of filenames. Export a named constant in
-each pack for the schemas consumers reach for by name. The Ruby pack has no such
-set yet, so nothing there picks a new schema up.
+each pack for the schemas consumers reach for by name.
 
 `docs/DECISIONS/a-shipped-schema-is-named-by-its-id.md` says why the directory is
 read and not listed, and what it cost to find out.
@@ -120,5 +118,5 @@ rules by reading `go/yaml.go`: if the two ever disagree, the fixture is right an
 the pack is wrong. That is what makes agreement evidence and not coincidence.
 
 Adding a case means adding it once and each pack picking it up, because every
-suite that reads the set enumerates the directory. The Ruby pack does not read
-it, so a case added today reaches three packs and not four.
+suite that reads the set enumerates the directory. A pack that does not read it
+is a pack a new case never reaches.

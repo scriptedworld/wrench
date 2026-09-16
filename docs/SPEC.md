@@ -109,7 +109,7 @@ supply the codec and add nothing else (FR-2.10):
 
 Validation stays in the core call, so the seam is unchanged in both directions.
 
-TOML was the third and is retired. No maintained library in any of the four
+TOML was the third and is retired. No maintained library in any of the
 languages emits its canonical form, and the hand-written emitters that stood in
 for one wrote a document they could not read back. FR-2.7 carries the defect and
 the three source lines it came from.
@@ -164,7 +164,8 @@ structure, and that output is not promised to be a sibling pack's.
 **The packs agree on structure, not on bytes** (FR-5.5). Any pack's output must
 decode to the same value in every other pack, and a difference in whitespace is
 not a defect. Byte identity cannot be kept alongside library emission: no
-canonical form exists that all four languages' YAML libraries can produce, libyaml writing block sequences indentless and
+canonical form exists that every language's YAML library can produce, libyaml
+writing block sequences indentless and
 hard-coding it while Go's `yaml.v3` indents them and offers only `SetIndent`.
 `packs-agree-on-structure-not-on-bytes` carries the measurement and what the
 change costs.
@@ -197,7 +198,7 @@ layout is not.
 An emitter in the libyaml family takes two settings beside them, both settings
 and not code: the line width off, so a long scalar is never wrapped, and
 unicode passed through rather than escaped. libyaml spells them `set_width(-1)`
-and `set_unicode(true)`, and Psych takes `line_width` on the dump. Go's
+and `set_unicode(true)`. Go's
 `yaml.v3` offers neither and needs neither: `SetIndent` is the whole of its
 emitter API, its own width and unicode functions being unexported, and it wrote
 a 9,689-character scalar on one line.
@@ -333,32 +334,29 @@ The calls are the same and the spelling is each language's own, by
 `each-pack-spells-the-calls-its-own-way`. A pack is idiomatic in its language
 before it is symmetrical with its siblings.
 
-| | Go | Python | Rust | Ruby |
-|---|---|---|---|---|
-| Core calls | `LoadFormattedFile` | `load_formatted_file` | `load_formatted_file` | `load_formatted_file` |
-| Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum | `Error < StandardError` |
-| Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants | the exception classes, plus `STEPS` |
-| Reading the kind | `Step()` method | `step` property | `step()` method | `step` method, on the instance or the class |
-| YAML emission | `yaml.v3` nodes | by hand | by hand | Psych nodes |
-| JSON emission | `encoding/json`, floats respelled first | walked by hand for floats | `serde_json` with a float formatter | `JSON.pretty_generate`, floats respelled first |
-| Schemas reach the pack by | generated `go/shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` | nothing yet |
-| Validator | santhosh-tekuri/jsonschema | `jsonschema` | `jsonschema` crate | `json_schemer` |
+| | Go | Python | Rust |
+|---|---|---|---|
+| Core calls | `LoadFormattedFile` | `load_formatted_file` | `load_formatted_file` |
+| Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum |
+| Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants |
+| Reading the kind | `Step()` method | `step` property | `step()` method |
+| YAML emission | `yaml.v3` nodes | `ruamel.yaml` nodes | `libyaml-safer` events |
+| JSON emission | `encoding/json`, floats respelled first | walked by hand for floats | `serde_json` with a float formatter |
+| Schemas reach the pack by | generated `go/shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` |
+| Validator | santhosh-tekuri/jsonschema | `jsonschema` | `jsonschema` crate |
 
 Each pack binds its language's established implementation instead of
 implementing JSON Schema itself (FR-5.2). Which one, and why, is
 `which-json-schema-library-each-pack-binds`.
 
-The two hand-written YAML emitters are what
-`packs-agree-on-structure-not-on-bytes` retired the requirement for, and they
-are still in place. A pack written now emits through its library with the four
-adapters; the older two are the shape being replaced, not the shape to copy.
+No pack emits YAML by hand. `packs-agree-on-structure-not-on-bytes` retired the
+byte-identity requirement the hand-written emitters existed for, and each pack
+now emits through its library with the four adapters applied.
 
 Every pack exposes the same set of schemas (FR-5.7), and each checks itself
 against the directory, not against another pack. A schema present in one
 pack and absent from another is a divergence in the contract, so agreement
-follows from each pack answering to the one authority. The Ruby pack does not
-carry the shipped set at all yet: it compiles a schema a caller hands it and has
-no `Schemas`, so it is the one pack a consumer cannot name `ENVELOPE` through.
+follows from each pack answering to the one authority.
 
 ## How the packs are held level
 
@@ -381,8 +379,8 @@ one pack is the finding.
 The fixture set compares bytes, and the contract does not. Each
 of the twelve cases holds an `input.yaml` and a `canonical.yaml`, and the Go,
 Python and Rust suites assert their output equals that golden file. That is a
-stricter test than FR-5.5 now asks for, and those three packs pass it; the Ruby
-pack does not read the set at all. Re-basing it on structures, so a case is a
+stricter test than FR-5.5 now asks for, and all three packs pass it. Re-basing
+it on structures, so a case is a
 value every pack must produce and decode rather than bytes every pack must
 reproduce, is open work in `NEXT_STEPS.md`.
 
@@ -434,5 +432,4 @@ the other two. All three are decode defects and none is caught by a fixture set
 that feeds YAML only.
 
 **How a pack is published.** Versioning and installation are each language's own
-question, and only Python's has been answered. The Ruby pack carries a gemspec
-and nothing has been published from it.
+question, and only Python's has been answered.

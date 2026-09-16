@@ -26,13 +26,12 @@ conclude the names drifted from the contract. They did not: the contract is
 This matters most for the packs not yet built.
 
     Rust        load_formatted_file  save_formatted_file
-    Ruby        load_formatted_file  save_formatted_file
-    TypeScript  loadFormattedFile    saveFormattedFile
 
-Rust and Ruby spell functions in snake case, so both match the contract directly.
-TypeScript does not, and camel case is what its ecosystem expects, so it
-transforms the contract exactly as Go does. Two of the four planned packs
-therefore rename, and that is the rule working, not an exception to it.
+Rust spells functions in snake case, so it matches the contract directly. A pack
+in a language whose ecosystem expects another convention transforms the contract
+exactly as Go does, and that is the rule working rather than an exception to it.
+A TypeScript pack would have spelled them `loadFormattedFile` and
+`saveFormattedFile` for that reason.
 
 ## A pack may widen an argument's type to its language's idiom
 

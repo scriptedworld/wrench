@@ -33,7 +33,7 @@ produce and consume them.
     docs/LESSONS/         what a mistake here cost
     NEXT_STEPS.md         open questions and context that is not yet work
 
-`docs/SPEC.md` is written so a fourth pack can be built from it, and it names
+`docs/SPEC.md` is written so a further pack can be built from it, and it names
 what it does not specify. Read it before this file if the question is how
 something works; read this file for how the project is run.
 
@@ -57,8 +57,6 @@ something works; read this file for how the project is run.
     rust/src/                the Rust pack
     rust/tests/              build.rs generates its copy every build
 
-    ruby/lib/wrench/         the Ruby pack
-    ruby/test/               it carries no copy of the schemas at all
 
 ## The gate
 
@@ -100,17 +98,15 @@ the register against every source file, not only the Python pack. There is no
 | Go | bolt's Go implementation | Built, under `go/` |
 | Python | toolbox's adapters and checkers | Built, under `python/` |
 | Rust | bolt | Built, suite level with the others |
-| Ruby | the estate's Ruby tooling as it is written | Built, under `ruby/`, and outside the gate |
-| TypeScript | the estate's TypeScript tooling as it is written | Built, under `typescript/`, and outside the gate |
 | C++ | infobot's C++ port | Planned, clank `tasks/wrench/library/cpp/` |
 
 `packs-follow-demand` says what decides when a pack gets written: whether the
 estate writes tools in that language. A waiting consumer is not required,
 because the emitters that made a pack expensive are gone.
 
-The Ruby pack is the least finished of the four. It exposes no `Schemas`, so
-FR-5.7 is undischarged there; no jig task runs its suite; and the parity check
-reports 55 divergences when its suite is added to the command.
+A Ruby pack and a TypeScript pack were built and removed on 2026-09-16, both
+outside the gate and neither wanted yet. `ruby/` is at `8d5714c` and
+`typescript/` at `67757b0` if either is restored.
 
 Bump the pack version in the same commit as a change to its surface. A resolver
 serves an unchanged version number out of its cache, so a consumer receives none
@@ -126,8 +122,8 @@ is right.
 What they are held to is that any pack's output decodes to the same value in
 every other pack, not that they write the same bytes. The fixture set has not
 caught up with that: it still compares each pack's output against a golden file,
-which is stricter than the contract and which the Ruby pack sits outside
-entirely. `packs-agree-on-structure-not-on-bytes` carries the argument.
+which is stricter than the contract asks.
+`packs-agree-on-structure-not-on-bytes` carries the argument.
 
 A fixture set proves agreement only over the values it holds, and a gap in it
 looks exactly like agreement. That is the standing caution rather than a closed

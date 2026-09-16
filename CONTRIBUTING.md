@@ -1,6 +1,6 @@
 # Contributing
 
-wrench owns one definition of what a structured file may contain, and four
+wrench owns one definition of what a structured file may contain, and three
 libraries that hold to it. A change is accepted when they still agree, so most
 of what follows is about keeping them level.
 
@@ -17,28 +17,20 @@ specify.
     go/                      the Go pack
     python/wrench/           the Python pack
     rust/src/                the Rust pack
-    ruby/lib/wrench/         the Ruby pack
 
 ## Running the suites
 
     (cd go && go test ./...)
     PYTHONPATH=python python3 -m pytest python/tests -q
     cargo test --manifest-path rust/Cargo.toml
-    (cd ruby && ruby -Ilib -Itest test/test_wrench.rb)
 
 `just test` delegates to each pack that has adopted its own Justfile. Run the Go
-suite from `go/` until that pack adopts one, and the Ruby suite by hand: `PACKS`
-in the `Justfile` names go, python and rust, so `just test` compiles nothing
-Ruby and reports nothing about it.
+suite from `go/` until that pack adopts one.
 
-The Python suite needs `PyYAML`, `jsonschema` and `referencing` importable. The
-pack imports them by name, so a platform package satisfies it as well as a
+The Python suite needs `ruamel.yaml`, `jsonschema` and `referencing` importable.
+The pack imports them by name, so a platform package satisfies it as well as a
 resolver does, and it runs from a source checkout with no install having
 happened.
-
-The Ruby suite needs `json_schemer` and `minitest`. Psych and `json` are
-standard library and the pack declares neither, because they are the emitters
-and the pack adds only the adapters on top of them.
 
 ## The parity check
 
@@ -57,12 +49,6 @@ list.
 Adding a scope marker to silence a parity failure is the one wrong use of it. A
 marker is for a row a pack cannot discharge; a row merely untested in one pack
 is the finding.
-
-The Ruby pack is not in that command. Adding `--suite
-ruby='ruby/test/*.rb'` reports 55 divergences and exits 1, because the pack is
-new and its suite covers 16 rows against the 67 the other three hold level.
-Neither a scope marker nor a deletion is the answer there: the tests are missing
-and have to be written.
 
 ## Every test names its requirement
 
@@ -111,9 +97,7 @@ generated file that is committed:
     ./bin/generate-shipped.py            write the generated files
     ./bin/generate-shipped.py --check    exit 1 if any is stale, and say which
 
-Rust needs neither, `rust/build.rs` regenerating its copy on every build. Ruby
-carries no copy and reaches no schema of its own, so a schema change does not
-reach that pack at all.
+Rust needs neither, `rust/build.rs` regenerating its copy on every build.
 
 Bump the pack version in the same commit as a change to its surface. A resolver
 serves an unchanged version number out of its cache, so a consumer receives none
