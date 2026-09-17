@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 import wrench
+from wrench.float_text import canonical_float_text
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "testdata" / "canonical"
@@ -776,12 +777,12 @@ def test_yaml_support_is_a_library_rather_than_a_vendored_copy():
     takes the scalar style, which is the quoting adapter and what lets the pack
     do without a hand-written emitter.
     """
-    from ruamel.yaml import YAML as Ruamel
+    from ruamel.yaml import YAML as RUAMEL_YAML
 
     source = (ROOT / "python" / "wrench" / "codec.py").read_text()
     assert "from ruamel.yaml import" in source
     assert not (ROOT / "python" / "wrench" / "yaml").exists(), "a vendored copy"
-    assert Ruamel(typ="safe").load("a: 1") == {"a": 1}
+    assert RUAMEL_YAML(typ="safe").load("a: 1") == {"a": 1}
 
 
 # COVERS: FR-4.3 | property
@@ -1031,8 +1032,6 @@ THREE_FORMATS = {"b": 1, "a": {"z": [1, 2], "y": "x"}, "d": True}
 CANONICAL_JSON = b'{\n  "a": {\n    "y": "x",\n    "z": [\n      1,\n      2\n    ]\n  },\n  "b": 1,\n  "d": true\n}\n'
 
 
-
-
 # COVERS: FR-2.7, FR-4.6 | property
 def test_json_canonical_form():
     """Two-space indent, one key to a line, keys sorted, trailing newline. The
@@ -1142,6 +1141,16 @@ def test_a_float_has_one_spelling_in_every_codec(value: float, spelled: str) -> 
     """
     for codec, prefix, suffix in CANONICAL_FLOAT_CODECS:
         assert codec.encode({"n": value}) == (prefix + spelled + suffix).encode()
+
+
+# COVERS: FR-4.1 | edge
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+def test_the_float_spelling_refuses_what_has_no_digits(value: float) -> None:
+    """NaN and the infinities have no positional spelling, so the spelling
+    itself refuses them, whichever codec asked. Both codecs refuse earlier, so
+    only a direct call reaches this."""
+    with pytest.raises(ValueError, match="canonical form"):
+        canonical_float_text(value)
 
 
 # The escape spellings below are asserted identically in every suite. A

@@ -50,3 +50,5 @@ adapters/
 config/
 bin/suppression-register.py
 bin/test-traceability.py
+bin/voice-review.py
+bin/voice-tells.py

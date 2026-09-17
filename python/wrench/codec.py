@@ -1,4 +1,4 @@
-"""The YAML codec: bytes to a structure, and a structure to canonical bytes.
+r"""The YAML codec: bytes to a structure, and a structure to canonical bytes.
 
 Canonical form is block style, one key to a line, keys sorted, and a scalar
 quoted exactly when it is meant to be a string. Booleans and numbers stay bare.
@@ -11,8 +11,8 @@ same structure produce the same bytes.
 ruamel emits, and this module decides four things. The document is handed to
 ruamel with the style named on each scalar, and ruamel turns it into text:
 layout, indentation, escaping and line breaks are all its, and its escape table
-is already the one this pack wants, `\\0 \\a \\b \\t \\n \\v \\f \\r \\e \\N \\L
-\\P`, uppercase `\\x7F` and `\\uFEFF`.
+is already the one this pack wants, `\0 \a \b \t \n \v \f \r \e \N \L
+\P`, uppercase `\x7F` and `﻿`.
 
 The four are the adapters docs/DECISIONS/packs-agree-on-structure-not-on-bytes.md
 names, and they preserve meaning, not layout: sort the keys, quote every string
@@ -24,9 +24,10 @@ from __future__ import annotations
 
 import datetime
 import io
+import math
 from typing import TYPE_CHECKING, Any, Protocol
 
-from ruamel.yaml import YAML as _RuamelYAML
+from ruamel.yaml import YAML as _RUAMEL_YAML
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString as _Quoted
 
 if TYPE_CHECKING:
@@ -85,17 +86,17 @@ class YAMLCodec:
 YAML = YAMLCodec()
 
 
-def _reader() -> _RuamelYAML:
+def _reader() -> _RUAMEL_YAML:
     """A parser that builds plain maps, lists and scalars.
 
     `typ="safe"` refuses arbitrary tags, which is the property a library reading
     files from elsewhere needs, and returns builtins rather than ruamel's
     round-trip types so `_normalise` sees what every other pack's parser sees.
     """
-    return _RuamelYAML(typ="safe")
+    return _RUAMEL_YAML(typ="safe")
 
 
-def _writer() -> _RuamelYAML:
+def _writer() -> _RUAMEL_YAML:
     """ruamel, set up to emit. Layout and escaping stay its; the adapters own
     ordering, quoting, float spelling and how a null is spelled.
 
@@ -103,7 +104,7 @@ def _writer() -> _RuamelYAML:
     scalar across lines. That is legal YAML and reads back the same, but it puts
     a line break where the value had none and makes a diff noisy.
     """
-    writer = _RuamelYAML()
+    writer = _RUAMEL_YAML()
     writer.default_flow_style = False
     writer.indent(mapping=INDENT, sequence=INDENT * 2, offset=INDENT)
     writer.width = 1 << 30
@@ -126,29 +127,46 @@ def _prepared(value: object) -> object:
     decoder then refuses under FR-1.2.
     """
     if isinstance(value, dict):
-        out = {}
-        for key in sorted(value):
-            if not isinstance(key, str):
-                raise ValueError(f"cannot write a {type(key).__name__} key in canonical form")
-            # The location is added on the way out, so a refusal names the key
-            # or index it happened at as well as the type. A schema over a
-            # large document says nothing useful without one.
-            try:
-                out[_Quoted(key)] = _prepared(value[key])
-            except ValueError as err:
-                raise _at(f'at key "{key}"', err) from err
-        return out
+        return _prepared_mapping(value)
     if isinstance(value, list):
-        prepared = []
-        for index, item in enumerate(value):
-            try:
-                prepared.append(_prepared(item))
-            except ValueError as err:
-                raise _at(f"at index {index}", err) from err
-        return prepared
+        return _prepared_sequence(value)
+    return _prepared_scalar(value)
+
+
+def _prepared_mapping(value: dict[Any, Any]) -> dict[Any, Any]:
+    """A mapping with its keys sorted and quoted, and its values prepared."""
+    out = {}
+    for key in sorted(value):
+        if not isinstance(key, str):
+            raise ValueError(f"cannot write a {type(key).__name__} key in canonical form")
+        # The location is added on the way out, so a refusal names the key
+        # or index it happened at as well as the type. A schema over a
+        # large document says nothing useful without one.
+        try:
+            out[_Quoted(key)] = _prepared(value[key])
+        except ValueError as err:
+            raise _at(f'at key "{key}"', err) from err
+    return out
+
+
+def _prepared_sequence(value: list[Any]) -> list[Any]:
+    """A sequence with each item prepared, refusals naming the index."""
+    prepared = []
+    for index, item in enumerate(value):
+        try:
+            prepared.append(_prepared(item))
+        except ValueError as err:
+            raise _at(f"at index {index}", err) from err
+    return prepared
+
+
+def _prepared_scalar(value: object) -> object:
+    """A scalar, quoted where it is a string and refused where it has no
+    canonical form. NaN and the infinities are the refusals: FR-4.8 spells a
+    float as digits, and neither is a number of digits."""
     if isinstance(value, str):
         return _Quoted(value)
-    if isinstance(value, float) and (value != value or value in (float("inf"), float("-inf"))):
+    if isinstance(value, float) and not math.isfinite(value):
         raise ValueError(f"cannot write {value} in canonical form")
     if not isinstance(value, (bool, int, float, type(None))):
         raise ValueError(f"cannot write {type(value).__name__} in canonical form")

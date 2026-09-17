@@ -90,6 +90,6 @@ def name_the_failing_step(path: str) -> str:
 
 def each_codec(path: str) -> list[Any]:
     """Every shipped codec through the seam, so `Codec` is exercised as a type
-    and not only as three concrete classes."""
-    codecs: list[wrench.Codec] = [wrench.YAML, wrench.JSON, wrench.TOML]
+    and not only as the concrete classes."""
+    codecs: list[wrench.Codec] = [wrench.YAML, wrench.JSON]
     return [wrench.load_formatted_file(path, wrench.schemas.MANIFEST, codec, wrench.LOCAL_FILE) for codec in codecs]
