@@ -69,6 +69,32 @@ one from text.
 A schema says what the document may contain. The reader and writer are where
 bytes come from, which is what lets a caller test without a filesystem.
 
+## Bytes that did not come from a file
+
+A process's output, a network reply or a model's answer is validated the same
+way a file is. Only the local file reader ships (FR-2.8), so hand the call a
+reader that returns the bytes you already hold, and the path becomes the label
+an error names:
+
+    class Held:
+        def __init__(self, data: bytes) -> None:
+            self.data = data
+
+        def read(self, path: str) -> bytes:
+            return self.data
+
+    verdicts = wrench.load_json_file("the model's reply", SCHEMA, Held(reply))
+
+The bytes go through the same decode and the same validation as a file, so a
+reply that does not match fails as `validate` and names where.
+
+Finding the document inside surrounding prose is not wrench's job. Ask the
+producer for the document alone. `claude -p --output-format json --json-schema
+<schema>` returns an envelope whose `result` is the bare JSON text, and the
+schema it is given must be an object at the top level: an array schema is
+refused with an API 400. Validate `result` through the pack anyway, because a
+schema the producer was told about is not a schema anything checked.
+
 ## What each pack is built on
 
 The packs are not ports of each other. Each binds its own parsers and its own
