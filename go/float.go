@@ -62,26 +62,42 @@ func (f canonicalFloat) MarshalJSON() ([]byte, error) {
 }
 
 // canonicalNumbers rebuilds a structure with every float replaced by one that
-// marshals canonically. Nothing else is touched.
-func canonicalNumbers(value any) any {
+// marshals canonically, and refuses what the YAML codec refuses.
+//
+// encoding/json writes more than the value model holds: it spells an integer
+// map key as a string and a struct as an object, so a document nobody wrote
+// would come out of the JSON codec while the YAML codec refused the same
+// value. FR-2.9 allows maps with string keys, lists and the JSON scalars, and
+// this is the one place the JSON codec sees the value before encoding/json does.
+func canonicalNumbers(value any) (any, error) {
 	switch v := value.(type) {
+	case nil, bool, string, int, int32, int64, uint, uint64:
+		return value, nil
 	case float64:
-		return canonicalFloat(v)
+		return canonicalFloat(v), nil
 	case float32:
-		return canonicalFloat(float64(v))
+		return canonicalFloat(float64(v)), nil
 	case map[string]any:
 		out := make(map[string]any, len(v))
 		for key, inner := range v {
-			out[key] = canonicalNumbers(inner)
+			converted, err := canonicalNumbers(inner)
+			if err != nil {
+				return nil, fmt.Errorf("at key %q: %w", key, err)
+			}
+			out[key] = converted
 		}
-		return out
+		return out, nil
 	case []any:
 		out := make([]any, len(v))
 		for i, inner := range v {
-			out[i] = canonicalNumbers(inner)
+			converted, err := canonicalNumbers(inner)
+			if err != nil {
+				return nil, fmt.Errorf("at index %d: %w", i, err)
+			}
+			out[i] = converted
 		}
-		return out
+		return out, nil
 	default:
-		return value
+		return nil, fmt.Errorf("cannot write %T in canonical form", value)
 	}
 }

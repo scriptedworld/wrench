@@ -134,7 +134,11 @@ func (jsonCodec) Encode(value any) ([]byte, error) {
 	// Go's encoder escapes <, > and & for HTML embedding, which no consumer here
 	// wants and which would make the bytes differ from every other pack's.
 	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(canonicalNumbers(value)); err != nil {
+	canonical, err := canonicalNumbers(value)
+	if err != nil {
+		return nil, &EncodeError{Err: err}
+	}
+	if err := encoder.Encode(canonical); err != nil {
 		return nil, &EncodeError{Err: fmt.Errorf("cannot write in canonical form: %w", err)}
 	}
 	// encoding/json sorts map keys already, and appends the newline this form

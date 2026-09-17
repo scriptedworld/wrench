@@ -2,7 +2,7 @@
 
 | ID | Requirement | |
 |---|---|---|
-| FR-2.11 | Every failure a public entry point produces is wrench's own error type, never a bound library's, and it carries the underlying cause. **Nothing escapes the family**: one catch reaches every failure wrench can produce. The kinds are distinct and named identically in every pack: `read`, `parse`, `schema`, `validate`, `encode`, `write`, and `usage`. | |
+| FR-2.11 | Every failure a public entry point produces is wrench's own error type, never a bound library's, and it carries the underlying cause. **Nothing escapes the family**: one catch reaches every failure wrench can produce. The kinds are distinct and named identically in every pack: `read`, `parse`, `schema`, `validate`, `encode`, `write`, and `usage`. | [go,python:negative] |
 
 There are six kinds on three axes, and the pairs are what make them worth
 separating:
@@ -14,6 +14,11 @@ separating:
 `usage` is a seventh and is not one of the six, because it happens before any
 file is touched: the call was handed no schema, codec, reader or writer. Nothing
 was read, parsed or validated, so calling it a `read` failure would be false.
+
+The negative case is scoped to Go and Python for the same reason FR-4.1's is. It
+hands a codec a value outside the model (an integer map key, a struct, a set)
+and expects a refusal naming it. Rust's `serde_json::Value` cannot hold such a
+value, so the case cannot be constructed there. Every pack covers the property.
 
 Rust cannot produce `usage`, and that is the contract holding, not a gap:
 `&dyn Schema` means the same call does not compile. Go and Python check at run

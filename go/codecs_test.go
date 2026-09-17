@@ -249,6 +249,30 @@ func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
 	}
 }
 
+// COVERS: FR-2.11 | negative
+func TestAValueOutsideTheModelIsRefusedByNameInEveryCodec(t *testing.T) {
+	// encoding/json would spell an integer key as a string and a struct as an
+	// object, writing a document nobody wrote. Both codecs refuse instead, and
+	// the refusal names the type so a reader knows what to look for.
+	for name, value := range map[string]any{
+		"an integer key": map[int]string{1: "x"},
+		"a struct":       map[string]any{"v": struct{ A int }{1}},
+		"a channel":      map[string]any{"v": make(chan int)},
+	} {
+		for codecName, codec := range map[string]wrench.Codec{"yaml": wrench.YAML, "json": wrench.JSON} {
+			_, err := codec.Encode(value)
+			var encodeErr *wrench.EncodeError
+			if !errors.As(err, &encodeErr) {
+				t.Errorf("%s %s: got %T (%v), want an EncodeError", codecName, name, err, err)
+				continue
+			}
+			if !strings.Contains(err.Error(), "cannot write") {
+				t.Errorf("%s %s: the refusal does not say what it refused: %v", codecName, name, err)
+			}
+		}
+	}
+}
+
 // COVERS: FR-2.11 | property
 func TestEveryFailureIsWrenchsOwnTypeWithItsStep(t *testing.T) {
 	// Six kinds on three axes. `schema` against `validate` is the pair most
