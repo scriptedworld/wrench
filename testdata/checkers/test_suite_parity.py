@@ -100,6 +100,23 @@ def test_a_row_after_a_later_heading_is_live(tmp_path):
     assert result.returncode == 1
 
 
+def test_a_row_with_an_empty_marker_cell_is_still_compared(tmp_path):
+    """A row whose status cell is empty is a live requirement all the same.
+
+    The pattern used to require a bracket in that cell, so such a row matched
+    nothing and was dropped from the comparison without a word. FR-2.11, FR-4.8
+    and FR-4.9 were written that way, and a test cited in one pack alone passed.
+    """
+    suites(tmp_path)
+    requirements = tmp_path / "reqs.md"
+    requirements.write_text(row("FR-9.1", "marked") + "| FR-9.2 | unmarked | |\n")
+
+    result = run(tmp_path, requirements)
+
+    assert "FR-9.2 | positive is in go but not in python" in result.stdout
+    assert result.returncode == 1
+
+
 def test_a_row_under_the_retired_heading_is_not_expected_anywhere(tmp_path):
     """The heading still retires what sits directly under it."""
     suites(tmp_path)

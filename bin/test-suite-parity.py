@@ -42,7 +42,11 @@ COVERS = re.compile(r"COVERS:\s*([^|\n]+)\|\s*(\w+)")
 # marker to be its last bracketed cell and matches `^\[[^\]]*\]$`, so a second
 # bracket reads as no marker at all and a `|` splits the cell in two. Both
 # break that checker quietly, which is why the spelling is awkward.
-ROW = re.compile(r"^\|\s*(FR-[0-9A-Za-z.]+)\s*\|(.*)\|\s*(\[[^|\]]*\])\s*\|\s*$")
+#
+# The bracket is optional. A row with an empty status cell is still a live
+# requirement expected in every suite, and requiring the bracket dropped such a
+# row from the comparison without a word.
+ROW = re.compile(r"^\|\s*(FR-[0-9A-Za-z.]+)\s*\|(.*)\|\s*(\[[^|\]]*\])?\s*\|\s*$")
 
 # A scope clause is `suites` or `suites:kinds`, both comma-separated:
 #
@@ -168,7 +172,8 @@ def declared(
             matched = ROW.match(line)
             if not matched or in_retired:
                 continue
-            identifier, _, markers = matched.groups()
+            identifier, _, bracket = matched.groups()
+            markers = bracket or ""
             if "[?]" in markers:  # open, carries no test by design
                 continue
             ids.add(identifier)
