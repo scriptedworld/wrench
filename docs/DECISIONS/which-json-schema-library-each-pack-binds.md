@@ -22,7 +22,7 @@ covering the 2020-12 dialect wrench declares.
 | Rust | `jsonschema`, `default-features = false` | yes | Measured, below |
 | TypeScript | `ajv` | yes | Run against wrench's schemas |
 | Ruby | `json_schemer` 2.5.0 | yes | The gem's own summary |
-| C++ | jsoncons 1.3.2, to be measured | yes | Declared, and in use by infobot |
+| C++ | jsoncons, pinned at v1.9.0 | yes | Measured: wrench's four schemas valid against the meta-schema under `unshare -rn` |
 
 The Ruby and TypeScript rows are the survey, not bindings. Both packs were
 removed on 2026-09-16 and the rows stay because the survey is what a later pack
@@ -47,6 +47,14 @@ only in 2020-12:
 
     "$dynamicRef" "dependentSchemas" "prefixItems"
     "unevaluatedItems" "unevaluatedProperties"
+
+C++ has two maintained 2020-12 implementations and both are heavy: a program
+that compiles one schema and validates one document carries 735,281 bytes of
+jsoncons symbols, with drafts 4, 6, 7 and 2019-09 instantiated whether or not
+anything reaches them, and 1,649,630 bytes of sourcemeta/blaze, which supports
+2020-12 alone and is larger anyway. `which-libraries-the-cpp-pack-binds` carries that measurement
+beside the codec choices, because the weight lands on every consumer that links
+the pack.
 
 Ruby: `json_schemer`'s summary reads *"JSON Schema validator. Supports drafts 4,
 6, 7, 2019-09, 2020-12, OpenAPI 3.0, and OpenAPI 3.1."* Versions run to 2.5.0.
