@@ -1,6 +1,12 @@
 # Session entry point: ephemeral by design, rewritten each session.
 START_HERE.md
 
+# Worktrees the harness makes for a delegated agent, which sit inside the
+# repository. A copy of the tree here is read by every checker that walks the
+# working directory, so the suppression register reports the copy's pragmas as
+# unregistered under a path no entry names.
+.claude/worktrees/
+
 # In-process and working files, including the message a commit is given with
 # -F. Gitignored so that naming it on the command line can never put it into
 # the commit it describes.
@@ -27,6 +33,12 @@ build/
 rust/target/
 rust/Cargo.lock
 
+# C++ build output. The build directory itself is covered by the `build/`
+# pattern above; this is the compilation database, a symlink into it that `just
+# cpp-profile` remakes. The jig's contract is that a build writes the database,
+# so committing one would encode a path a clone resolves to nothing.
+cpp/compile_commands.json
+
 # coverage writes this beside the pack when the shared jig runs its tests
 .coverage
 python/.coverage
@@ -41,13 +53,15 @@ python/.coverage
 # are this repository's own files and are tracked.
 #
 # `bin/` cannot be ignored wholesale for the same reason: it holds wrench's own
-# checkers beside two links, so the two are named.
+# checkers beside the links, so each link is named.
 bolt.common-quality.yaml
+bolt.cpp-std-quality.yaml
 bolt.go-std-quality.yaml
 bolt.python-std-quality.yaml
 bolt.secrets.yaml
 adapters/
 config/
+bin/clang-format-check.py
 bin/suppression-register.py
 bin/test-traceability.py
 bin/voice-review.py

@@ -1,0 +1,15 @@
+# wrench's values for the placeholders in bolt.cpp-std-quality.yaml.
+#
+# The jig runs at the C++ pack's own base, `cpp/`, so every path here is read
+# from there. The database keeps the jig's default name, which `just cpp-profile`
+# links to the CMake build in `cpp/build`, and the exclusions keep their
+# defaults: `.ephemera`, `bin` and `adapters` are the three shapes an adopter's
+# links take and none of them exists inside the pack.
+#
+# The header filter is the one value only this repository knows. The jig's
+# default of `^$` matches nothing, so clang-tidy would report on translation
+# units alone and never on a header, and this pack's contract is its headers.
+# Both directories are named: `include/wrench` is what a consumer compiles
+# against and `tests` holds the suite's own, which are as much the project's to
+# get right.
+header_filter: .*/cpp/(include|tests)/.*

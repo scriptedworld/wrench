@@ -28,7 +28,7 @@
 #
 #    Do not rewrite these as `@for` one-liners.
 
-PACKS := "go python rust"
+PACKS := "cpp go python rust"
 
 default:
     @just --list

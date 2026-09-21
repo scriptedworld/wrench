@@ -57,6 +57,11 @@ something works; read this file for how the project is run.
     rust/src/                the Rust pack
     rust/tests/              build.rs generates its copy every build
 
+    cpp/include/wrench/      the C++ pack's headers, which are what a consumer
+                             compiles against
+    cpp/src/ cpp/tests/      CMake, doctest, and a build that writes the
+                             compilation database the C++ jig reads
+
 
 ## The gate
 
@@ -98,7 +103,7 @@ the register against every source file, not only the Python pack. There is no
 | Go | bolt's Go implementation | Built, under `go/` |
 | Python | toolbox's adapters and checkers | Built, under `python/` |
 | Rust | bolt | Built, suite level with the others |
-| C++ | infobot's C++ port | Planned, clank `tasks/wrench/library/cpp/` |
+| C++ | infobot's C++ port | Started, under `cpp/`: the float spelling and the local file pair, gated. The codecs and the two calls are clank `tasks/wrench/library/cpp/` |
 
 `packs-follow-demand` says what decides when a pack gets written: whether the
 estate writes tools in that language. A waiting consumer is not required,
@@ -143,6 +148,11 @@ finds an undeclared one:
     ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
         --suite go='go/*_test.go' --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' .
+
+The C++ suite is not compared yet. It covers the float spelling and the local
+file pair and none of the rest of the contract, so every row it does not reach
+would read as a divergence rather than as a pack still being written. It joins
+the comparison when it covers the contract.
 
 `docs/PATTERNS/holding-two-packs-level.md` is what keeps it this way. Assert the
 same table in every suite; a table that differs is packs that differ. Its name

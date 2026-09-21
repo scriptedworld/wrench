@@ -4,6 +4,10 @@ Every `# nosec` in this repository appears below, with the question that was
 asked and the answer that was given. No pragma goes in unjustified, so an entry
 here is the justification and not a record that one was wanted.
 
+A substitute that stands in for something real is registered the same way, even
+where no checker reads the file it lives in. The rule is about what was asked
+and answered, not about what a scanner happens to recognise.
+
 ## B404 and B603, the subprocess in the Python suite
 
 Asked 2026-08-28. Answered: allowed.
@@ -96,3 +100,44 @@ suite is reported and is covered by nothing here.
 
 This entry retires if `_Shipped` gains a public constructor, which nothing
 wants, or if the guard becomes unreachable and is deleted with its test.
+
+## A replacement operator new that fails on demand, in the C++ suite
+
+Asked 2026-09-16, of infobot, and again of wrench. Answered: yes.
+
+    Q: The C++ pack will hit the same throw-edge gate. That approval was for
+       infobot. Yes for wrench?
+    A: yes
+
+    cpp/tests/allocation.hpp
+    cpp/tests/allocation.cpp
+
+This is a substitute and not a pragma, so nothing silences a check and the
+register's checker has no row to match: it reads `.go`, `.py`, `.rs`, `.rb` and
+the shells, and neither of these files is any of those. It is here because a
+test-only replacement of a global is the kind of thing that must be answered for
+even when no tool asks.
+
+What it does: `allocation.cpp` replaces the global `operator new` and
+`operator delete` in the test binary alone. Every replacement allocates exactly
+as the default does until a test arms a failure, and then the allocation it
+names fails once. Nothing a consumer links carries the file, and nothing in the
+library knows it exists.
+
+Why it is needed. gcov counts the edge an allocating call takes when it throws,
+and the C++ jig enforces 80% of branches per file. Nothing a test can hand the
+pack makes an allocation fail, so those edges are unreachable from outside and
+the file sits below the minimum with no defect in it. The two ways to make that
+green without this are to pass `--exclude-throw-branches` or to stop gating
+branches, and both are the case hard rule 5 covers: a coverage failure settled
+by not looking.
+
+It stands apart from a mock, which is why the answer was yes. A mock replaces
+the thing under test with something that agrees with the test; this replaces the
+allocator with one that behaves exactly as the real one does until it is told
+otherwise, and what it then does, failing, is what the real one does under
+memory pressure. The code under test is unchanged and unaware.
+
+This entry retires if the pack stops being gated on branches, or if a way is
+found to exhaust memory in a test without replacing the allocator, which on a
+machine with overcommit there is not.

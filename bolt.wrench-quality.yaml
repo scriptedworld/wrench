@@ -31,7 +31,14 @@ version: 1.0.0
 # `python/pyproject.toml` and not installed globally. Every tool a task invokes
 # belongs here, `cargo` and `rustfmt` included, so a missing one stops the run
 # before it starts instead of several tasks in.
-requires: [go, gofmt, python3, jq, deno, bolt, mypy, uv, cargo, rustfmt]
+#
+# `just`, `cmake`, `ninja` and `g++` are here for the C++ pack. The jig does not
+# build and does not run tests, by its own contract: it reads a compilation
+# database and a gcov profile that the adopter's build produced. `cpp-profile`
+# below is that build, and the three tools it invokes are named here so a
+# machine without them stops the run rather than failing the slowest task in it.
+requires:
+  [go, gofmt, python3, jq, deno, bolt, mypy, uv, cargo, rustfmt, just, cmake, ninja, g++]
 
 definitions:
   # A directory, one file per requirement, nested by category. Both checkers
@@ -292,6 +299,12 @@ tasks:
     # Compares the suites against each other, so it stands at the root and
     # cannot become a per-language task. Adding a pack means adding a --suite
     # here.
+    #
+    # The C++ pack is absent on purpose and not by omission. It holds the float
+    # spelling and the local file pair and none of the contract yet, so
+    # comparing it against the three that hold all of it would report every row
+    # it does not cover as a divergence. It joins when it covers the contract,
+    # which is task `library/cpp/40`.
     command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='go/*_test.go' --suite python='python/tests/*.py' --suite rust='rust/tests/*.rs' .
 
   # Nothing else checks the checker above. It decides whether three suites
@@ -314,3 +327,37 @@ tasks:
   - name: checker-tests
     description: wrench's own parity checker does what it claims
     command: uv run --no-project --with pytest python -m pytest testdata/checkers -q
+
+  # ---- the C++ pack, last because it is the slowest ------------------------
+  #
+  # Two tasks and not one. The C++ jig reads two artefacts rather than running
+  # anything: `compile_commands.json`, which is the only statement of what this
+  # project compiles and how, and the gcov profile its own suite left behind.
+  # Neither exists until something builds, so the build is a task of its own,
+  # run first, and it fails with its own exit status and its own output.
+  #
+  # Folding the build into the composed command would hide it. The adapter reads
+  # the last line of stdout for the child's result path, so a build that failed
+  # before bolt ran would surface as "no result is there" with a compiler error
+  # as the path, which names neither the build nor the failure.
+  #
+  # Tasks run one at a time and in the order they are written (bolt's README),
+  # which is what makes the ordering enough here. Nothing is passed between
+  # them: the profile is on disk, where the jig's contract says an adopter puts
+  # it.
+  - name: cpp-profile
+    description: the C++ suite, instrumented, leaving the database and profile the jig reads
+    # `just -f cpp/Justfile` runs with the working directory set to that
+    # Justfile's own directory, so the recipe is the same one a person runs in
+    # `cpp/`. One definition of how the pack builds, not two.
+    command: just -f cpp/Justfile cpp-profile
+
+  - name: cpp-std
+    description: clang-format, clang-tidy, cppcheck, include-what-you-use and coverage
+    # `--definitions cpp-std-quality` supplies the header filter. Without it the
+    # jig's default of `^$` matches nothing and clang-tidy reports on no header
+    # in the pack, which is a green that answered a narrower question.
+    command: >-
+      bolt --config-dir {config_dir} --definitions cpp-std-quality
+      --output-dir {work_dir}/child cpp-std-quality cpp
+    adapter: adapters/common/bolt-result.py
