@@ -30,7 +30,7 @@
 
 # everything: quality, tests, coverage, secrets
 checks:
-    @just _verdict common-quality --config-dir ..
+    @just _verdict common-quality --config-dir .. --definitions wrench
     @just _verdict python-std-quality --config-dir ..
     @just _verdict secrets --config-dir ..
 
