@@ -65,6 +65,25 @@ where its JSON gives an `int64`, and that is a decode defect a fixture set
 feeding YAML only cannot catch. Every divergence found so far has been on the
 decode path, which is why the mechanism is the work and the rules are not.
 
+### What the C++ pack met that the contract does not answer
+
+The skeleton landed at `e16a406` and three of these are task 30's to settle in
+code. The first is the contract's.
+
+- **The file mode is agreed and unwritten.** Go, Python and Rust all set 0644
+  explicitly, and the C++ writer now does too, because `mkstemp` gives 0600 and
+  a rename carries it. FR-6.3 states the atomicity and nothing else, so four
+  packs agree on something no row says. Either the row says it or the agreement
+  is an accident waiting to be broken by a fifth pack.
+- **`std::bad_alloc` escapes the C++ family**, against FR-2.11's "nothing
+  escapes". Reporting an allocation failure means building a message, which
+  allocates. The pack says so in `error.hpp` rather than pretending otherwise.
+- **How a seam is spelled in C++** is not fixed by FR-2.5a, which settles the
+  split and the direction. The pack uses an abstract base; a concept would move
+  the substitution to compile time and change what the two calls look like.
+- **What "bytes" is** has no answer in the contract. The C++ pack uses
+  `std::string`.
+
 ### Smaller items
 
 A cold read of the prose sweep, which by its own design cannot be the writer.
