@@ -28,7 +28,7 @@
 #
 #    Do not rewrite these as `@for` one-liners.
 
-PACKS := "cpp go python rust"
+PACKS := "cpp go python rust typescript"
 
 default:
     @just --list
@@ -68,23 +68,31 @@ _each recipe:
         exit 1
     fi
 
-# everything, in every pack
+# Two layers, and the split is what keeps one pack's tooling out of another's.
+#
+# Each pack runs its own language tooling at its own base, so its build
+# directory, its coverage profile and its caches are inside it and belong to it.
+# A gcov profile under `cpp/` is the C++ pack's; a `.coverage` under `python/` is
+# the Python pack's. Nothing at the root reaches into a pack to run a tool, which
+# is how a profile from one language stopped being read as another's.
+#
+# The root runs what no pack can: the contract. Traceability, suite parity, the
+# requirement count, the schemas and the register read every pack at once, and a
+# row scoped to one pack has no test at another's base by design. Running those
+# from inside a pack fails for being asked in the wrong place, which is what the
+# Rust pack's checks did, unnoticed, until the layers were separated.
+
+# The common standard runs here and not inside a pack. Run at a pack's base it
+# reads that pack's share of the repository, so the wording check, the secrets
+# scan and the register saw one language's files and reported green over the
+# rest: `bin/`, `schemas/`, `docs/` and three packs went unread for as long as
+# it ran under `python/`.
+
+# everything: each pack's own tooling, then the standards across the repository
 checks:
     @just _each checks
-    @just _parity
-
-# The parity check belongs to wrench alone and sits at the root because it is
-# the only thing that reads all three packs at once. `bin/test-suite-parity.py`
-# fails when one pack's suite covers something another's does not, which is how
-# "in parallel and in sync" gets enforced.
-#
-# It is separate from `_each checks` because no pack can run it without knowing
-# about its siblings, and the packs are kept from knowing.
-_parity:
-    ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
-        --suite go='go/*_test.go' \
-        --suite python='python/tests/*.py' \
-        --suite rust='rust/tests/*.rs' .
+    @just _verdict common-quality --definitions wrench-root
+    @just _verdict wrench-quality
 
 # the suite, in every pack
 test:
@@ -134,10 +142,12 @@ leak-scan:
 # Reads the verdict out of result.yaml and never bolt's exit status, which is 0
 # whenever a run was carried out at all. The same recipe as just/base.just's,
 # copied because this file does not import it.
-_verdict jig:
+_verdict jig *flags:
     #!/usr/bin/env bash
     set -euo pipefail
-    out=$(bolt "{{ jig }}" .)
+    # Flags come before the positional, or bolt prints usage and the recipe
+    # fails as a bolt error with nothing said about the jig.
+    out=$(bolt {{ flags }} "{{ jig }}" .)
     result=$(printf '%s\n' "$out" | tail -1)
     if [ ! -f "$result" ]; then
         echo "REFUSED: bolt wrote no result for {{ jig }}" >&2

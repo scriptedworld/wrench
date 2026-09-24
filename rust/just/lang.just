@@ -36,7 +36,6 @@ checks:
     @just _cargo-lint
     @just test
     @just doc
-    @just _verdict common-quality --config-dir .. --definitions wrench
 
 # clippy with warnings denied, so a lint declared in Cargo.toml is enforced
 _cargo-lint:

@@ -1,0 +1,13 @@
+# Values the shared jigs substitute when they run over the whole repository.
+#
+# `bolt.wrench.definitions.yaml` is the same two values written for a pack's
+# own base, where the contract sits one level up. This file is that pair without
+# the `../`, so the common standard can run once at the root and read every
+# file in the repository rather than one pack's share of them.
+#
+# Both are needed. A run at a pack's base cannot see its siblings, so the wording
+# check, the secrets scan and the register only ever read one language's files
+# when they run there; a run at the root reads the lot, `bin/`, `schemas/`,
+# `docs/` and every pack together.
+requirements: docs/REQUIREMENTS
+suppressions: SUPPRESSIONS

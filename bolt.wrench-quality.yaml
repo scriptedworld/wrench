@@ -20,25 +20,22 @@
 # the only tool that would have needed one. `test -z` gives it an exit status
 # instead.
 #
-# The exception is `python-common` and `python-std`, which run bolt over the
-# Python pack's own base. bolt exits 0 whenever it carried a run out, so those
-# two read the child's verdict through `adapters/common/bolt-result.py` and
-# would otherwise pass however badly the child failed.
+# This jig is the contract layer and holds no pack's tooling. `just checks` at
+# the root runs each pack's own checks first, each at its own base, and then
+# this. A pack's build directory, coverage profile and caches stay inside it.
 
 version: 1.0.0
 
-# `uv` runs the Python tasks, because the pack's tools are declared in
-# `python/pyproject.toml` and not installed globally. Every tool a task invokes
-# belongs here, `cargo` and `rustfmt` included, so a missing one stops the run
-# before it starts instead of several tasks in.
+# Every tool a task here invokes, so a missing one stops the run before it
+# starts instead of several tasks in. `uv` is here because the checkers that
+# type-check the consumer use the Python pack's declared environment rather than
+# whatever is installed globally.
 #
-# `just`, `cmake`, `ninja` and `g++` are here for the C++ pack. The jig does not
-# build and does not run tests, by its own contract: it reads a compilation
-# database and a gcov profile that the adopter's build produced. `cpp-profile`
-# below is that build, and the three tools it invokes are named here so a
-# machine without them stops the run rather than failing the slowest task in it.
-requires:
-  [go, gofmt, python3, jq, deno, bolt, mypy, uv, cargo, rustfmt, just, cmake, ninja, g++]
+# No compiler and no pack's tooling. A language's toolchain is named in that
+# pack's own jig, reached through its own Justfile, so a machine that cannot
+# build the C++ pack still runs the contract over the schemas and the
+# requirements.
+requires: [python3, jq, deno, mypy, uv]
 
 definitions:
   # A directory, one file per requirement, nested by category. Both checkers
@@ -125,87 +122,32 @@ tasks:
     # schema is checked without editing anything.
     command: deno run --allow-read --allow-net bin/check-schemas.ts
 
-  # ---- the packs ------------------------------------------------------------
-
-  - name: go-format
-    description: every Go file is gofmt-clean
-    # gofmt -l lists unformatted files and exits 0 either way, so its exit status
-    # answers "did gofmt run" and never "is this formatted". test -z makes the
-    # empty list the success condition.
-    # No quotes around the placeholder: bolt shell-quotes a substituted value,
-    # so adding a pair produces '' and sh fails to parse the line.
-    command: test -z "$(gofmt -l go | grep -Ev {artefacts_regex} || true)"
-
-  - name: go-vet
-    command: cd go && go vet ./...
-
-  - name: go-test
-    description: the Go pack, uncached
-    command: cd go && go test -count=1 ./...
-
-  # `uv run --project python` supplies the environment, and cwd stays the
-  # repository root so the schemas resolve. The pack's dependencies and its test
-  # tools are declared in `python/pyproject.toml`, and a bare
-  # `python3 -m pytest` resolves neither: it fails with `No module named pytest`.
-  - name: python-test
-    description: the Python pack, run from the repository root so it finds schemas/
-    command: PYTHONPATH=python uv run --project python python -m pytest python/tests -q
-
-  - name: rust-test
-    description: the Rust pack, which bolt builds against
-    command: cargo test --manifest-path rust/Cargo.toml
-
-  - name: rust-format
-    description: every Rust file is rustfmt-clean
-    # Without this the Rust pack drifts silently; it reached 33 diffs across 8
-    # files before it was gated. cargo fmt --check exits non-zero on a diff,
-    # unlike gofmt -l, so its status is the answer.
-    command: cargo fmt --manifest-path rust/Cargo.toml --check
-
-  # ---- the shared standard, per pack at its own base -----------------------
+  # ---- no pack tasks live here ----------------------------------------------
   #
-  # The Go and Python packs each have a base of their own. Rust has no shared
-  # standard yet.
+  # A pack's own tooling runs at that pack's base, through its own Justfile, and
+  # this jig does not reach into one. `just checks` at the root iterates the
+  # packs and then runs this.
   #
-  # Composition is a command task plus an adapter. Nested `jig:` tasks are
-  # retired at bolt `f3304d8`, so a jig wanting another jig run over a
-  # subdirectory writes an ordinary command whose program is bolt.
+  # That is not tidiness. Running a pack's tools from here put their artefacts
+  # at the root: `gofmt -l go` walked a tree Go's own `./...` would have skipped,
+  # `pytest python/tests` wrote `.coverage` at the root beside `python/.coverage`,
+  # and a gcov profile anywhere under the repository was read as the C++ pack's,
+  # because gcovr searches from its root. One language's leavings being graded as
+  # another's is what the split removes, and it is why `.gitignore` carried two
+  # `.coverage` paths.
   #
-  # `adapters/common/bolt-result.py` turns that into a verdict. bolt exits 0
-  # whenever it carried a run out, so the generic exit-code adapter reads a
-  # failing child as a pass: one failing child gives `success=True` without the
-  # adapter and `success=False` with it.
-  #
-  # Three details that each cost a run to learn. Flags come before positionals,
-  # or bolt prints usage to stderr and the task fails as a bolt error with
-  # nothing said about the jig. The child gets its own `{work_dir}/child`,
-  # because bolt refuses a directory already holding a run and the Go build
-  # rewrites the earlier verdict while refusing. And the adapter reads the last
-  # line of the child's stdout, which is the result path under both builds.
-
-  - name: python-common
-    description: the shared common standard, at the Python pack's own base
-    command: >-
-      bolt --config-dir {config_dir} --definitions wrench
-      --output-dir {work_dir}/child common-quality python
-    adapter: adapters/common/bolt-result.py
-
-  - name: python-std
-    description: ruff, mypy, pylint, complexipy, vulture, docstrings and coverage
-    command: >-
-      bolt --config-dir {config_dir}
-      --output-dir {work_dir}/child python-std-quality python
-    adapter: adapters/common/bolt-result.py
+  # What each pack runs is in `<pack>/just/lang.just`: go-std-quality,
+  # python-std-quality, cpp-std-quality with the build that writes its database
+  # and profile, and Rust's cargo tasks until a shared Rust standard is adopted.
 
   # ---- the contract ---------------------------------------------------------
 
-  - name: traceability
-    description: every test cites what it discharges, and every settled requirement has one
-    command: python3 {config_dir}/bin/test-traceability.py --requirements {requirements} .
-
-  # One task per pack, and the root task above does not replace them. The root
-  # run asks whether an id is cited anywhere under it, so a row covered in Go
-  # alone passes it, and a pack holding none of a requirement goes unseen.
+  # The whole-repository traceability run is the common standard's, which `just
+  # checks` runs here at the root. What is left here is the half it cannot do.
+  #
+  # One task per pack. A run over the repository asks whether an id is cited
+  # anywhere under it, so a row covered in Go alone passes, and a pack holding
+  # none of a requirement goes unseen.
   # `suite-parity` catches that by comparing the suites to each other, which
   # leaves its own gap: three packs that all miss the same row agree, and
   # agreement is what it checks.
@@ -345,19 +287,3 @@ tasks:
   # which is what makes the ordering enough here. Nothing is passed between
   # them: the profile is on disk, where the jig's contract says an adopter puts
   # it.
-  - name: cpp-profile
-    description: the C++ suite, instrumented, leaving the database and profile the jig reads
-    # `just -f cpp/Justfile` runs with the working directory set to that
-    # Justfile's own directory, so the recipe is the same one a person runs in
-    # `cpp/`. One definition of how the pack builds, not two.
-    command: just -f cpp/Justfile cpp-profile
-
-  - name: cpp-std
-    description: clang-format, clang-tidy, cppcheck, include-what-you-use and coverage
-    # `--definitions cpp-std-quality` supplies the header filter. Without it the
-    # jig's default of `^$` matches nothing and clang-tidy reports on no header
-    # in the pack, which is a green that answered a narrower question.
-    command: >-
-      bolt --config-dir {config_dir} --definitions cpp-std-quality
-      --output-dir {work_dir}/child cpp-std-quality cpp
-    adapter: adapters/common/bolt-result.py
