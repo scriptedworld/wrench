@@ -1,0 +1,41 @@
+{
+  "name": "@scriptedworld/wrench",
+  "version": "0.1.0",
+  "description": "Reads, writes and validates the form of the ecosystem's structured files",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/mod.ts",
+      "default": "./src/mod.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/",
+    "types": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "shipped": "node bin/generate_shipped.ts",
+    "shipped:check": "node bin/generate_shipped.ts --check"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "js-yaml": "^5.4.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.2",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.8",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}

@@ -33,6 +33,15 @@ build/
 rust/target/
 rust/Cargo.lock
 
+# The TypeScript pack's installed dependencies. `package-lock.json` is committed
+# and is what pins them, so this directory is reproducible from the tree and
+# carrying it would add tens of thousands of files nobody reads.
+#
+# Unanchored, so it matches wherever a Node project appears. `bolt` does not
+# read this file, so a jig task that walks the tree still has to exclude
+# `**/node_modules/**` for itself; the two are separate statements.
+node_modules/
+
 # C++ build output. The build directory itself is covered by the `build/`
 # pattern above; this is the compilation database, a symlink into it that `just
 # cpp-profile` remakes. The jig's contract is that a build writes the database,

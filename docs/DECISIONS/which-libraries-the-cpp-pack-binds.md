@@ -5,17 +5,17 @@ format, and the pack is not the place to chase a parser's speed.
 
 **Each is taken from upstream at a pinned tag, not from a distribution.** The
 build names the version, so what a consumer compiles against is what this file
-says rather than what a machine happens to have installed:
+says, not what a machine happens to have installed:
 
     libyaml     0.2.5
     jsoncons    v1.9.0
     doctest     v2.5.3
 
-Debian packages all four, and the probes below were run against both where the
+Debian packages all three, and the probes below were run against both where the
 version differed, because a distribution's build is the thing to measure against
-rather than the thing to depend on. Pinning costs a fetch at configure time, and
+and not the thing to depend on. Pinning costs a fetch at configure time, and
 where a build has to run with no network the pinned tree is vendored or cached
-rather than the pin being dropped.
+instead of the pin being dropped.
 
 `docs/PATTERNS/adopting-a-library-for-a-codec.md` decides adoption: a library is
 configured with the four adapters, then asked to read back what it wrote, one
@@ -54,8 +54,8 @@ tag sets the quoted flag, not the plain one.
 
 libyaml hands back the scalar's text and the flags saying how it was written, so
 turning `no`, `10` and `2026-01-01` into values is the pack's work and not the
-library's. The table to reach, measured by running the Python pack rather than
-by reading it:
+library's. The table to reach, measured by running the Python pack and not by
+reading it:
 
     no yes on off    strings          null ~ and empty   null
     true             boolean          10 010             integer 10
@@ -74,7 +74,7 @@ carries.
 
 jsoncons validates, and `jsoncons::json` sorts keys by itself, which is the
 first adapter. Binding it for reading and writing as well means the pack holds
-one JSON library rather than a parser, a writer and a validator that each have
+one JSON library instead of a parser, a writer and a validator that each have
 their own idea of what a value is. nlohmann is bound by nothing: it is neither
 lighter than jsoncons nor the fastest reader available.
 

@@ -1,0 +1,18 @@
+# src/shipped.ts is GENERATED from the repository's schemas/ directory by
+# bin/generate_shipped.ts, and the generator's `--check` holds it byte for byte
+# against what that directory makes. A formatter breaks its long string literals
+# onto their own lines and rewrites their quoting, so a formatted copy is never
+# what the generator writes and `--check` would call a current file stale.
+# Teaching the generator to reproduce a formatter's output would pin the pack to
+# a formatter version. `deno.json` carried the same exclusion for `deno fmt`.
+src/shipped.ts
+
+# npm owns this file's shape and rewrites it on every install, so formatting it
+# is a change that does not survive.
+package-lock.json
+
+# Not source. node_modules is prettier's own default ignore; the rest are
+# outputs a tool recreates.
+node_modules/
+coverage/
+.bolt-*/

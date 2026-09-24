@@ -172,6 +172,6 @@ body says what it cost, in figures a reader of the log cannot get without
 running the suite, and leaves the reasoning in the file the commit changed.
 
 Documentation here is evergreen. It states what is true now and leaves the
-history to git, so a statement carries no date and no record of what the
-document used to say. Where a mistake is instructive it goes in `docs/LESSONS/`
-as a lesson, written once.
+history to git, so a statement carries no date and no account of an earlier
+wording. Where a mistake is instructive it goes in `docs/LESSONS/` as a lesson,
+written once.
