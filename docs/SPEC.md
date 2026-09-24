@@ -432,11 +432,17 @@ string, a list, a mapping or a number and validation passes.
 The inbox entry `the-envelope-schema-does-not-constrain-evidence` holds a
 real producer's shape and the range of options.
 
-**Which type a number comes back as within the widened range.** The range rule
-is settled and the agreement mechanism is not. Go's YAML gives an `int` where
-its JSON gives an `int64`, and `-0` in JSON reads as `-0.0` in Rust and `0` in
-the other two. All three are decode defects and none is caught by a fixture set
-that feeds YAML only.
+**Which type a number comes back as within the widened range.** Go's YAML gives
+an `int` where its JSON gives an `int64`. Both hold the same value, so FR-2.9's
+model and FR-5.5 are satisfied and the cross-pack check reports agreement; what
+it costs is a Go consumer type-switching on the result, which a Go-only test is
+the right mechanism for, and a parity check is not.
+
+This paragraph also said `-0` in JSON read as `-0.0` in Rust and `0` in the
+other two, and called all three decode defects. That is withdrawn: all three
+packs read `-0` as a signed float in JSON and as an integer in YAML, which is
+what FR-4.11 asks for. The shared parity tree holds no negative zero, so nothing
+in the fixture set was covering it.
 
 **How a pack is published.** Versioning and installation are each language's own
 question, and only Python's has been answered.

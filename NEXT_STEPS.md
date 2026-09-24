@@ -65,6 +65,42 @@ where its JSON gives an `int64`, and that is a decode defect a fixture set
 feeding YAML only cannot catch. Every divergence found so far has been on the
 decode path, which is why the mechanism is the work and the rules are not.
 
+### A single number type cannot hold what FR-4.10 promises
+
+FR-4.10 has an integer stay exact across the signed 64-bit range in every pack.
+No JavaScript pack can keep that, and it fails silently, which is the failure
+this project exists to prevent. The TypeScript pack widens at 2^53 instead.
+
+Under Node 26.9.0:
+
+    JSON.parse int64max   9223372036854776000    not 9223372036854775807
+    js-yaml    int64max   9223372036854776000    the same corruption
+    BigInt                exact
+    ajv with a BigInt     INVALID: data/v must be integer
+
+So carrying the exact value collides with validation: ajv checks
+`typeof x === "number"`, and `lossless-json`'s exact `LosslessNumber` is an
+object, which it refuses the same way. RFC 8259 names ±(2^53-1) as the
+interoperable range, and protobuf's JSON mapping sends an int64 as a string for
+exactly this reason.
+
+Three ways out, and the row cannot stay as it is under any of them:
+
+1. Move the exactness boundary to 2^53 in every pack, which is RFC 8259's
+   interoperable range. Check first whether anything in the estate writes an
+   integer above it; a nanosecond epoch timestamp is about 1.7e18 and would be
+   affected.
+2. Large integers as strings, protobuf's answer, which changes FR-2.9's value
+   model.
+3. Scope FR-4.10 away from TypeScript, which writes down that one pack silently
+   corrupts what the others keep.
+
+A fourth thing is worth doing under any of them: the pack detects a value
+outside its exact range and fails with a `parse` error naming the key, rather
+than returning a number that is quietly wrong. Whether it can also carry the
+exact value is the harder half, and needs a schema transform teaching ajv a
+custom type, held to JSON Schema's own test suite.
+
 ### What the C++ pack met that the contract does not answer
 
 The skeleton landed at `e16a406` and three of these are task 30's to settle in
@@ -84,9 +120,47 @@ code. The first is the contract's.
 - **What "bytes" is** has no answer in the contract. The C++ pack uses
   `std::string`.
 
+### The TypeScript pack is not held to what the others are
+
+It passes its own tooling and is in none of the three mechanisms that hold packs
+level. Each is a small piece of work with a measurement attached:
+
+- **`node-std-quality` is written and not adopted.** It is committed in toolbox
+  at `6bcf7b6`. Adopting needs the pack's devDependencies declared, and two
+  files brought to the branch minimum: `local_file.ts`
+  75.0% and `schema.ts` 76.0% against 80.
+- **The suite is not in `bin/test-suite-parity.py`.** Adding
+  `--suite typescript='typescript/test/*.ts'` reported 6 divergences on
+  2026-09-22. Four are rows scoped to `go,python`. One is `FR-6.3 | property`,
+  which TypeScript tests and Go, Python and Rust do not, although all four set
+  0644 deliberately, so that one is a missing test in three packs.
+- **It is not in the cross-pack round-trip check.** A driver at
+  `testdata/parity/typescript/` and a table entry is the whole of it.
+
+### The C++ pack cannot join the round-trip check until it has a codec
+
+`bin/test-cross-pack-parity.py` proves FR-5.5 for Go, Python and Rust, 18 of 18
+pairs. C++ has the float spelling and the local file pair and no codec, so it
+has nothing to encode with. It is deliberately not stubbed: a stub reporting
+agreement would be the only thing in that check able to lie. Task
+`library/cpp/30` is what closes it.
+
 ### Smaller items
 
 A cold read of the prose sweep, which by its own design cannot be the writer.
+
+The cross-pack round-trip check is not a gate task. It passes and nothing runs
+it automatically. The stanza is written in
+`clank/tasks/wrench/library/cpp/`'s sibling notes; it costs about 25 seconds
+warm and builds a Go binary and a Rust crate cold, and that cost belongs in the decision before
+it joins the default set.
+
+Two claims were measured false and corrected where they stood.
+`docs/SPEC.md` said `-0` in JSON reads as `-0.0` in Rust and `0` in the other
+two: all three now agree, in both formats, and the JSON against YAML split is
+what FR-4.11 asks for. The shared parity tree holds no negative zero at all, so
+FR-4.11 has no coverage in it; adding a `neg_zero` key would close that and
+every pack passes it today.
 
 The voice review's leftovers. The sweep commits took most of it; checked
 2026-09-15, tracked source outside Markdown still carries 6 dated comments, 3
