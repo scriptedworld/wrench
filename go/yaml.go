@@ -22,9 +22,28 @@ const canonicalIndent = 2
 // Quoting marks intent. `no`, `1.20` and `null` survive a round trip as the
 // strings they were, because they are written back quoted, and a boolean stays
 // a boolean because it is not.
-var YAML Codec = yamlCodec{}
+//
+// A function and not a var for the reason JSON is one: an exported var is
+// writable by any importing package, and substituting a codec belongs to the
+// seams that take one as an argument. yamlCodec is an empty struct, so building
+// it per call allocates nothing.
+//
+// It returns the Codec interface for the reason JSON does: the concrete type
+// carries no method beyond the two the interface names.
+func YAML() Codec { return yamlCodec{} }
 
 type yamlCodec struct{}
+
+// A mappingKeyError says a YAML mapping is keyed by something with no JSON
+// equivalent. Refused rather than coerced, because coercing invents a document
+// nobody wrote. FR-1.2.
+type mappingKeyError struct {
+	key any
+}
+
+func (e *mappingKeyError) Error() string {
+	return fmt.Sprintf("mapping key %v is %T, not a string", e.key, e.key)
+}
 
 // Decode turns YAML bytes into maps, lists and scalars.
 //
@@ -103,7 +122,7 @@ func normalise(value any) (any, error) {
 		for key, item := range v {
 			name, ok := key.(string)
 			if !ok {
-				return nil, fmt.Errorf("mapping key %v is %T, not a string", key, key)
+				return nil, &mappingKeyError{key: key}
 			}
 			converted[name] = item
 		}
@@ -162,7 +181,7 @@ func canonicalNode(value any) (*yaml.Node, error) {
 	case []any:
 		return sequenceNode(v)
 	default:
-		return nil, fmt.Errorf("cannot write %T in canonical form", value)
+		return nil, &canonicalFormError{what: fmt.Sprintf("%T", value)}
 	}
 }
 

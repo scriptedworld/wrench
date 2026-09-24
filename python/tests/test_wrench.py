@@ -728,6 +728,18 @@ def test_a_path_that_is_neither_string_nor_pathlike_is_a_usage_error():
     assert "int" in str(caught.value)
 
 
+# COVERS: FR-2.8 | negative
+def test_the_shipped_reader_fails_on_what_it_cannot_read(tmp_path):
+    """A directory is not a file, and the shipped reader says so.
+
+    Answering with empty bytes instead would reach the codec as an empty
+    document and fail as a parse error about the wrong thing, sending a reader
+    to look at the file's contents rather than at what was handed in.
+    """
+    with pytest.raises(OSError):
+        wrench.LOCAL_FILE.read(str(tmp_path))
+
+
 # COVERS: FR-2.8, FR-6.3 | positive
 def test_local_file_writes_atomically(tmp_path):
     path = tmp_path / "output.yaml"

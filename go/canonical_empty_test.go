@@ -15,6 +15,8 @@ import (
 
 // COVERS: FR-4.6 | edge
 func TestJSONEmptyContainersAreShort(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		name  string
 		value map[string]any
@@ -25,7 +27,9 @@ func TestJSONEmptyContainersAreShort(t *testing.T) {
 		{"an empty sequence", map[string]any{"v": []any{}}, "{\n  \"v\": []\n}\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			encoded, err := wrench.JSON.Encode(tc.value)
+			t.Parallel()
+
+			encoded, err := wrench.JSON().Encode(tc.value)
 			if err != nil {
 				t.Fatalf("encode: %v", err)
 			}
@@ -38,7 +42,9 @@ func TestJSONEmptyContainersAreShort(t *testing.T) {
 
 // COVERS: FR-4.6 | edge
 func TestJSONNestedEmptyContainersKeepTheShortSpelling(t *testing.T) {
-	encoded, err := wrench.JSON.Encode(map[string]any{
+	t.Parallel()
+
+	encoded, err := wrench.JSON().Encode(map[string]any{
 		"a": map[string]any{"b": map[string]any{}},
 		"c": []any{[]any{}},
 	})

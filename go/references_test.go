@@ -12,7 +12,8 @@ import (
 // packs were measured against each other before any of them were written. A
 // divergence here is a divergence in the contract.
 
-const permissiveSchema = `{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object"}`
+const permissiveSchema = `{"$schema":"https://json-schema.org/draft/2020-12/schema",` +
+	`"type":"object"}`
 
 // compiles a schema and validates one instance, returning what happened rather
 // than failing, so a table can state its own expectation.
@@ -35,11 +36,13 @@ func outcome(t *testing.T, name, schemaBody, instanceJSON string) (string, strin
 
 // COVERS: FR-3.10c | negative
 func TestAKeywordInAnInstanceIsData(t *testing.T) {
+	t.Parallel()
+
 	// The schema keywords are ordinary keys in a document being validated, and
 	// a data file is allowed to carry them. The file this points at EXISTS, so
 	// an implementation that resolved it would be caught here rather than
 	// passing for want of a target.
-	seedReachableSchema(t)
+	reachablePath := seedReachableSchema(t)
 
 	for what, instance := range map[string]string{
 		"a $ref at a file that exists": `{"$ref":"file://` + reachablePath + `"}`,
@@ -58,6 +61,8 @@ func TestAKeywordInAnInstanceIsData(t *testing.T) {
 
 // COVERS: FR-3.10a | positive
 func TestAReferenceWithinTheDocumentResolves(t *testing.T) {
+	t.Parallel()
+
 	// Both spellings of an internal reference, and each is asserted by its
 	// VIOLATION: an accepted document says nothing, because a $ref that
 	// silently contributed no constraint would accept it too.
@@ -69,17 +74,21 @@ func TestAReferenceWithinTheDocumentResolves(t *testing.T) {
 			`"$defs":{"t":{"$anchor":"tight","type":"string","minLength":3}},` +
 			`"type":"object","properties":{"a":{"$ref":"#tight"}}}`,
 	} {
-		if got, detail := outcome(t, "https://example.invalid/s.schema.json", body, `{"a":"abc"}`); got != "accepted" {
+		got, detail := outcome(t, "https://example.invalid/s.schema.json", body, `{"a":"abc"}`)
+		if got != "accepted" {
 			t.Errorf("%s refused a document it should take: %s: %s", what, got, detail)
 		}
-		if got, _ := outcome(t, "https://example.invalid/s.schema.json", body, `{"a":"x"}`); got != "validate" {
-			t.Errorf("%s did not constrain, so the reference resolved to nothing: got %s", what, got)
+		tight, _ := outcome(t, "https://example.invalid/s.schema.json", body, `{"a":"x"}`)
+		if tight != "validate" {
+			t.Errorf("%s did not constrain, so the reference resolved to nothing: got %s", what, tight)
 		}
 	}
 }
 
 // COVERS: FR-3.10b, FR-3.10d | negative
 func TestARefusalNamesTheResolvedReference(t *testing.T) {
+	t.Parallel()
+
 	// A relative reference resolves against the document's $id, so the text and
 	// the reference are different strings. Naming the text would send a reader
 	// looking for something that is not what failed.
@@ -104,9 +113,11 @@ func TestARefusalNamesTheResolvedReference(t *testing.T) {
 
 // COVERS: FR-3.10d | negative
 func TestEveryRefusedFormGivesTheSameSentence(t *testing.T) {
+	t.Parallel()
+
 	// One sentence for every shape a reference can take, so a consumer matching
 	// on the failure does not need a list of the ways it can be spelled.
-	seedReachableSchema(t)
+	reachablePath := seedReachableSchema(t)
 
 	for what, ref := range map[string]string{
 		"an http url":         "http://example.invalid/x.schema.json",
@@ -134,8 +145,9 @@ func TestNoEnvironmentVariableOpensAReference(t *testing.T) {
 	// somebody may still set it. It meant three different things while it
 	// existed: Python fetched over HTTP and read files, Go read files, and Rust
 	// did nothing at all.
-	seedReachableSchema(t)
-	body := `{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"file://` + reachablePath + `"}`
+	reachablePath := seedReachableSchema(t)
+	body := `{"$schema":"https://json-schema.org/draft/2020-12/schema",` +
+		`"$ref":"file://` + reachablePath + `"}`
 
 	// A subtest each, because t.Setenv restores at the end of the test rather
 	// than at the end of an iteration: setting three names in one loop leaves
@@ -148,7 +160,8 @@ func TestNoEnvironmentVariableOpensAReference(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Setenv(name, "1")
-			if got, _ := outcome(t, "https://example.invalid/s.schema.json", body, `{"anything":1}`); got != "schema" {
+			got, _ := outcome(t, "https://example.invalid/s.schema.json", body, `{"anything":1}`)
+			if got != "schema" {
 				t.Errorf("%s=1 opened a reference", name)
 			}
 		})

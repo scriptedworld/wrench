@@ -24,6 +24,8 @@ func compileAnything(t *testing.T) wrench.Schema {
 
 // COVERS: FR-3.1 | positive
 func TestAnyoneCanAttachTheirOwnSchema(t *testing.T) {
+	t.Parallel()
+
 	document := `{
 	  "$schema": "https://json-schema.org/draft/2020-12/schema",
 	  "type": "object",
@@ -36,11 +38,13 @@ func TestAnyoneCanAttachTheirOwnSchema(t *testing.T) {
 		t.Fatalf("compiling: %v", err)
 	}
 
-	if _, err := wrench.LoadFormattedFile("node.yaml", schema, wrench.YAML, &stubReader{data: []byte("ratchet: node\n")}); err != nil {
+	conforming := &stubReader{data: []byte("ratchet: node\n")}
+	if _, err := wrench.LoadFormattedFile("node.yaml", schema, wrench.YAML(), conforming); err != nil {
 		t.Errorf("a conforming file was refused: %v", err)
 	}
 
-	_, err = wrench.LoadFormattedFile("node.yaml", schema, wrench.YAML, &stubReader{data: []byte("ratchet: 3\n")})
+	wrongType := &stubReader{data: []byte("ratchet: 3\n")}
+	_, err = wrench.LoadFormattedFile("node.yaml", schema, wrench.YAML(), wrongType)
 	var validationErr *wrench.ValidationError
 	if !errors.As(err, &validationErr) {
 		t.Errorf("got %T (%v), want a ValidationError", err, err)
@@ -49,12 +53,17 @@ func TestAnyoneCanAttachTheirOwnSchema(t *testing.T) {
 
 // COVERS: FR-3.1 | negative
 func TestAnUnusableSchemaFailsWhenItIsCompiled(t *testing.T) {
+	t.Parallel()
+
 	for name, document := range map[string]string{
 		"not json":     `{ not json at all`,
 		"not a schema": `{"type": 42}`,
 	} {
 		t.Run(name, func(t *testing.T) {
-			if _, err := wrench.CompileSchema("broken.schema.json", strings.NewReader(document)); err == nil {
+			t.Parallel()
+
+			_, err := wrench.CompileSchema("broken.schema.json", strings.NewReader(document))
+			if err == nil {
 				t.Error("compiling succeeded, so the failure would have surfaced later and elsewhere")
 			}
 		})
@@ -63,29 +72,38 @@ func TestAnUnusableSchemaFailsWhenItIsCompiled(t *testing.T) {
 
 // COVERS: FR-2.2 | negative
 func TestACallWithNoCodecOrNoIOIsRefused(t *testing.T) {
+	t.Parallel()
+
 	schema := compileAnything(t)
 
-	if _, err := wrench.LoadFormattedFile("f.yaml", schema, nil, &stubReader{}); !errors.Is(err, wrench.ErrNoCodec) {
-		t.Errorf("load with no codec gave %v, want ErrNoCodec", err)
+	_, noCodec := wrench.LoadFormattedFile("f.yaml", schema, nil, &stubReader{})
+	if !errors.Is(noCodec, wrench.ErrNoCodec) {
+		t.Errorf("load with no codec gave %v, want ErrNoCodec", noCodec)
 	}
-	if _, err := wrench.LoadFormattedFile("f.yaml", schema, wrench.YAML, nil); !errors.Is(err, wrench.ErrNoReader) {
-		t.Errorf("load with no reader gave %v, want ErrNoReader", err)
+	_, noReader := wrench.LoadFormattedFile("f.yaml", schema, wrench.YAML(), nil)
+	if !errors.Is(noReader, wrench.ErrNoReader) {
+		t.Errorf("load with no reader gave %v, want ErrNoReader", noReader)
 	}
-	if err := wrench.SaveFormattedFile(nil, "f.yaml", schema, nil, &stubWriter{}); !errors.Is(err, wrench.ErrNoCodec) {
-		t.Errorf("save with no codec gave %v, want ErrNoCodec", err)
+	noCodecOut := wrench.SaveFormattedFile(nil, "f.yaml", schema, nil, &stubWriter{})
+	if !errors.Is(noCodecOut, wrench.ErrNoCodec) {
+		t.Errorf("save with no codec gave %v, want ErrNoCodec", noCodecOut)
 	}
-	if err := wrench.SaveFormattedFile(nil, "f.yaml", schema, wrench.YAML, nil); !errors.Is(err, wrench.ErrNoWriter) {
-		t.Errorf("save with no writer gave %v, want ErrNoWriter", err)
+	noWriter := wrench.SaveFormattedFile(nil, "f.yaml", schema, wrench.YAML(), nil)
+	if !errors.Is(noWriter, wrench.ErrNoWriter) {
+		t.Errorf("save with no writer gave %v, want ErrNoWriter", noWriter)
 	}
 }
 
 // COVERS: FR-4.1 | negative
 func TestAValueWithNoCanonicalFormIsRefused(t *testing.T) {
+	t.Parallel()
+
 	schema := compileAnything(t)
 	writer := &stubWriter{}
 
 	// A channel has no YAML spelling. Refusing beats inventing one.
-	err := wrench.SaveFormattedFile(map[string]any{"c": make(chan int)}, "f.yaml", schema, wrench.YAML, writer)
+	value := map[string]any{"c": make(chan int)}
+	err := wrench.SaveFormattedFile(value, "f.yaml", schema, wrench.YAML(), writer)
 
 	var encodeErr *wrench.EncodeError
 	if !errors.As(err, &encodeErr) {
@@ -101,10 +119,12 @@ func TestAValueWithNoCanonicalFormIsRefused(t *testing.T) {
 
 // COVERS: FR-2.9 | regression
 func TestATimestampDecodesToAStringSoItCanBeWrittenBack(t *testing.T) {
+	t.Parallel()
+
 	// YAML has a native timestamp type and JSON does not. Left as a time.Time,
 	// an unquoted date reaches the validator, which has no type for it, and then
 	// cannot be encoded: wrench would read a file it cannot write back.
-	value, err := wrench.YAML.Decode([]byte("day: 2026-01-01\nstamp: 2026-01-01T07:32:00Z\n"))
+	value, err := wrench.YAML().Decode([]byte("day: 2026-01-01\nstamp: 2026-01-01T07:32:00Z\n"))
 	if err != nil {
 		t.Fatalf("decoding: %v", err)
 	}
@@ -120,15 +140,15 @@ func TestATimestampDecodesToAStringSoItCanBeWrittenBack(t *testing.T) {
 	}
 
 	// The coercion exists so that what was read can be written.
-	encoded, err := wrench.YAML.Encode(value)
+	encoded, err := wrench.YAML().Encode(value)
 	if err != nil {
 		t.Fatalf("encoding what was just decoded: %v", err)
 	}
-	again, err := wrench.YAML.Decode(encoded)
+	again, err := wrench.YAML().Decode(encoded)
 	if err != nil {
 		t.Fatalf("decoding again: %v", err)
 	}
-	second, err := wrench.YAML.Encode(again)
+	second, err := wrench.YAML().Encode(again)
 	if err != nil {
 		t.Fatalf("encoding again: %v", err)
 	}
@@ -139,6 +159,8 @@ func TestATimestampDecodesToAStringSoItCanBeWrittenBack(t *testing.T) {
 
 // COVERS: FR-4.1 | edge
 func TestNaNAndTheInfinitiesAreRefused(t *testing.T) {
+	t.Parallel()
+
 	schema := compileAnything(t)
 
 	for name, value := range map[string]float64{
@@ -147,7 +169,9 @@ func TestNaNAndTheInfinitiesAreRefused(t *testing.T) {
 		"negative infinity": math.Inf(-1),
 	} {
 		t.Run(name, func(t *testing.T) {
-			err := wrench.SaveFormattedFile([]any{value}, "f.yaml", schema, wrench.YAML, &stubWriter{})
+			t.Parallel()
+
+			err := wrench.SaveFormattedFile([]any{value}, "f.yaml", schema, wrench.YAML(), &stubWriter{})
 			var encodeErr *wrench.EncodeError
 			if !errors.As(err, &encodeErr) {
 				t.Errorf("got %T (%v), want an EncodeError", err, err)
@@ -158,12 +182,15 @@ func TestNaNAndTheInfinitiesAreRefused(t *testing.T) {
 
 // COVERS: FR-1.2 | negative
 func TestAMappingKeyThatIsNotAStringIsRefused(t *testing.T) {
+	t.Parallel()
+
 	schema := compileAnything(t)
 
 	// A YAML mapping may be keyed by anything. JSON Schema addresses string
 	// keys, so a document wrench cannot describe is refused rather than
 	// silently coerced into one it can.
-	_, err := wrench.LoadFormattedFile("f.yaml", schema, wrench.YAML, &stubReader{data: []byte("1: one\n")})
+	keyed := &stubReader{data: []byte("1: one\n")}
+	_, err := wrench.LoadFormattedFile("f.yaml", schema, wrench.YAML(), keyed)
 
 	var parseErr *wrench.ParseError
 	if !errors.As(err, &parseErr) {
@@ -176,6 +203,8 @@ func TestAMappingKeyThatIsNotAStringIsRefused(t *testing.T) {
 
 // COVERS: FR-4.5 | property
 func TestEveryScalarTypeSurvivesTheRoundTrip(t *testing.T) {
+	t.Parallel()
+
 	schema := compileAnything(t)
 	writer := &stubWriter{}
 
@@ -189,11 +218,11 @@ func TestEveryScalarTypeSurvivesTheRoundTrip(t *testing.T) {
 		"list":    []any{1, "two", false},
 	}
 
-	if err := wrench.SaveFormattedFile(value, "f.yaml", schema, wrench.YAML, writer); err != nil {
+	if err := wrench.SaveFormattedFile(value, "f.yaml", schema, wrench.YAML(), writer); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
-	back, err := wrench.YAML.Decode(writer.data)
+	back, err := wrench.YAML().Decode(writer.data)
 	if err != nil {
 		t.Fatalf("decoding what we wrote: %v", err)
 	}

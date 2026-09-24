@@ -21,11 +21,19 @@ func threeFormats() map[string]any {
 	}
 }
 
-const canonicalJSON = "{\n  \"a\": {\n    \"y\": \"x\",\n    \"z\": [\n      1,\n      2\n    ]\n  },\n  \"b\": 1,\n  \"d\": true\n}\n"
+const canonicalJSON = "{\n  \"a\": {\n    \"y\": \"x\",\n" +
+	"    \"z\": [\n      1,\n      2\n    ]\n  },\n  \"b\": 1,\n  \"d\": true\n}\n"
+
+// errStub is what a stub reader or writer fails with. A sentinel rather than a
+// fresh errors.New at each use, so the failure has one identity and errors.Is
+// reaches it.
+var errStub = errors.New("nope")
 
 // COVERS: FR-2.7, FR-4.6 | property
 func TestJSONCanonicalForm(t *testing.T) {
-	encoded, err := wrench.JSON.Encode(threeFormats())
+	t.Parallel()
+
+	encoded, err := wrench.JSON().Encode(threeFormats())
 	if err != nil {
 		t.Fatalf("encode: %v", err)
 	}
@@ -34,11 +42,11 @@ func TestJSONCanonicalForm(t *testing.T) {
 	}
 
 	// Decoded and re-encoded, because a form nothing reads back is not a form.
-	value, err := wrench.JSON.Decode([]byte(canonicalJSON))
+	value, err := wrench.JSON().Decode([]byte(canonicalJSON))
 	if err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	again, err := wrench.JSON.Encode(value)
+	again, err := wrench.JSON().Encode(value)
 	if err != nil {
 		t.Fatalf("re-encode: %v", err)
 	}
@@ -49,7 +57,9 @@ func TestJSONCanonicalForm(t *testing.T) {
 
 // COVERS: FR-4.11 | edge
 func TestNegativeZeroIsSignedInJSONAndAnIntegerElsewhere(t *testing.T) {
-	value, err := wrench.JSON.Decode([]byte("{\"n\": -0}\n"))
+	t.Parallel()
+
+	value, err := wrench.JSON().Decode([]byte("{\"n\": -0}\n"))
 	if err != nil {
 		t.Fatalf("decoding JSON: %v", err)
 	}
@@ -68,7 +78,7 @@ func TestNegativeZeroIsSignedInJSONAndAnIntegerElsewhere(t *testing.T) {
 		codec wrench.Codec
 		doc   string
 	}{
-		{"yaml", wrench.YAML, "n: -0\n"},
+		{"yaml", wrench.YAML(), "n: -0\n"},
 	} {
 		decoded, err := format.codec.Decode([]byte(format.doc))
 		if err != nil {
@@ -88,6 +98,8 @@ func TestNegativeZeroIsSignedInJSONAndAnIntegerElsewhere(t *testing.T) {
 
 // COVERS: FR-4.10 | property
 func TestAnIntegerPastInt64WidensToAFloat(t *testing.T) {
+	t.Parallel()
+
 	// The band only Go's YAML decoder holds exact: go-yaml reaches for uint64
 	// above int64, so (int64max, uint64max] arrives as an exact integer while
 	// anything larger has already become a float64.
@@ -96,8 +108,8 @@ func TestAnIntegerPastInt64WidensToAFloat(t *testing.T) {
 		codec wrench.Codec
 		doc   string
 	}{
-		{"yaml", wrench.YAML, "n: 18446744073709551615\n"},
-		{"json", wrench.JSON, "{\"n\": 18446744073709551615}\n"},
+		{"yaml", wrench.YAML(), "n: 18446744073709551615\n"},
+		{"json", wrench.JSON(), "{\"n\": 18446744073709551615}\n"},
 	} {
 		value, err := codec.codec.Decode([]byte(codec.doc))
 		if err != nil {
@@ -112,8 +124,11 @@ func TestAnIntegerPastInt64WidensToAFloat(t *testing.T) {
 
 // COVERS: FR-2.10 | positive
 func TestAWrapperPerFormatSuppliesTheCodec(t *testing.T) {
+	t.Parallel()
+
 	writer := &stubWriter{}
-	if err := wrench.SaveJSONFile(map[string]any{"success": true}, "out.json", wrench.EnvelopeSchema, writer); err != nil {
+	passing := map[string]any{"success": true}
+	if err := wrench.SaveJSONFile(passing, "out.json", wrench.EnvelopeSchema(), writer); err != nil {
 		t.Fatalf("save json: %v", err)
 	}
 	if string(writer.data) != "{\n  \"success\": true\n}\n" {
@@ -121,7 +136,7 @@ func TestAWrapperPerFormatSuppliesTheCodec(t *testing.T) {
 	}
 
 	reader := &stubReader{data: []byte(`{"success": true}`)}
-	value, err := wrench.LoadJSONFile("out.json", wrench.EnvelopeSchema, reader)
+	value, err := wrench.LoadJSONFile("out.json", wrench.EnvelopeSchema(), reader)
 	if err != nil {
 		t.Fatalf("load json: %v", err)
 	}
@@ -130,7 +145,8 @@ func TestAWrapperPerFormatSuppliesTheCodec(t *testing.T) {
 	}
 
 	yamlWriter := &stubWriter{}
-	if err := wrench.SaveYAMLFile(map[string]any{"success": true}, "out.yaml", wrench.EnvelopeSchema, yamlWriter); err != nil {
+	err = wrench.SaveYAMLFile(passing, "out.yaml", wrench.EnvelopeSchema(), yamlWriter)
+	if err != nil {
 		t.Fatalf("save yaml: %v", err)
 	}
 	if string(yamlWriter.data) != "\"success\": true\n" {
@@ -140,8 +156,11 @@ func TestAWrapperPerFormatSuppliesTheCodec(t *testing.T) {
 
 // COVERS: FR-2.10 | negative
 func TestAWrapperStillValidates(t *testing.T) {
+	t.Parallel()
+
 	writer := &stubWriter{}
-	err := wrench.SaveJSONFile(map[string]any{"success": "yes"}, "out.json", wrench.EnvelopeSchema, writer)
+	refused := map[string]any{"success": "yes"}
+	err := wrench.SaveJSONFile(refused, "out.json", wrench.EnvelopeSchema(), writer)
 	if err == nil {
 		t.Fatal("the wrapper accepted a structure the schema refuses")
 	}
@@ -175,14 +194,16 @@ func canonicalFloats() []struct {
 
 // COVERS: FR-4.8 | property
 func TestAFloatHasOneSpellingInEveryCodec(t *testing.T) {
+	t.Parallel()
+
 	codecs := []struct {
 		name   string
 		codec  wrench.Codec
 		prefix string
 		suffix string
 	}{
-		{"yaml", wrench.YAML, "\"n\": ", "\n"},
-		{"json", wrench.JSON, "{\n  \"n\": ", "\n}\n"},
+		{"yaml", wrench.YAML(), "\"n\": ", "\n"},
+		{"json", wrench.JSON(), "{\n  \"n\": ", "\n}\n"},
 	}
 
 	for _, c := range codecs {
@@ -225,11 +246,13 @@ func canonicalEscapes() []struct {
 
 // COVERS: FR-4.9 | property
 func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
+	t.Parallel()
+
 	for _, c := range canonicalEscapes() {
 		text := "a" + string(c.point) + "b"
 		value := map[string]any{"n": text}
 
-		yamlBytes, err := wrench.YAML.Encode(value)
+		yamlBytes, err := wrench.YAML().Encode(value)
 		if err != nil {
 			t.Fatalf("yaml encode U+%04X: %v", c.point, err)
 		}
@@ -239,7 +262,7 @@ func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
 
 		// Reading it back is the half that breaks: a pack can write a file its
 		// own parser then refuses.
-		back, err := wrench.YAML.Decode(yamlBytes)
+		back, err := wrench.YAML().Decode(yamlBytes)
 		if err != nil {
 			t.Fatalf("yaml decode U+%04X: %v", c.point, err)
 		}
@@ -251,6 +274,8 @@ func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
 
 // COVERS: FR-2.11 | negative
 func TestAValueOutsideTheModelIsRefusedByNameInEveryCodec(t *testing.T) {
+	t.Parallel()
+
 	// encoding/json would spell an integer key as a string and a struct as an
 	// object, writing a document nobody wrote. Both codecs refuse instead, and
 	// the refusal names the type so a reader knows what to look for.
@@ -259,7 +284,8 @@ func TestAValueOutsideTheModelIsRefusedByNameInEveryCodec(t *testing.T) {
 		"a struct":       map[string]any{"v": struct{ A int }{1}},
 		"a channel":      map[string]any{"v": make(chan int)},
 	} {
-		for codecName, codec := range map[string]wrench.Codec{"yaml": wrench.YAML, "json": wrench.JSON} {
+		codecs := map[string]wrench.Codec{"yaml": wrench.YAML(), "json": wrench.JSON()}
+		for codecName, codec := range codecs {
 			_, err := codec.Encode(value)
 			var encodeErr *wrench.EncodeError
 			if !errors.As(err, &encodeErr) {
@@ -275,6 +301,8 @@ func TestAValueOutsideTheModelIsRefusedByNameInEveryCodec(t *testing.T) {
 
 // COVERS: FR-2.11 | property
 func TestEveryFailureIsWrenchsOwnTypeWithItsStep(t *testing.T) {
+	t.Parallel()
+
 	// Six kinds on three axes. `schema` against `validate` is the pair most
 	// easily lost: a schema that will not compile is not a document that does
 	// not match one, and the fix is to a different file.
@@ -286,10 +314,10 @@ func TestEveryFailureIsWrenchsOwnTypeWithItsStep(t *testing.T) {
 	}
 
 	_, schemaErr := wrench.CompileSchema("bad.json", strings.NewReader(`{"type": 42}`))
-	_, parseErr := wrench.YAML.Decode([]byte("a: [1,\n"))
-	_, encodeErr := wrench.YAML.Encode(map[string]any{"a": make(chan int)})
-	_, readErr := wrench.LoadYAMLFile("f.yaml", good, &stubReader{err: errors.New("nope")})
-	writeErr := wrench.SaveYAMLFile(map[string]any{"a": 1}, "f.yaml", good, &stubWriter{err: errors.New("nope")})
+	_, parseErr := wrench.YAML().Decode([]byte("a: [1,\n"))
+	_, encodeErr := wrench.YAML().Encode(map[string]any{"a": make(chan int)})
+	_, readErr := wrench.LoadYAMLFile("f.yaml", good, &stubReader{err: errStub})
+	writeErr := wrench.SaveYAMLFile(map[string]any{"a": 1}, "f.yaml", good, &stubWriter{err: errStub})
 
 	for want, err := range map[string]error{
 		"schema":   schemaErr,

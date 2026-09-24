@@ -20,7 +20,7 @@
 //! the HTTP client and TLS stack out of a build that does not otherwise ask for
 //! them, which is useful, but it is not a refusal.
 //!
-//! The refusal is [`LocalOnly`], a retriever that answers every reference the
+//! The refusal is `LocalOnly`, a retriever that answers every reference the
 //! compiler was not already given with wrench's own message. It holds whatever
 //! the rest of the graph turned on.
 
@@ -128,7 +128,7 @@ impl jsonschema::Retrieve for LocalOnly {
         &self,
         uri: &jsonschema::Uri<String>,
     ) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-        Err(unresolved(&uri.to_string()).into())
+        Err(unresolved(uri.as_ref()).into())
     }
 }
 

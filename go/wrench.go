@@ -62,6 +62,14 @@ type Writer interface {
 	Write(path string, data []byte) error
 }
 
+// A ReadWriter is both, which is what the shipped local-file seam is. The two
+// calls each take one half, so this exists only so a caller can name what
+// LocalFile hands back and pass it to either.
+type ReadWriter interface {
+	Reader
+	Writer
+}
+
 // A Schema validates a decoded structure. It applies to the maps and lists a
 // codec produced rather than to the text, so it is indifferent to how the file
 // was serialised on the way in.

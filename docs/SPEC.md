@@ -251,13 +251,18 @@ Each pack groups them so the names carry no suffix, the grouping saying what
 kind of thing they are:
 
     wrench.schemas.JIG        Python
-    wrench.Schemas.Jig        Go, a struct value, having no namespace in a package
+    wrench.Schemas().Jig      Go, a struct returned by a function, having no
+                              namespace in a package
     wrench::schemas::JIG      Rust
 
-The older `JIG_SCHEMA` and `JigSchema` spellings are the same objects and are
-kept while consumers move. Two names for one object cannot drift the way two
-copies can, which is why keeping both costs nothing; only one of them is the
-spelling to write.
+The older `JIG_SCHEMA` and `JigSchema()` spellings reach the same schema and are
+kept while consumers move; only one of them is the spelling to write.
+
+Python and Rust hold one object under both names, so neither can drift. Go
+cannot: an exported `var` there is writable by any importing package, so both
+spellings are functions, and what stops them drifting is that each builds from
+one `$id` constant. The Go suite asserts it by behaviour, the other two by
+identity, and all three are asserting that one document is behind both names.
 
 They stay files in the tree so a YAML language server can be pointed at one
 while a jig is being written. A pack compiles them in to link a single static
@@ -337,6 +342,8 @@ before it is symmetrical with its siblings.
 | | Go | Python | Rust |
 |---|---|---|---|
 | Core calls | `LoadFormattedFile` | `load_formatted_file` | `load_formatted_file` |
+| Codecs and IO | `YAML()`, `LocalFile()`, functions | `YAML`, `LOCAL_FILE`, values | `YAML`, `LOCAL_FILE`, statics |
+| Schemas | `Schemas()`, returning a struct | `schemas`, a module | `schemas`, a module |
 | Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum |
 | Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants |
 | Reading the kind | `Step()` method | `step` property | `step()` method |

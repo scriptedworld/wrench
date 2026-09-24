@@ -118,7 +118,13 @@ Go, under `go/`.
     import "github.com/scriptedworld/wrench/go"
 
     envelope, err := wrench.LoadFormattedFile(
-        path, wrench.Schemas.Envelope, wrench.YAML, wrench.LocalFile)
+        path, wrench.Schemas().Envelope, wrench.YAML(), wrench.LocalFile())
+
+The Go pack spells these as functions where Python and Rust spell them as
+values. An exported `var` in Go is writable by every package that imports it,
+so a value spelling would let one consumer respell another's files
+process-wide. Substituting a codec or a reader belongs to the arguments the two
+calls already take.
 
 That import path is the module path `go/go.mod` declares, and the Go toolchain
 resolves a module path as a URL. `go get` will work once the repository is

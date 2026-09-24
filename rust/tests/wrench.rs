@@ -1244,6 +1244,20 @@ fn a_failed_write_leaves_no_temporary_behind() {
     );
 }
 
+// COVERS: FR-2.8 | negative
+#[test]
+fn the_shipped_reader_fails_on_what_it_cannot_read() {
+    // A directory is not a file, and the shipped reader says so. Answering with
+    // empty bytes instead would reach the codec as an empty document and fail as
+    // a parse error about the wrong thing, sending a reader to look at the
+    // file's contents rather than at what was handed in.
+    let dir = scratch("unreadable");
+
+    let refused = LOCAL_FILE.read(dir.to_str().expect("utf-8"));
+
+    assert!(refused.is_err(), "a directory read back as a file");
+}
+
 // COVERS: FR-6.3 | edge
 #[cfg(unix)]
 #[test]

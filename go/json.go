@@ -3,6 +3,7 @@ package wrench
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -25,9 +26,31 @@ import (
 // and collapses a short object onto one line, so it is a formatter and not a
 // canonical form, and matching it holds in one direction only: what wrench
 // emits, deno accepts.
-var JSON Codec = jsonCodec{}
+//
+// A function and not a var, because an exported var is writable by any package
+// that imports this one: `wrench.JSON = somethingElse` would respell every
+// other consumer's files in the same binary. Substituting a codec belongs to
+// the seams, which take one as an argument. The standard library draws the same
+// line: os.Stdout is a var because it is meant to be swapped, elliptic.P256()
+// is a function because it is not.
+//
+// The value is built per call rather than held at package level. jsonCodec is
+// an empty struct, so this allocates nothing and two of them compare equal,
+// and a package-level singleton is what gochecknoglobals refuses whether it is
+// exported or not.
+//
+// It returns the Codec interface and not jsonCodec: the concrete type carries
+// no method beyond the two the interface names, and every seam in this pack
+// takes a Codec, so handing back the concrete type would export a name that
+// tells a caller nothing.
+func JSON() Codec { return jsonCodec{} }
 
 type jsonCodec struct{}
+
+// errTrailingContent is what a document carrying more than one JSON value
+// fails with. json.Unmarshal refuses trailing content and a Decoder does not,
+// so the check is made in Decode rather than lost with the switch.
+var errTrailingContent = errors.New("unexpected content after the JSON value")
 
 // Decode turns JSON bytes into maps, lists and scalars.
 //
@@ -53,7 +76,7 @@ func (jsonCodec) Decode(data []byte) (any, error) {
 	// json.Unmarshal refuses trailing content and a Decoder does not, so the
 	// check is made here rather than lost with the switch.
 	if decoder.More() {
-		return nil, &ParseError{Err: fmt.Errorf("unexpected content after the JSON value")}
+		return nil, &ParseError{Err: errTrailingContent}
 	}
 	converted, err := jsonNumbers(value)
 	if err != nil {

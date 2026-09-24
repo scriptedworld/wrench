@@ -11,20 +11,20 @@ package wrench
 
 // LoadYAMLFile reads a YAML file and validates it against schema.
 func LoadYAMLFile(path string, schema Schema, reader Reader) (any, error) {
-	return LoadFormattedFile(path, schema, YAML, reader)
+	return LoadFormattedFile(path, schema, YAML(), reader)
 }
 
 // SaveYAMLFile validates a structure and writes it as canonical YAML.
 func SaveYAMLFile(value any, path string, schema Schema, writer Writer) error {
-	return SaveFormattedFile(value, path, schema, YAML, writer)
+	return SaveFormattedFile(value, path, schema, YAML(), writer)
 }
 
 // LoadJSONFile reads a JSON file and validates it against schema.
 func LoadJSONFile(path string, schema Schema, reader Reader) (any, error) {
-	return LoadFormattedFile(path, schema, JSON, reader)
+	return LoadFormattedFile(path, schema, JSON(), reader)
 }
 
 // SaveJSONFile validates a structure and writes it as canonical JSON.
 func SaveJSONFile(value any, path string, schema Schema, writer Writer) error {
-	return SaveFormattedFile(value, path, schema, JSON, writer)
+	return SaveFormattedFile(value, path, schema, JSON(), writer)
 }

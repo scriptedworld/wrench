@@ -29,12 +29,26 @@ import (
 // NaN and the infinities are refused. YAML can spell them, JSON Schema cannot
 // represent them, and a file no consumer in this ecosystem can validate is not
 // canonical form.
+// A canonicalFormError says a value has no spelling in canonical form, naming
+// what was refused. FR-4.1.
+//
+// A type rather than a dynamic error, so errors.As reaches it and the sentence
+// stays one sentence: a sentinel wrapped with fmt.Errorf would render the
+// general statement after the specific one.
+type canonicalFormError struct {
+	what string
+}
+
+func (e *canonicalFormError) Error() string {
+	return "cannot write " + e.what + " in canonical form"
+}
+
 func canonicalFloatText(v float64) (string, error) {
 	if math.IsNaN(v) {
-		return "", fmt.Errorf("cannot write NaN in canonical form")
+		return "", &canonicalFormError{what: "NaN"}
 	}
 	if math.IsInf(v, 0) {
-		return "", fmt.Errorf("cannot write %v in canonical form", v)
+		return "", &canonicalFormError{what: fmt.Sprintf("%v", v)}
 	}
 
 	// 'f' is positional and never emits an exponent; -1 asks for the fewest
@@ -98,6 +112,6 @@ func canonicalNumbers(value any) (any, error) {
 		}
 		return out, nil
 	default:
-		return nil, fmt.Errorf("cannot write %T in canonical form", value)
+		return nil, &canonicalFormError{what: fmt.Sprintf("%T", value)}
 	}
 }

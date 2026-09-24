@@ -1,6 +1,7 @@
 package wrench
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -18,45 +19,75 @@ import (
 // The generated file is a second copy, so the gate task
 // `shipped-schemas-are-current` runs the generator with --check.
 
-// EnvelopeSchema is the result envelope every producer in the ecosystem writes.
-var EnvelopeSchema Schema = shipped(
-	"https://scriptedworld.github.io/wrench/envelope.schema.json",
+// The shipped set are package-level singletons reached through the accessors
+// below, and they are unexported for a reason that is not style. An exported
+// var is writable by any package that imports this one, so `wrench.JigSchema =
+// somethingElse` would change what every other consumer in the same binary
+// validates against. Substitution already belongs to the seams, which take a
+// schema, a codec and a reader as arguments, so a mutable global buys nothing
+// the design does not already offer. The standard library draws the same line:
+// os.Stdout is a var because it is meant to be swapped, elliptic.P256() is a
+// function because it is not.
+//
+// Nothing is held at package level, not even unexported. Measured against
+// toolbox's config: gochecknoglobals flags every package-level var except one
+// named for an error, so an unexported singleton is refused the same way an
+// exported one is. The id is a const instead, and it is the const that makes
+// the two spellings below impossible to drift: one string, one constructor,
+// so JigSchema() and Schemas().Jig cannot come to mean different documents.
+//
+// Each call returns a fresh Schema that compiles on first use rather than on
+// every call, `shipped` deferring the work behind a sync.OnceValues. So a
+// caller that holds what it is given pays once, which is what a caller does.
+const (
+	envelopeSchemaID    = "https://scriptedworld.github.io/wrench/envelope.schema.json"
+	jigSchemaID         = "https://scriptedworld.github.io/wrench/jig.schema.json"
+	manifestSchemaID    = "https://scriptedworld.github.io/wrench/manifest.schema.json"
+	definitionsSchemaID = "https://scriptedworld.github.io/wrench/definitions.schema.json"
 )
 
+// EnvelopeSchema is the result envelope every producer in the ecosystem writes.
+func EnvelopeSchema() Schema { return shipped(envelopeSchemaID) }
+
 // JigSchema is the jig a runner reads a project's tasks from.
-var JigSchema Schema = shipped(
-	"https://scriptedworld.github.io/wrench/jig.schema.json",
-)
+func JigSchema() Schema { return shipped(jigSchemaID) }
 
 // ManifestSchema is what one task execution was going to be given, written
 // before its command runs.
-var ManifestSchema Schema = shipped(
-	"https://scriptedworld.github.io/wrench/manifest.schema.json",
-)
+func ManifestSchema() Schema { return shipped(manifestSchemaID) }
 
 // DefinitionsSchema is the values a runner substitutes for a jig's
 // placeholders, whether they are a jig's own block or a file supplying them.
-var DefinitionsSchema Schema = shipped(
-	"https://scriptedworld.github.io/wrench/definitions.schema.json",
-)
+func DefinitionsSchema() Schema { return shipped(definitionsSchemaID) }
 
-// Schemas groups the shipped set so the names carry no suffix:
-// wrench.Schemas.Jig rather than wrench.JigSchema, which says schema twice and
-// reads worse the more of them there are. Go has no namespace inside a package,
-// so a struct value is what gives the other packs' wrench.schemas.JIG shape.
+// A SchemaSet is the shipped schemas grouped so the names carry no suffix:
+// wrench.Schemas().Jig rather than wrench.JigSchema(), which says schema twice
+// and reads worse the more of them there are. Go has no namespace inside a
+// package, so a struct is what gives the other packs' wrench.schemas.JIG shape.
 //
-// Each field is the same Schema as its older name, so the two cannot drift. The
-// older ones stay while consumers move.
-var Schemas = struct {
+// A struct and not a map, so a field is checked when the pack is compiled. A
+// typo in Jig is a build failure; a typo in a string key is a nil Schema found
+// at run time.
+type SchemaSet struct {
 	Envelope    Schema
 	Jig         Schema
 	Manifest    Schema
 	Definitions Schema
-}{
-	Envelope:    EnvelopeSchema,
-	Jig:         JigSchema,
-	Manifest:    ManifestSchema,
-	Definitions: DefinitionsSchema,
+}
+
+// Schemas returns the shipped set grouped under one name.
+//
+// Each field is built from the same id const its suffixed accessor uses, so the
+// two spellings validate against one document and cannot drift the way two
+// copies would. The suffixed ones stay while consumers move; only one of them
+// is the spelling to write.
+func Schemas() SchemaSet {
+	return SchemaSet{
+		Envelope:    EnvelopeSchema(),
+		Jig:         JigSchema(),
+		Manifest:    ManifestSchema(),
+		Definitions: DefinitionsSchema(),
+	}
 }
 
 // CompileSchema turns a JSON Schema document into a Schema. The shipped pair
@@ -74,6 +105,12 @@ var Schemas = struct {
 func CompileSchema(name string, document io.Reader) (Schema, error) {
 	compiled, err := compile(name, document)
 	if err != nil {
+		// Already wrench's, from the compiler itself. Passed on rather than
+		// wrapped a second time, which would say "compiling <name>" twice.
+		var schemaErr *SchemaError
+		if errors.As(err, &schemaErr) {
+			return nil, err
+		}
 		return nil, &SchemaError{Name: name, Err: err}
 	}
 	return &readySchema{compiled: compiled}, nil
@@ -94,8 +131,17 @@ func CompileSchema(name string, document io.Reader) (Schema, error) {
 type localOnly struct{}
 
 func (localOnly) Load(url string) (any, error) {
-	return nil, fmt.Errorf("%s", unresolved(url))
+	return nil, &unresolvedRefError{url: url}
 }
+
+// An unresolvedRefError is a reference the loader will not follow. It is a type
+// rather than a dynamic error so that the sentence FR-3.10d fixes is rendered
+// from one place and cannot pick up a prefix.
+type unresolvedRefError struct {
+	url string
+}
+
+func (e *unresolvedRefError) Error() string { return unresolved(e.url) }
 
 // unresolved is the one sentence every pack gives for a reference it will not
 // follow. It names the reference as RESOLVED rather than as written, because a
@@ -140,18 +186,45 @@ func compile(name string, document io.Reader) (*jsonschema.Schema, error) {
 	// document decide what the envelope schema means, and fixing that meaning
 	// is what a shipped schema is for.
 	if _, shipped := shippedIDs()[name]; shipped {
-		return nil, fmt.Errorf("wrench: %s is a shipped schema and cannot be redefined", name)
+		return nil, &redefinedSchemaError{name: name}
 	}
 
 	if err := compiler.AddResource(name, decoded); err != nil {
 		return nil, fmt.Errorf("wrench: adding schema %s: %w", name, err)
 	}
 
-	// Returned bare. CompileSchema wraps this in a SchemaError whose message is
-	// already "compiling <name>", so a prefix here would render it twice:
-	// "wrench: compiling mine.json: wrench: compiling schema mine.json: ...".
-	// compileShipped keeps its own, because the lazy path wraps with no name.
-	return compiler.Compile(name)
+	// Given wrench's own type here rather than a prefix. CompileSchema renders
+	// this inside a SchemaError that already says "compiling <name>", so a
+	// prefix would read twice: "wrench: compiling mine.json: wrench: compiling
+	// schema mine.json: ...". compileShipped keeps its own, because the lazy
+	// path wraps with no name.
+	compiled, err := compiler.Compile(name)
+	if err != nil {
+		return nil, &SchemaError{Name: name, Err: err}
+	}
+	return compiled, nil
+}
+
+// A redefinedSchemaError says a caller tried to register a shipped $id. Fixing
+// what a shipped schema means is the whole reason one ships, so a document may
+// not decide it.
+type redefinedSchemaError struct {
+	name string
+}
+
+func (e *redefinedSchemaError) Error() string {
+	return "wrench: " + e.name + " is a shipped schema and cannot be redefined"
+}
+
+// A shippedSchemaError says one of the carried schemas is not usable. It is a
+// fault in what the generator wrote, not in anything a caller passed.
+type shippedSchemaError struct {
+	name   string
+	detail string
+}
+
+func (e *shippedSchemaError) Error() string {
+	return "wrench: shipped schema " + e.name + " " + e.detail
 }
 
 // shippedIDs is the set of $ids the shipped schemas declare, read from what the
@@ -205,11 +278,14 @@ func readShipped(entry shippedSchema) (any, string, error) {
 
 	mapping, ok := document.(map[string]any)
 	if !ok {
-		return nil, "", fmt.Errorf("wrench: shipped schema %s is %T, want an object", entry.Name, document)
+		return nil, "", &shippedSchemaError{
+			name:   entry.Name,
+			detail: fmt.Sprintf("is %T, want an object", document),
+		}
 	}
 	declared, ok := mapping["$id"].(string)
 	if !ok || declared == "" {
-		return nil, "", fmt.Errorf("wrench: shipped schema %s declares no $id", entry.Name)
+		return nil, "", &shippedSchemaError{name: entry.Name, detail: "declares no $id"}
 	}
 	return document, declared, nil
 }
