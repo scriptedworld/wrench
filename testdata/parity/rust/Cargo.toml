@@ -1,0 +1,17 @@
+# A crate of its own, outside rust/, because the packs are being worked on and a
+# driver must not land inside a pack's tree. It reaches the pack by relative
+# path, so the driver and the pack it measures always move together.
+[package]
+name = "wrench-parity-driver"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+
+# The pack under measurement.
+wrench = { path = "../../../rust" }
+
+# The wire the checker speaks, and nothing else. Every scalar on that wire is a
+# string, so this parser's number handling never touches a value being measured.
+serde_json = "1"
