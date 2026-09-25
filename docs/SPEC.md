@@ -339,18 +339,31 @@ The calls are the same and the spelling is each language's own, by
 `each-pack-spells-the-calls-its-own-way`. A pack is idiomatic in its language
 before it is symmetrical with its siblings.
 
-| | Go | Python | Rust |
-|---|---|---|---|
-| Core calls | `LoadFormattedFile` | `load_formatted_file` | `load_formatted_file` |
-| Codecs and IO | `YAML()`, `LocalFile()`, functions | `YAML`, `LOCAL_FILE`, values | `YAML`, `LOCAL_FILE`, statics |
-| Schemas | `Schemas()`, returning a struct | `schemas`, a module | `schemas`, a module |
-| Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum |
-| Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants |
-| Reading the kind | `Step()` method | `step` property | `step()` method |
-| YAML emission | `yaml.v3` nodes | `ruamel.yaml` nodes | `libyaml-safer` events |
-| JSON emission | `encoding/json`, floats respelled first | walked by hand for floats | `serde_json` with a float formatter |
-| Schemas reach the pack by | generated `go/shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` |
-| Validator | santhosh-tekuri/jsonschema | `jsonschema` | `jsonschema` crate |
+| | Go | Python | Rust | C++ |
+|---|---|---|---|---|
+| Core calls | `LoadFormattedFile` | `load_formatted_file` | `load_formatted_file` | `load_formatted_file` |
+| Codecs and IO | `YAML()`, `LocalFile()`, functions | `YAML`, `LOCAL_FILE`, values | `YAML`, `LOCAL_FILE`, statics | `yaml()`, `json()`, functions returning a reference, and `local_file`, a class |
+| Schemas | `Schemas()`, returning a struct | `schemas`, a module | `schemas`, a module | `schemas`, a namespace of functions |
+| Error family | `Error` interface with `Step()` | `Error` base class | `Error` enum | `failure` inside `std::expected` |
+| Kind vocabulary | `StepRead` and the rest | the exception classes | the enum variants | the `step` enumerators |
+| Reading the kind | `Step()` method | `step` property | `step()` method | the `step` member |
+| YAML emission | `yaml.v3` nodes | `ruamel.yaml` nodes | `libyaml-safer` events | libyaml events |
+| JSON emission | `encoding/json`, floats respelled first | walked by hand for floats | `serde_json` with a float formatter | jsoncons, floats respelled first as tagged decimals |
+| Schemas reach the pack by | generated `go/shipped_gen.go` | generated `_shipped.py` | `build.rs` generating `shipped.rs` | CMake generating `shipped.hpp` |
+| Validator | santhosh-tekuri/jsonschema | `jsonschema` | `jsonschema` crate | jsoncons |
+
+The C++ pack answers with `std::expected` and throws nothing on purpose, so its
+failures are values a caller is made to handle by `[[nodiscard]]`, and the family
+is one type where the other three are a hierarchy or an enum. `usage` does not
+exist there, for the reason it does not exist in Rust: the seams arrive as
+references, so a call naming no schema, codec, reader or writer does not compile.
+
+Its value type is `jsoncons::json` under the name `wrench::value`, which is the
+one place a pack names a bound library's type on its own surface.
+`which-libraries-the-cpp-pack-binds` carries why: C++ has no value type every
+parser and validator agrees on, so a value reaching the validate step is
+necessarily the validator's own, and a second representation would be converted
+on every load for nothing.
 
 Each pack binds its language's established implementation instead of
 implementing JSON Schema itself (FR-5.2). Which one, and why, is
