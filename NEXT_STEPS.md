@@ -224,6 +224,36 @@ cached in the build script's `rerun-if-changed`. An ordinary `cargo test` in
 
 `rm -rf rust/target/package` restores it, and so does `just clean`.
 
+## The three oslo commits are already here, so there is no merge to do
+
+`dotfiles/NEXT_STEPS.md` lists wrench among nine repositories holding
+unintegrated oslo work, at 3 commits. The `oslo` remote points at the snapshot
+taken when that box was powered off, not at the host:
+
+    git remote get-url oslo    ~/oslo-consolidation/.projects/wrench/
+
+Those 3 are on this line already, replanted under different SHAs when the
+history was rewritten. The trees are identical, which is what settles it rather
+than the subjects matching:
+
+    f34be14  ==  8e9d199   a reference resolves in three tiers
+    e3e7bc2  ==  af30b64   the Go pack has no tags
+    4ace839  ==  042edf9   wrench-quality goes green
+
+    git rev-parse f34be14^{tree} 8e9d199^{tree}
+
+So `git rev-list --count oslo/main ^main` reporting 3 is a numbering difference,
+not lost work, and merging that branch would duplicate three commits. Nothing is
+owed to the snapshot either: it records a machine that is off, so it is read and
+not written.
+
+`f34be14` is the commit infobot pins as
+`v0.0.0-20260904181338-f34be142d905`. On this disk only `refs/remotes/oslo/main`
+reaches it, and the remote carries `main` and nothing else, so that pin is
+already unresolvable from GitHub and does not wait on the history rewrite to
+break it. `8e9d199` is on `main` and carries the same tree, so it is what a
+re-resolve should land on.
+
 ## Two things a consumer of the schemas should know
 
 toolbox holds a second copy of `jig.schema.json` and it is out of step, since
