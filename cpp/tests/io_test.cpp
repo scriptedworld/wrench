@@ -73,7 +73,7 @@ TEST_CASE("the shipped reader gives back what is on disk") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.put("carried.yaml", "one: 1\n");
 
-    CHECK(through(wrench::local_file_reader(), file) == "one: 1\n");
+    CHECK(through(wrench::local_file(), file) == "one: 1\n");
 }
 
 // COVERS: FR-2.8 | edge
@@ -81,13 +81,13 @@ TEST_CASE("an empty file reads back as no bytes rather than as a failure") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.put("empty.yaml", "");
 
-    CHECK(through(wrench::local_file_reader(), file).empty());
+    CHECK(through(wrench::local_file(), file).empty());
 }
 
 // COVERS: FR-2.8 | negative
 TEST_CASE("a file that is not there is a read failure naming the cause") {
     const wrench::test::scratch area;
-    const auto bytes = wrench::local_file_reader().read(area.at("absent.yaml"));
+    const auto bytes = wrench::local_file().read(area.at("absent.yaml"));
 
     REQUIRE_FALSE(bytes.has_value());
     CHECK(bytes.error().step == wrench::step::read);
@@ -103,7 +103,7 @@ TEST_CASE("a file that is not there is a read failure naming the cause") {
 // COVERS: FR-2.8 | negative
 TEST_CASE("a directory is a read failure and not an escaping exception") {
     const wrench::test::scratch area;
-    const auto bytes = wrench::local_file_reader().read(area.path());
+    const auto bytes = wrench::local_file().read(area.path());
 
     REQUIRE_FALSE(bytes.has_value());
     CHECK(bytes.error().step == wrench::step::read);
@@ -115,7 +115,7 @@ TEST_CASE("a write lands and reads back byte for byte") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.at("written.yaml");
 
-    const auto landed = wrench::local_file_writer().write(file, "one: 1\n");
+    const auto landed = wrench::local_file().write(file, "one: 1\n");
 
     REQUIRE(landed.has_value());
     CHECK(wrench::test::slurp(file) == "one: 1\n");
@@ -126,7 +126,7 @@ TEST_CASE("a written file is readable by anybody who reads what wrench wrote") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.at("mode.yaml");
 
-    const auto landed = wrench::local_file_writer().write(file, "one: 1\n");
+    const auto landed = wrench::local_file().write(file, "one: 1\n");
 
     REQUIRE(landed.has_value());
     // mkstemp creates the temporary at 0600 and a rename keeps that mode, so
@@ -153,7 +153,7 @@ TEST_CASE("an empty write leaves an empty file and not an absent one") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.at("empty.yaml");
 
-    const auto landed = wrench::local_file_writer().write(file, "");
+    const auto landed = wrench::local_file().write(file, "");
 
     REQUIRE(landed.has_value());
     CHECK(std::filesystem::exists(file));
@@ -165,7 +165,7 @@ TEST_CASE("a write that lands leaves no temporary beside the target") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.at("written.yaml");
 
-    const auto landed = wrench::local_file_writer().write(file, "one: 1\n");
+    const auto landed = wrench::local_file().write(file, "one: 1\n");
 
     REQUIRE(landed.has_value());
     CHECK(wrench::test::entries(area.path()) == 1);
@@ -175,7 +175,7 @@ TEST_CASE("a write that lands leaves no temporary beside the target") {
 TEST_CASE("a second write replaces the contents and adds no file") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.put("written.yaml", "old: 1\n");
-    const wrench::local_file_writer shipped;
+    const wrench::local_file shipped;
 
     REQUIRE(shipped.write(file, "new: 2\n").has_value());
 
@@ -195,7 +195,7 @@ TEST_CASE("a write that cannot land leaves the previous contents and no temporar
     const std::filesystem::path inside =
         area.put("occupied.yaml/inside", "untouched\n");
 
-    const auto landed = wrench::local_file_writer().write(occupied, "one: 1\n");
+    const auto landed = wrench::local_file().write(occupied, "one: 1\n");
 
     REQUIRE_FALSE(landed.has_value());
     CHECK(landed.error().step == wrench::step::write);
@@ -209,8 +209,7 @@ TEST_CASE("a write that cannot land leaves the previous contents and no temporar
 // COVERS: FR-6.3 | negative
 TEST_CASE("a write into a directory that is not there is a write failure") {
     const wrench::test::scratch area;
-    const auto landed =
-        wrench::local_file_writer().write(area.at("absent/file.yaml"), "x\n");
+    const auto landed = wrench::local_file().write(area.at("absent/file.yaml"), "x\n");
 
     REQUIRE_FALSE(landed.has_value());
     CHECK(landed.error().step == wrench::step::write);
@@ -221,12 +220,12 @@ TEST_CASE("a write into a directory that is not there is a write failure") {
 TEST_CASE("the shipped pair is reached through the seams and not by its own type") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.at("through.yaml");
-    const wrench::local_file_writer shipped_out;
+    const wrench::local_file shipped_out;
     const wrench::writer& out = shipped_out;
 
     REQUIRE(out.write(file, "one: 1\n").has_value());
 
-    const wrench::local_file_reader shipped;
+    const wrench::local_file shipped;
     const wrench::reader& in = shipped;
     CHECK(through(in, file) == "one: 1\n");
 }
@@ -266,7 +265,7 @@ TEST_CASE("a substituted writer is handed the path and writes no file") {
 TEST_CASE("a write that cannot allocate leaves nothing behind") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.at("written.yaml");
-    const wrench::local_file_writer shipped;
+    const wrench::local_file shipped;
 
     const wrench::test::sweep found = wrench::test::fail_each_allocation(
         [&shipped, &file] { const auto answer = shipped.write(file, "one: 1\n"); });
@@ -280,7 +279,7 @@ TEST_CASE("a write that cannot allocate leaves nothing behind") {
 TEST_CASE("a read that cannot allocate throws rather than answering") {
     const wrench::test::scratch area;
     const std::filesystem::path file = area.put("carried.yaml", "one: 1\n");
-    const wrench::local_file_reader shipped;
+    const wrench::local_file shipped;
 
     const wrench::test::sweep found = wrench::test::fail_each_allocation(
         [&shipped, &file] { const auto answer = shipped.read(file); });
@@ -293,7 +292,7 @@ TEST_CASE("a read that cannot allocate throws rather than answering") {
 TEST_CASE("a read failure that cannot allocate its message throws") {
     const wrench::test::scratch area;
     const std::filesystem::path absent = area.at("absent.yaml");
-    const wrench::local_file_reader shipped;
+    const wrench::local_file shipped;
 
     const wrench::test::sweep found = wrench::test::fail_each_allocation(
         [&shipped, &absent] { const auto answer = shipped.read(absent); });

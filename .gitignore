@@ -48,6 +48,13 @@ node_modules/
 # so committing one would encode a path a clone resolves to nothing.
 cpp/compile_commands.json
 
+# The libraries the C++ pack binds, fetched at the tags
+# `which-libraries-the-cpp-pack-binds` names. They sit beside the source rather
+# than under `build/`, which `just cpp-profile` empties on every run, because a
+# pinned tree is not build output and re-cloning it per run costs minutes. The
+# CMake file is what pins them, so nothing here needs committing.
+cpp/.deps/
+
 # coverage writes this beside the pack when the shared jig runs its tests
 .coverage
 python/.coverage

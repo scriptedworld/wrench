@@ -2,9 +2,7 @@
 #
 # The jig runs at the C++ pack's own base, `cpp/`, so every path here is read
 # from there. The database keeps the jig's default name, which `just cpp-profile`
-# links to the CMake build in `cpp/build`, and the exclusions keep their
-# defaults: `.ephemera`, `bin` and `adapters` are the three shapes an adopter's
-# links take and none of them exists inside the pack.
+# links to the CMake build in `cpp/build`.
 #
 # The header filter is the one value only this repository knows. The jig's
 # default of `^$` matches nothing, so clang-tidy would report on translation
@@ -13,3 +11,18 @@
 # against and `tests` holds the suite's own, which are as much the project's to
 # get right.
 header_filter: .*/cpp/(include|tests)/.*
+
+# The exclusions name `.deps`, which is where the pinned libraries land, in
+# place of the jig's `.ephemera`, `bin` and `adapters`. Those three are where an
+# adopter's links into toolbox go and none of them exists inside this pack, so
+# the slots are spent on the directory that does.
+#
+# Nothing in `.deps` is the pack's to answer for. jsoncons is header-only, so its
+# templates instantiate into the pack's own translation units and a coverage
+# build instruments them: without this, gcovr reported 84 jsoncons headers, each
+# at a few percent of lines, and the per-file minimum failed on every one. The
+# pack's own files are measured exactly as before.
+excluded_one: .deps
+excluded_two: bin
+excluded_three: adapters
+excluded_regex: (^|/)(\.deps|\.ephemera|bin|adapters)/

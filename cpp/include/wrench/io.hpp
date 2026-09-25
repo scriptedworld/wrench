@@ -59,22 +59,21 @@ class writer {
     writer& operator=(writer&&) = default;
 };
 
-// The shipped reader: a file on the machine the process is running on.
-class local_file_reader final : public reader {
+// The shipped pair: a file on the machine the process is running on, read and
+// written (FR-2.8). One type holds both directions, as the one `LOCAL_FILE` in
+// every other pack does, so a caller names the same thing on the way in and on
+// the way out.
+//
+// The write is atomic (FR-6.3). The bytes go to a temporary file beside the
+// target and are renamed into place, so a concurrent reader sees the previous
+// contents or the new ones and never a half-written file. Beside the target and
+// not in the system temporary directory, because a rename across filesystems is
+// a copy and a copy is not atomic.
+class local_file final : public reader, public writer {
    public:
     [[nodiscard]] result<std::string> read(
         const std::filesystem::path& path) const override;
-};
 
-// The shipped writer, and it is atomic (FR-6.3).
-//
-// The bytes go to a temporary file beside the target and are renamed into
-// place, so a concurrent reader sees the previous contents or the new ones and
-// never a half-written file. Beside the target and not in the system temporary
-// directory, because a rename across filesystems is a copy and a copy is not
-// atomic.
-class local_file_writer final : public writer {
-   public:
     [[nodiscard]] result<void> write(const std::filesystem::path& path,
                                      std::string_view bytes) const override;
 };

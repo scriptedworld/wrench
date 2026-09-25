@@ -110,7 +110,7 @@ reader::~reader() = default;
 
 writer::~writer() = default;
 
-result<std::string> local_file_reader::read(const std::filesystem::path& path) const {
+result<std::string> local_file::read(const std::filesystem::path& path) const {
     errno = 0;
     std::ifstream stream(path, std::ios::binary);
     if (!stream.is_open()) {
@@ -129,8 +129,8 @@ result<std::string> local_file_reader::read(const std::filesystem::path& path) c
     }
 }
 
-result<void> local_file_writer::write(const std::filesystem::path& path,
-                                      std::string_view bytes) const {
+result<void> local_file::write(const std::filesystem::path& path,
+                               std::string_view bytes) const {
     // Beside the target, so the rename that follows stays inside one directory
     // and therefore one filesystem: a rename across filesystems is a copy, and
     // a copy is not atomic. Hidden, so a reader listing the directory between
