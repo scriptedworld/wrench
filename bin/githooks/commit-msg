@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Refuse a commit message carrying the wording the writing standard names.
+#
+# The gate reads messages too, through `common-quality`'s `wording` task, but it
+# reads them after they are history, where the only fix is a rewrite. This runs
+# while the message is still a file, which is the one moment it is free to change.
+#
+# Install once per checkout, from the repository root:
+#
+#     ln -sf ../../bin/githooks/commit-msg .git/hooks/commit-msg.local
+#
+# `.local` and not `commit-msg`, because `core.hooksPath` sends git to
+# ~/.git-hooks and git consults exactly one hooks directory. The global
+# `commit-msg` there runs no-ai-attribution and no-agent-voice, then dispatches to
+# `$(git rev-parse --git-dir)/hooks/commit-msg.local`. A hook installed as
+# `.git/hooks/commit-msg` is never read: no error, and nothing says it is inert.
+#
+# Do not set core.hooksPath in this repository. A local override shadows the
+# global directory, so the two hooks above would silently stop running here.
+set -uo pipefail
+
+message="${1:?commit-msg: no message file was passed}"
+
+root="$(git rev-parse --show-toplevel)"
+checker="$root/bin/voice-tells.py"
+
+# The refusal below asserts a cause, so establish it first. Any other non-zero
+# exit would otherwise tell somebody to reword a message that is fine and send
+# them looking in the wrong place.
+if [ ! -e "$checker" ]; then
+    echo "commit-msg: cannot run, $checker is missing." >&2
+    echo "It is a link into toolbox, made by link-toolbox.py." >&2
+    exit 1
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "commit-msg: cannot run, python3 is not on PATH." >&2
+    exit 1
+fi
+
+python3 "$checker" --commit-msg-filename "$message"
+status=$?
+
+if [ "$status" -eq 1 ]; then
+    echo
+    echo "commit-msg: refused. Reword the lines above and commit again. The rules"
+    echo "are toolbox FR-9 and silo's writing standard. --no-verify is not the way"
+    echo "through: it is the one option whose purpose is to suppress the check that"
+    echo "stopped you."
+    exit 1
+fi
+
+if [ "$status" -ne 0 ]; then
+    echo "commit-msg: the checker exited $status, which is not a verdict." >&2
+    echo "That is a fault in the check rather than in your message." >&2
+    exit 1
+fi
+
+exit 0

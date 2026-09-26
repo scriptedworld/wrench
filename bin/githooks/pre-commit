@@ -59,4 +59,44 @@ if [ "$status" -ne 0 ]; then
     exit 1
 fi
 
+# The wording check over what is being committed, and nothing else.
+#
+# With no mode given it reads the staged copies from the index rather than the
+# working tree, so a partly staged file is judged by what is about to land. It
+# reads no commits in this mode, which is what makes it usable here: the same
+# checker under `--all-files` reads every commit in the history and this
+# repository has 254 findings waiting in its own, which is `prose-cleanup/30` to
+# `50` and not a reason to refuse the commit in front of you.
+#
+# Test this by attempting a real commit, never by running this file by hand.
+# Hard rule 2 has us commit with `git commit <paths>` and never stage, so the
+# index is empty between commits and a hand-run hook reports "0 staged files" and
+# exits 0 whatever the file says. `git commit <paths>` builds a temporary index
+# for those paths and points the hook at it, which is the only state in which
+# this check sees anything.
+wording="$root/bin/voice-tells.py"
+
+if [ ! -e "$wording" ]; then
+    echo "pre-commit: cannot run, $wording is missing." >&2
+    echo "It is a link into toolbox, made by link-toolbox.py." >&2
+    exit 1
+fi
+
+python3 "$wording"
+status=$?
+
+if [ "$status" -eq 1 ]; then
+    echo
+    echo "pre-commit: refused on the wording above. Reword it, or where the line is"
+    echo "right as it stands, accept that one finding in .voice-baseline.json with"
+    echo "the reason it stands. An entry carrying no reason accepts nothing."
+    exit 1
+fi
+
+if [ "$status" -ne 0 ]; then
+    echo "pre-commit: the wording check exited $status, which is not a verdict." >&2
+    echo "That is a fault in the check rather than in your commit." >&2
+    exit 1
+fi
+
 exit 0

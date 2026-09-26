@@ -264,3 +264,21 @@ tasks:
   - name: checker-tests
     description: wrench's own parity checker does what it claims
     command: uv run --no-project --with pytest python -m pytest testdata/checkers -q
+
+  # ---- the claim this project exists for ------------------------------------
+  #
+  # Last because it is the slowest task here and the only one that builds
+  # anything: about 25 seconds warm, and a Go binary and a Rust crate cold.
+  #
+  # It is what FR-5.5 actually asks, where `suite-parity` above asks something
+  # weaker. That one compares which requirements each suite cites; this writes a
+  # tree with every pack, reads it back with every other, and requires the
+  # decoded values to agree. Bytes are allowed to differ, and they do: 1797,
+  # 1785 and 1747 for the three packs, so a pass here is not a pass by identity.
+  #
+  # It ran green for days while nothing invoked it, which is the case
+  # `an-installed-check-is-not-a-running-check` records. A check nothing runs is
+  # indistinguishable from one that does not exist.
+  - name: cross-pack-parity
+    description: every pack's output decodes to the same value in every other pack
+    command: ./bin/test-cross-pack-parity.py
