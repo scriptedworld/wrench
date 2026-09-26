@@ -9,8 +9,8 @@
 # Node natively and Deno needs a container. Deno is a runtime it also runs on,
 # and `deno-test` below is what keeps that true rather than assumed.
 #
-# There is no shared TypeScript standard in toolbox yet, the way there is for
-# Go, Python, Rust and C++, so `checks` names this pack's own tools directly.
+# There is no shared TypeScript standard adopted here yet, the way there is for
+# Go and Python, so `checks` names this pack's own tools directly.
 # When that jig exists this file takes it and these lines go, the same way the
 # Rust pack's cargo tasks will.
 #

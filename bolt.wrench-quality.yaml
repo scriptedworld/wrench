@@ -31,10 +31,9 @@ version: 1.0.0
 # type-check the consumer use the Python pack's declared environment rather than
 # whatever is installed globally.
 #
-# No compiler and no pack's tooling. A language's toolchain is named in that
-# pack's own jig, reached through its own Justfile, so a machine that cannot
-# build the C++ pack still runs the contract over the schemas and the
-# requirements.
+# No pack's tooling. A language's toolchain is named in that pack's own jig,
+# reached through its own Justfile, so a machine missing one pack's compiler or
+# runtime still runs the contract over the schemas and the requirements.
 requires: [python3, jq, deno, mypy, uv]
 
 definitions:
@@ -130,15 +129,13 @@ tasks:
   #
   # That is not tidiness. Running a pack's tools from here put their artefacts
   # at the root: `gofmt -l go` walked a tree Go's own `./...` would have skipped,
-  # `pytest python/tests` wrote `.coverage` at the root beside `python/.coverage`,
-  # and a gcov profile anywhere under the repository was read as the C++ pack's,
-  # because gcovr searches from its root. One language's leavings being graded as
-  # another's is what the split removes, and it is why `.gitignore` carried two
-  # `.coverage` paths.
+  # and `pytest python/tests` wrote `.coverage` at the root beside
+  # `python/.coverage`. One language's leavings being graded as another's is what
+  # the split removes, and it is why `.gitignore` carried two `.coverage` paths.
   #
   # What each pack runs is in `<pack>/just/lang.just`: go-std-quality,
-  # python-std-quality, cpp-std-quality with the build that writes its database
-  # and profile, and Rust's cargo tasks until a shared Rust standard is adopted.
+  # python-std-quality, node-std-quality, and Rust's cargo tasks until a shared
+  # Rust standard is adopted.
 
   # ---- the contract ---------------------------------------------------------
 
@@ -242,11 +239,9 @@ tasks:
     # cannot become a per-language task. Adding a pack means adding a --suite
     # here.
     #
-    # The C++ pack is absent on purpose and not by omission. It holds the float
-    # spelling and the local file pair and none of the contract yet, so
-    # comparing it against the three that hold all of it would report every row
-    # it does not cover as a divergence. It joins when it covers the contract,
-    # which is task `library/cpp/40`.
+    # TypeScript is absent on purpose and not by omission: it is not yet in any
+    # of the three mechanisms that hold packs level, and `NEXT_STEPS.md` carries
+    # what adding it reported.
     command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='go/*_test.go' --suite python='python/tests/*.py' --suite rust='rust/tests/*.rs' .
 
   # Nothing else checks the checker above. It decides whether three suites
@@ -269,21 +264,3 @@ tasks:
   - name: checker-tests
     description: wrench's own parity checker does what it claims
     command: uv run --no-project --with pytest python -m pytest testdata/checkers -q
-
-  # ---- the C++ pack, last because it is the slowest ------------------------
-  #
-  # Two tasks and not one. The C++ jig reads two artefacts rather than running
-  # anything: `compile_commands.json`, which is the only statement of what this
-  # project compiles and how, and the gcov profile its own suite left behind.
-  # Neither exists until something builds, so the build is a task of its own,
-  # run first, and it fails with its own exit status and its own output.
-  #
-  # Folding the build into the composed command would hide it. The adapter reads
-  # the last line of stdout for the child's result path, so a build that failed
-  # before bolt ran would surface as "no result is there" with a compiler error
-  # as the path, which names neither the build nor the failure.
-  #
-  # Tasks run one at a time and in the order they are written (bolt's README),
-  # which is what makes the ordering enough here. Nothing is passed between
-  # them: the profile is on disk, where the jig's contract says an adopter puts
-  # it.

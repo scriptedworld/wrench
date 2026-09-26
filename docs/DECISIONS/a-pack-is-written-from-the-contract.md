@@ -31,12 +31,16 @@ So the guarantee in force is "two implementations agree on a declared set of
 cases", not "two implementations were derived independently". Those are different
 strengths and only the first has been demonstrated.
 
-The next pack is where this decision can still be kept, and that is the C++
-pack. Write it from
-`docs/REQUIREMENTS/` and `schemas/`, run it against `testdata/canonical/`, and do
-not open `go/wrench.go` or `codec.py` while doing it. If the contract turns out to
-be insufficient to write a pack from, that is the finding, and it says more than
-a third pack that agrees because it was copied.
+The next pack is where this decision can still be kept, whichever language that
+turns out to be. Write it from `docs/REQUIREMENTS/` and `schemas/`, run it against
+`testdata/canonical/`, and do not open `go/wrench.go` or `codec.py` while doing
+it. If the contract turns out to be insufficient to write a pack from, that is the
+finding, and it says more than a further pack that agrees because it was copied.
+
+The C++ pack was written this way and is the one datum for how the rule behaves.
+A writer that had opened no other pack produced a conformant pack, so the contract
+was sufficient. It was removed for its size and not for anything the rule caused:
+`a-cpp-pack-was-built-and-removed`.
 
 ## Retired requirement ID
 

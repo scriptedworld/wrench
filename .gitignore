@@ -42,19 +42,6 @@ rust/Cargo.lock
 # `**/node_modules/**` for itself; the two are separate statements.
 node_modules/
 
-# C++ build output. The build directory itself is covered by the `build/`
-# pattern above; this is the compilation database, a symlink into it that `just
-# cpp-profile` remakes. The jig's contract is that a build writes the database,
-# so committing one would encode a path a clone resolves to nothing.
-cpp/compile_commands.json
-
-# The libraries the C++ pack binds, fetched at the tags
-# `which-libraries-the-cpp-pack-binds` names. They sit beside the source rather
-# than under `build/`, which `just cpp-profile` empties on every run, because a
-# pinned tree is not build output and re-cloning it per run costs minutes. The
-# CMake file is what pins them, so nothing here needs committing.
-cpp/.deps/
-
 # coverage writes this beside the pack when the shared jig runs its tests
 .coverage
 python/.coverage
@@ -71,13 +58,11 @@ python/.coverage
 # `bin/` cannot be ignored wholesale for the same reason: it holds wrench's own
 # checkers beside the links, so each link is named.
 bolt.common-quality.yaml
-bolt.cpp-std-quality.yaml
 bolt.go-std-quality.yaml
 bolt.python-std-quality.yaml
 bolt.secrets.yaml
 adapters/
 config/
-bin/clang-format-check.py
 bin/suppression-register.py
 bin/test-traceability.py
 bin/voice-review.py

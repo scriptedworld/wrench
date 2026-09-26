@@ -94,10 +94,10 @@ class Pack:
 def default_packs(work: Path) -> list[Pack]:
     """The packs that take part, one entry each.
 
-    The C++ pack has no codec yet, so it has nothing to encode with and cannot
-    take part. The TypeScript pack is mid-port and its files are moving. Both
-    are absent rather than stubbed: a stub that reported agreement would be the
-    only thing here that could lie.
+    The TypeScript pack is absent: it needs a driver under
+    `testdata/parity/typescript/` and a table entry here. It is absent rather
+    than stubbed, because a stub that reported agreement would be the only thing
+    here that could lie.
     """
     parity = REPO / "testdata" / "parity"
     return [

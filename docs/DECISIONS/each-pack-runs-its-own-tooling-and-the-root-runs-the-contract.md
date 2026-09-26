@@ -7,7 +7,6 @@ Justfile. The root runs what no pack can: the common standard over every file in
 the repository, then wrench's own contract jig. `just checks` iterates the packs
 and then runs both.
 
-    cpp/Justfile          cpp-std-quality at cpp/
     go/Justfile           go-std-quality at go/
     python/Justfile       python-std-quality at python/
     rust/Justfile         cargo fmt, clippy, test, doc at rust/

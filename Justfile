@@ -28,7 +28,7 @@
 #
 #    Do not rewrite these as `@for` one-liners.
 
-PACKS := "cpp go python rust typescript"
+PACKS := "go python rust typescript"
 
 default:
     @just --list
@@ -72,8 +72,8 @@ _each recipe:
 #
 # Each pack runs its own language tooling at its own base, so its build
 # directory, its coverage profile and its caches are inside it and belong to it.
-# A gcov profile under `cpp/` is the C++ pack's; a `.coverage` under `python/` is
-# the Python pack's. Nothing at the root reaches into a pack to run a tool, which
+# A `.coverage` under `python/` is the Python pack's and a target directory under
+# `rust/` is Rust's. Nothing at the root reaches into a pack to run a tool, which
 # is how a profile from one language stopped being read as another's.
 #
 # The root runs what no pack can: the contract. Traceability, suite parity, the

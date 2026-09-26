@@ -212,8 +212,6 @@ The packs disagree about which type a number comes back as inside the widened
 range, and about `-0`. The range rule is settled and the agreement mechanism is
 not. The Python pack writes two characters it then refuses to read.
 
-A C++ pack is planned, with infobot's C++ port as its consumer.
-
 `NEXT_STEPS.md` has the rest, with the measurements behind each.
 
 ## Reading further

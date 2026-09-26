@@ -24,9 +24,10 @@ covering the 2020-12 dialect wrench declares.
 | Ruby | `json_schemer` 2.5.0 | yes | The gem's own summary |
 | C++ | jsoncons, pinned at v1.9.0 | yes | Measured: wrench's four schemas valid against the meta-schema under `unshare -rn` |
 
-The Ruby and TypeScript rows are the survey, not bindings. Both packs were
-removed on 2026-09-16 and the rows stay because the survey is what a later pack
-in either language starts from.
+The Ruby and C++ rows are the survey, not bindings. Ruby's pack was removed on
+2026-09-16 and C++'s on 2026-09-25, and the rows stay because the survey is what
+a later pack in either language starts from. TypeScript's row is a binding again:
+the pack returned at `237f969`.
 
 A library is not why a pack does or does not get built. Ruby was dropped and
 restored, and `json_schemer` was solid throughout: 76,948,643 total downloads,
@@ -52,9 +53,9 @@ C++ has two maintained 2020-12 implementations and both are heavy: a program
 that compiles one schema and validates one document carries 735,281 bytes of
 jsoncons symbols, with drafts 4, 6, 7 and 2019-09 instantiated whether or not
 anything reaches them, and 1,649,630 bytes of sourcemeta/blaze, which supports
-2020-12 alone and is larger anyway. `which-libraries-the-cpp-pack-binds` carries that measurement
-beside the codec choices, because the weight lands on every consumer that links
-the pack.
+2020-12 alone and is larger anyway. That weight would land on every consumer that
+linked the pack, and it is part of why a C++ pack came out again:
+`a-cpp-pack-was-built-and-removed`.
 
 Ruby: `json_schemer`'s summary reads *"JSON Schema validator. Supports drafts 4,
 6, 7, 2019-09, 2020-12, OpenAPI 3.0, and OpenAPI 3.1."* Versions run to 2.5.0.

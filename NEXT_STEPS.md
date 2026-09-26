@@ -101,24 +101,16 @@ than returning a number that is quietly wrong. Whether it can also carry the
 exact value is the harder half, and needs a schema transform teaching ajv a
 custom type, held to JSON Schema's own test suite.
 
-### What the C++ pack met that the contract does not answer
+### The file mode three packs agree on is written in no requirement
 
-The skeleton landed at `e16a406` and three of these are task 30's to settle in
-code. The first is the contract's.
+Go, Python and Rust all set 0644 explicitly on a written file. FR-6.3 states the
+atomicity and nothing else, so three packs agree on something no row says, and the
+agreement is an accident waiting to be broken by a fourth.
 
-- **The file mode is agreed and unwritten.** Go, Python and Rust all set 0644
-  explicitly, and the C++ writer now does too, because `mkstemp` gives 0600 and
-  a rename carries it. FR-6.3 states the atomicity and nothing else, so four
-  packs agree on something no row says. Either the row says it or the agreement
-  is an accident waiting to be broken by a fifth pack.
-- **`std::bad_alloc` escapes the C++ family**, against FR-2.11's "nothing
-  escapes". Reporting an allocation failure means building a message, which
-  allocates. The pack says so in `error.hpp` rather than pretending otherwise.
-- **How a seam is spelled in C++** is not fixed by FR-2.5a, which settles the
-  split and the direction. The pack uses an abstract base; a concept would move
-  the substitution to compile time and change what the two calls look like.
-- **What "bytes" is** has no answer in the contract. The C++ pack uses
-  `std::string`.
+A C++ pack found this the hard way and had to decide it for itself, because
+`mkstemp` gives 0600 and a rename carries it. That pack is gone
+(`a-cpp-pack-was-built-and-removed`) and the gap it exposed is not: either the row
+says the mode or the next pack guesses too.
 
 ### The TypeScript pack is not held to what the others are
 
@@ -137,23 +129,14 @@ level. Each is a small piece of work with a measurement attached:
 - **It is not in the cross-pack round-trip check.** A driver at
   `testdata/parity/typescript/` and a table entry is the whole of it.
 
-### The C++ pack cannot join the round-trip check until it has a codec
-
-`bin/test-cross-pack-parity.py` proves FR-5.5 for Go, Python and Rust, 18 of 18
-pairs. C++ has the float spelling and the local file pair and no codec, so it
-has nothing to encode with. It is deliberately not stubbed: a stub reporting
-agreement would be the only thing in that check able to lie. Task
-`library/cpp/30` is what closes it.
-
 ### Smaller items
 
 A cold read of the prose sweep, which by its own design cannot be the writer.
 
 The cross-pack round-trip check is not a gate task. It passes and nothing runs
-it automatically. The stanza is written in
-`clank/tasks/wrench/library/cpp/`'s sibling notes; it costs about 25 seconds
-warm and builds a Go binary and a Rust crate cold, and that cost belongs in the decision before
-it joins the default set.
+it automatically. It costs about 25 seconds warm and builds a Go binary and a
+Rust crate cold, and that cost belongs in the decision before it joins the
+default set.
 
 Two claims were measured false and corrected where they stood.
 `docs/SPEC.md` said `-0` in JSON reads as `-0.0` in Rust and `0` in the other

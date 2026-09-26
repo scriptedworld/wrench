@@ -22,7 +22,13 @@ language would be nice to support.
 | Go | `bolt.go`, the previous Go implementation | Built |
 | Python | toolbox's adapters and checkers, and skid | Built |
 | Rust | bolt, which is now a Rust implementation | Built |
-| C++ | infobot's C++ port | Planned, clank `tasks/wrench/library/cpp/` |
+| TypeScript | nothing yet | Built, and level with no other pack |
+
+A C++ pack was built for infobot's C++ port and removed on 2026-09-25, on cost
+rather than on demand: it reached the contract at roughly 3,200 lines.
+`a-cpp-pack-was-built-and-removed` carries the figures. Demand was the one test
+it passed, which is worth noticing about this rule: a consumer wanting a pack does
+not make the pack worth its size.
 
 Ruby and TypeScript packs were written and removed on 2026-09-16. Both were
 built on the relaxed rule below, before anything in the estate was written in
