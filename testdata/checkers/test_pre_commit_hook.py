@@ -62,10 +62,27 @@ unregistered pragma there the only thing the hook can be refusing.
     bin/suppression-register.py    # pylint: disable=duplicate-code
 
 The checker scans everything in the tree it is pointed at, and the tree carries
-toolbox's two checkers so the hook can run them. One of them acquired that mark
-on 2026-09-04, when toolbox registered the duplication between its own scripts.
+toolbox's checkers so the hook can run them. That one acquired its mark on
+2026-09-04, when toolbox registered the duplication between its own scripts.
 Without this row the probe fails on a pragma that is not the probe's, and every
 test here refuses for the wrong reason.
+"""
+
+# The wording checker's own pragmas, added only when that file is copied in.
+#
+# The register is counted and not merely matched: it reported "the source carries
+# 4, the register says 1" until every occurrence had a row. So this couples the
+# probe to what toolbox's file carries, which is the price of running the real
+# checker instead of a stub. A stub would not have caught the hook refusing on a
+# missing dependency, which is the defect these tests found, so the coupling is
+# the cheaper side of the trade. When toolbox adds a pragma here, this list is
+# what says so.
+WORDING_ROWS = """
+    bin/voice-tells.py    # nosec B404
+    bin/voice-tells.py    # nosec B603
+    bin/voice-tells.py    # nosec B603
+    bin/voice-tells.py    # nosec B603
+    bin/voice-tells.py    # nosec B603
 """
 
 # The checker shells out to this, which is a symlink into toolbox. Copied
@@ -77,6 +94,20 @@ test here refuses for the wrong reason.
 # and both looked like the hook working. The clean-source test is what caught
 # it, which is the whole argument for a control.
 SCANNER = REPO / "bin" / "suppression-register.py"
+
+# The hook's second check, also a symlink into toolbox, copied resolved for the
+# reason above.
+#
+# The clean-source control caught its absence the same way it caught the
+# scanner's: adding this check to the hook made every commit in the probe refuse
+# because the file was missing, which is the failure the control exists for. A
+# fresh clone of wrench is in that state until link-toolbox.py runs, so the hook
+# refusing rather than skipping is deliberate and is pinned below.
+WORDING = REPO / "bin" / "voice-tells.py"
+
+# A comment carrying two of the tells FR-9 names, so the wording half of the hook
+# has something to refuse that the suppression half does not care about.
+WORDY_SOURCE = "package probe\n\n// It is worth noting that this hedges.\nfunc Thing() int { return 1 }\n"
 
 CLEAN_SOURCE = "package probe\n\nfunc Thing() int { return 1 }\n"
 PRAGMA_SOURCE = "package probe\n\nfunc Thing() int { return 1 } //nolint:all\n"
@@ -100,7 +131,7 @@ def git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def repository(tmp_path: Path, *, source: str, install_hook: bool) -> Path:
+def repository(tmp_path: Path, *, source: str, install_hook: bool, wording: bool = True) -> Path:
     """A throwaway repository carrying wrench's checker, register and hook.
 
     `HOME` is redirected at it, so the machine's own `core.hooksPath` and global
@@ -112,7 +143,10 @@ def repository(tmp_path: Path, *, source: str, install_hook: bool) -> Path:
 
     shutil.copy(CHECKER, root / "bin" / CHECKER.name)
     shutil.copy(SCANNER, root / "bin" / SCANNER.name)
-    (root / "SUPPRESSIONS").write_text(PROBE_REGISTER)
+    if wording:
+        shutil.copy(WORDING, root / "bin" / WORDING.name)
+    register = PROBE_REGISTER + WORDING_ROWS if wording else PROBE_REGISTER
+    (root / "SUPPRESSIONS").write_text(register)
     (root / "probe.go").write_text(source)
 
     git(root, "init", "-q", "-b", "main")
@@ -177,3 +211,33 @@ def test_the_refusal_names_what_to_do_and_refuses_the_way_round_it(tmp_path):
 
     assert "SUPPRESSIONS" in output, "the refusal does not say where to register it"
     assert "--no-verify" in output, "the refusal does not address the way round it"
+
+
+def test_the_hook_refuses_wording_the_standard_names(tmp_path):
+    """The hook's second check. A message is only readable by the gate once it is
+    history, where the fix is a rewrite; a staged file is still free to change."""
+    root = repository(tmp_path, source=WORDY_SOURCE, install_hook=True)
+
+    done = commit(root)
+
+    assert done.returncode != 0, done.stdout + done.stderr
+    assert not head_exists(root), "the commit landed despite the wording"
+    output = done.stdout + done.stderr
+    assert "worth-phrase" in output, "the refusal does not name the rule it broke"
+    assert ".voice-baseline.json" in output, "the refusal does not say what to do"
+
+
+def test_the_hook_refuses_when_the_wording_checker_is_absent(tmp_path):
+    """Absence is refused rather than skipped, and it says which file and how to
+    get it. `bin/voice-tells.py` is a link into toolbox and is ignored by git, so a
+    fresh clone has no wording check until link-toolbox.py runs. Skipping quietly
+    there is how a check becomes decorative."""
+    root = repository(tmp_path, source=CLEAN_SOURCE, install_hook=True, wording=False)
+
+    done = commit(root)
+
+    assert done.returncode != 0, done.stdout + done.stderr
+    assert not head_exists(root)
+    output = done.stdout + done.stderr
+    assert "voice-tells.py" in output, "the refusal does not name the missing file"
+    assert "link-toolbox" in output, "the refusal does not say how to get it"
