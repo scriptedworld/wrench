@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://probe.invalid/type-is-a-number.schema.json",
+  "type": 5
+}

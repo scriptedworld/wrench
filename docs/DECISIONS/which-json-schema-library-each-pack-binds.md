@@ -124,19 +124,19 @@ waits for a consumer; this adds that it also waits for a library.
 
 ## The gate's validators are not bindings
 
-`bolt.wrench-quality.yaml` runs `ajv` over `schemas/*.schema.json`. That is a
-checker of wrench's own schema files, not part of any pack: nothing imports it,
-nothing shells to it at run time, and it never sees a document a consumer wrote.
+`bolt.wrench-quality.yaml` asks every pack's binding and `@hyperjump/json-schema`
+whether each file in `schemas/` is valid 2020-12. hyperjump is a checker of
+wrench's own schema files, not part of any pack: nothing imports it, nothing
+shells to it at run time, and it never sees a document a consumer wrote.
 
 **A pack and the gate's independent validator may never bind the same library**,
 and whoever adds the fifth pack checks that again. The criterion is the
 implementation and not the runtime, so two implementations in one language are
 as independent of each other as two in different ones.
 
-The TypeScript pack binds `ajv`, and `ajv` is the only validator the gate asks, so
-the gate has no independent implementation until a second one is added. That is
-the rule above broken, not a cost the rule excuses.
-`the-gate-asks-every-validator-and-requires-agreement` has the shape the check
-takes: every validator wrench binds is asked and must agree, plus at least one
-implementation no pack binds, so unanimity cannot quietly become unanimity among
-wrench's own bindings.
+`ajv` was that validator until the TypeScript pack bound it, and for that span
+the gate asked one of wrench's own bindings and nothing independent. hyperjump
+replaced it. `the-gate-asks-every-validator-and-requires-agreement` has the shape
+the check takes: every validator wrench binds is asked and must agree, plus at
+least one implementation no pack binds, so unanimity cannot quietly become
+unanimity among wrench's own bindings.

@@ -1,0 +1,13 @@
+[package]
+name = "wrench-schema-validity-driver"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Asks the Rust pack whether each file is a valid schema."
+license = "Apache-2.0"
+
+[dependencies]
+wrench = { path = "../../../rust" }
+
+# Its own workspace, so building it never touches the pack's.
+[workspace]

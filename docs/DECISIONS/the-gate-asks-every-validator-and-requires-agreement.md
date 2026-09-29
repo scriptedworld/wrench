@@ -21,10 +21,10 @@ expects and nothing has to move.
 
 ## Why unanimity is stronger than one outsider
 
-The existing check runs ajv with `strict: false`, deliberately, because wrench's
-schemas use union types and ajv's strict mode is a style opinion, not a
-validity check. So today it contributes exactly one implementation's reading of
-the specification and nothing more. Several independent implementations agreeing
+The check this replaced ran ajv with `strict: false`, deliberately, because
+wrench's schemas use union types and ajv's strict mode is a style opinion, not a
+validity check. So it contributed exactly one implementation's reading of the
+specification and nothing more. Several independent implementations agreeing
 is more than that.
 
 It also tests something the old shape did not: that every pack can actually
@@ -40,12 +40,18 @@ implementation no pack binds means N-of-N can never quietly become N-of-wrench.
 Whoever adds the fifth pack checks this again: a pack and the gate's independent
 validator may never bind the same library.
 
-## What is not settled
+## How it runs
 
-Whether each pack can validate a schema against the 2020-12 meta-schema without
-reaching the network, which is what "is this a valid schema" means. Every
-binding embeds a meta-schema, and none of them has been asked this question
-here.
+`bin/test-schema-validity.py`, gate task `schemas-valid-to-every-validator`. Five
+readers: the Go, Python, Rust and TypeScript packs' `compile_schema`, and
+`@hyperjump/json-schema` 1.17.8, which no pack binds and which replaces `ajv` as
+the outsider now that the TypeScript pack binds `ajv`.
 
-The unanimity check is unwritten. The decision is what shape it takes; the task
-is `schemas/50`.
+Every one validates against the 2020-12 meta-schema it bundles, with no network.
+Measured: the four packs answered correctly inside a sandbox whose proxy reports
+any fetch to an unlisted host, and none was reported; hyperjump runs under deno
+with network permission withheld, so it cannot fetch.
+
+Each run also hands every reader two schemas that are not valid 2020-12, a
+numeric `type` and a string `required`. A reader must refuse both, so one that
+stopped checking fails the gate instead of reading as agreement.

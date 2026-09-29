@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://probe.invalid/required-is-a-string.schema.json",
+  "type": "object",
+  "required": "name"
+}

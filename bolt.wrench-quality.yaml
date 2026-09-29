@@ -94,39 +94,6 @@ tasks:
     command: jq -e 'has("$schema") and has("$id")' {each_path} > /dev/null
     matching: ["schemas/*.schema.json"]
 
-  - name: schema-valid-by-an-independent-implementation
-    description: the shipped schemas are valid 2020-12 according to something that is not wrench
-    # The validator here must not be wrench. The packs compiling their own
-    # schemas cannot catch every binding misreading the specification the same
-    # way.
-    #
-    # ajv, in JavaScript. A pack and the gate's independent validator may never
-    # bind the same library, and the TypeScript pack now binds ajv, so this task
-    # asks one of wrench's own bindings and nothing independent. Go's
-    # santhosh-tekuri, Python's jsonschema and Rust's jsonschema crate are
-    # wrench's too.
-    #
-    # The intended check asks every validator wrench binds, requires them to
-    # agree, and adds at least one implementation no pack binds, so unanimity
-    # cannot quietly become unanimity among wrench's own bindings. Only ajv is
-    # asked so far; an implementation no pack binds is the missing half.
-    # The argument is in
-    # docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md.
-    #
-    # Run through deno, which is installed and declared, so this needs no global
-    # npm install and no package.json. deno caches the package, so only a cold
-    # cache reaches the network.
-    #
-    # Not `jq` or `yq`: both are processors, not validators, and
-    # `jq -n 'builtins | map(select(test("schema")))'` returns [].
-    #
-    # bin/check-schemas.ts and not ajv-cli. The library is actively maintained,
-    # at 377 million downloads a week and released 2026-04-24. Its CLI is not:
-    # ajv-cli 5.0.0 was last released 2023-04-28. Fifteen lines here beat a
-    # three-year-stale wrapper, and reading schemas/ as a directory means a new
-    # schema is checked without editing anything.
-    command: deno run --allow-read --allow-net bin/check-schemas.ts
-
   # ---- no pack tasks live here ----------------------------------------------
   #
   # A pack's own tooling runs at that pack's base, through its own Justfile, and
@@ -268,7 +235,7 @@ tasks:
   # else (they drive the checkers as subprocesses), so the pack's environment
   # would be the wrong one and the root has no project of its own.
   - name: checker-tests
-    description: wrench's own parity checker does what it claims
+    description: wrench's own checkers do what they claim
     command: uv run --no-project --with pytest python -m pytest testdata/checkers -q
 
   # ---- the claim this project exists for ------------------------------------
@@ -288,3 +255,14 @@ tasks:
   - name: cross-pack-parity
     description: every pack's output decodes to the same value in every other pack
     command: ./bin/test-cross-pack-parity.py
+
+  # Every validator a pack binds, and @hyperjump/json-schema, which none binds,
+  # must agree that each shipped schema is valid 2020-12 and must refuse two
+  # controls that are not. Unanimity tests that every pack can consume what
+  # wrench ships; the outsider keeps it from becoming agreement among wrench's
+  # own bindings; the controls catch a reader that stopped checking.
+  # docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md is the
+  # argument. It builds a Go and a Rust driver, so it sits with the slow tasks.
+  - name: schemas-valid-to-every-validator
+    description: every validator wrench binds, and one it does not, agree the shipped schemas are valid
+    command: ./bin/test-schema-validity.py
