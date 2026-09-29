@@ -185,9 +185,9 @@ def test_a_retired_filename_retires_its_rows_with_no_heading(tmp_path):
     assert result.returncode == 0
 
 
-def test_the_colon_form_of_a_mark_is_still_counted(tmp_path):
-    """A mark written the old way, with a colon, is read as toolbox's
-    traceability checker reads it, so a straggler is counted and not dropped."""
+def test_the_colon_form_of_a_mark_is_not_counted(tmp_path):
+    """A mark written the old way, with a colon, is not a mark, as toolbox's
+    traceability checker refuses it, so the two checkers agree."""
     (tmp_path / "alpha_test.go").write_text(GO_SUITE)
     (tmp_path / "test_beta.py").write_text(
         PYTHON_SUITE + "# COVERS" + ": FR-9.2 | positive\n"
@@ -197,8 +197,8 @@ def test_the_colon_form_of_a_mark_is_still_counted(tmp_path):
 
     result = run(tmp_path, requirements)
 
-    assert "FR-9.2" not in result.stdout
-    assert result.returncode == 0
+    assert "FR-9.2 | positive is in go but not in python" in result.stdout
+    assert result.returncode == 1
 
 
 def test_prose_about_marks_is_not_a_mark(tmp_path):

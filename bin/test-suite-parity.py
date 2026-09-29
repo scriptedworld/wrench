@@ -30,16 +30,16 @@ from pathlib import Path
 # the comment syntax, so a new language needs no change here.
 #
 # The mark has no colon, because a colon after COVERS makes the comment parse as
-# a Python annotation and ruff's ERA001 reads it as commented-out code. That form is
-# still read, as toolbox's traceability checker reads it, so a mark written the
-# old way is counted and not silently dropped. The ids must start `FR-`, which is
+# a Python annotation and ruff's ERA001 reads it as commented-out code. A mark
+# with a colon is not read here, as toolbox's traceability checker refuses it, so
+# the two checkers agree on what a mark is. The ids must start `FR-`, which is
 # what keeps prose mentioning "COVERS marks" out of the count.
 #
 # The kind is part of the comparison. Two suites both citing FR-3.1 have both
 # touched it, which does not mean they test the same thing: one asserting the
 # positive path and the other the negative one is a divergence that an id-only
 # comparison calls level. In wrench an id-only comparison hid three of them.
-COVERS = re.compile(r"COVERS:?[ \t]+(FR-[^|\n]+)\|[ \t]*(\w+)")
+COVERS = re.compile(r"COVERS[ \t]+(FR-[^|\n]+)\|[ \t]*(\w+)")
 
 # `| FR-6.1 | ... | [A] |` and the optional scope naming the suites expected to
 # discharge it, inside the SAME bracket: `| FR-6.1 | ... | [A python] |`.
