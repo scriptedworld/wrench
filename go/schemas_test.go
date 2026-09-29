@@ -707,6 +707,40 @@ func TestATaskMayAllowAnEmptySelection(t *testing.T) {
 }
 
 // COVERS: FR-3.1, FR-3.4 | edge
+func TestFilteringNeedsASelectionToFilter(t *testing.T) {
+	t.Parallel()
+
+	// matching and excluding say which paths a selection takes, so a command
+	// naming neither path variable has no selection for them to shape. bolt's
+	// FR-3.4b calls that a jig error and puts the refusal in this schema.
+	accepted := map[string]string{
+		"matching one per path": "tasks:\n  - name: check\n    command: jq . {each_path}\n" +
+			"    matching: [\"*.json\"]\n",
+		"excluding over the whole set": "tasks:\n  - name: check\n    command: jq . {all_paths}\n" +
+			"    excluding: [\"vendor/**\"]\n",
+		"both, one per path": "tasks:\n  - name: check\n    command: jq . {each_path}\n" +
+			"    matching: [\"*.json\"]\n    excluding: [\"vendor/**\"]\n",
+	}
+	for what, document := range accepted {
+		if err := loadDocument("bolt.q.yaml", wrench.JigSchema(), document); err != nil {
+			t.Errorf("%s was refused: %v", what, err)
+		}
+	}
+
+	refused := map[string]string{
+		"matching with no selection": "tasks:\n  - name: whole\n" +
+			"    command: sh -c 'exit 0'\n    matching: [\"*.txt\"]\n",
+		"excluding with no selection": "tasks:\n  - name: whole\n" +
+			"    command: go test ./...\n    excluding: [\"vendor/**\"]\n",
+	}
+	for what, document := range refused {
+		if err := loadDocument("bolt.q.yaml", wrench.JigSchema(), document); err == nil {
+			t.Errorf("%s was accepted", what)
+		}
+	}
+}
+
+// COVERS: FR-3.1, FR-3.4 | edge
 func TestATimeLimitIsADecimalWithAUnit(t *testing.T) {
 	t.Parallel()
 

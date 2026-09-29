@@ -843,6 +843,49 @@ fn a_task_may_allow_an_empty_selection() {
 
 // COVERS: FR-3.1, FR-3.4 | edge
 #[test]
+fn filtering_needs_a_selection_to_filter() {
+    // matching and excluding say which paths a selection takes, so a command
+    // naming neither path variable has no selection for them to shape. bolt's
+    // FR-3.4b calls that a jig error and puts the refusal in this schema.
+    for (what, document) in [
+        ("matching one per path", "tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: [\"*.json\"]\n"),
+        ("excluding over the whole set", "tasks:\n  - name: check\n    command: jq . {all_paths}\n    excluding: [\"vendor/**\"]\n"),
+        ("both, one per path", "tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: [\"*.json\"]\n    excluding: [\"vendor/**\"]\n"),
+    ] {
+        load_formatted_file(
+            "bolt.q.yaml",
+            &wrench::JIG_SCHEMA,
+            &YAML,
+            &Stub::new(document.as_bytes()),
+        )
+        .unwrap_or_else(|e| panic!("{what} was refused: {e}"));
+    }
+
+    for (what, document) in [
+        (
+            "matching with no selection",
+            "tasks:\n  - name: whole\n    command: sh -c 'exit 0'\n    matching: [\"*.txt\"]\n",
+        ),
+        (
+            "excluding with no selection",
+            "tasks:\n  - name: whole\n    command: go test ./...\n    excluding: [\"vendor/**\"]\n",
+        ),
+    ] {
+        assert!(
+            load_formatted_file(
+                "bolt.q.yaml",
+                &wrench::JIG_SCHEMA,
+                &YAML,
+                &Stub::new(document.as_bytes())
+            )
+            .is_err(),
+            "{what} was accepted"
+        );
+    }
+}
+
+// COVERS: FR-3.1, FR-3.4 | edge
+#[test]
 fn a_time_limit_is_a_decimal_with_a_unit() {
     // The grammar is deliberately narrower than a float parse, so the runner
     // and this schema stay expressible as the same regex. A jig author gets the

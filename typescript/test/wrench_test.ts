@@ -612,6 +612,49 @@ void test("a schema checks shape and not meaning", () => {
   );
 });
 
+// COVERS: FR-3.1, FR-3.4 | edge
+void test("filtering needs a selection to filter", () => {
+  // matching and excluding say which paths a selection takes, so a command
+  // naming neither path variable has no selection for them to shape. bolt's
+  // FR-3.4b calls that a jig error and puts the refusal in this schema.
+  const accepted: Record<string, string> = {
+    "matching one per path":
+      'tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: ["*.json"]\n',
+    "excluding over the whole set":
+      'tasks:\n  - name: check\n    command: jq . {all_paths}\n    excluding: ["vendor/**"]\n',
+    "both, one per path":
+      'tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: ["*.json"]\n    excluding: ["vendor/**"]\n',
+  };
+  for (const document of Object.values(accepted)) {
+    wrench.loadFormattedFile(
+      "bolt.q.yaml",
+      wrench.schemas.JIG,
+      wrench.YAML,
+      new Reading(document),
+    );
+  }
+  const refused: Record<string, string> = {
+    "matching with no selection":
+      "tasks:\n  - name: whole\n    command: sh -c 'exit 0'\n    matching: [\"*.txt\"]\n",
+    "excluding with no selection":
+      'tasks:\n  - name: whole\n    command: go test ./...\n    excluding: ["vendor/**"]\n',
+  };
+  for (const [what, document] of Object.entries(refused)) {
+    assertThrows(
+      () =>
+        wrench.loadFormattedFile(
+          "bolt.q.yaml",
+          wrench.schemas.JIG,
+          wrench.YAML,
+          new Reading(document),
+        ),
+      wrench.ValidationError,
+      undefined,
+      `${what} was not refused as a validation failure`,
+    );
+  }
+});
+
 // COVERS: FR-3.2 | negative
 void test("a definitions file takes one level of scalars", () => {
   wrench.loadFormattedFile(

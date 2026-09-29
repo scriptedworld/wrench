@@ -235,8 +235,16 @@ var shippedSchemas = []shippedSchema{
 			"          \"description\": \"A shell line. How it runs is read off it: {each_path} means one execution per m" +
 			"atched path, {all_paths} one execution with the whole selection. Naming both is an error.\"\n" +
 			"        },\n" +
-			"        \"matching\": { \"$ref\": \"#/$defs/pathList\" },\n" +
-			"        \"excluding\": { \"$ref\": \"#/$defs/pathList\" },\n" +
+			"        \"matching\": {\n" +
+			"          \"$ref\": \"#/$defs/pathList\",\n" +
+			"          \"description\": \"Which paths the selection takes. Only meaningful where a selection exists, so a" +
+			" command naming neither {each_path} nor {all_paths} may not declare it.\"\n" +
+			"        },\n" +
+			"        \"excluding\": {\n" +
+			"          \"$ref\": \"#/$defs/pathList\",\n" +
+			"          \"description\": \"Which paths the selection leaves out. Only meaningful where a selection exists," +
+			" so a command naming neither {each_path} nor {all_paths} may not declare it.\"\n" +
+			"        },\n" +
 			"        \"optional\": {\n" +
 			"          \"type\": \"boolean\",\n" +
 			"          \"default\": false,\n" +
@@ -309,20 +317,38 @@ var shippedSchemas = []shippedSchema{
 			"            \"definitions\": false,\n" +
 			"            \"needs-repository-root\": false\n" +
 			"          },\n" +
-			"          \"if\": {\n" +
-			"            \"required\": [\"optional\"],\n" +
-			"            \"properties\": { \"optional\": { \"const\": true } }\n" +
-			"          },\n" +
-			"          \"then\": {\n" +
-			"            \"properties\": {\n" +
-			"              \"command\": {\n" +
-			"                \"pattern\": \"\\\\{each_path\\\\}|\\\\{all_paths\\\\}\",\n" +
-			"                \"$comment\": \"optional says an empty SELECTION is acceptable, so a command with no selecti" +
-			"on to be empty cannot declare it. Refused here rather than left to the runner, because it is a property of t" +
-			"he jig as written.\"\n" +
+			"          \"$comment\": \"Each of the three says something about a selection, so a command naming neither {e" +
+			"ach_path} nor {all_paths} has no selection for it to say anything about. Refused here and not left to the ru" +
+			"nner, because it is a property of the jig as written.\",\n" +
+			"          \"allOf\": [\n" +
+			"            {\n" +
+			"              \"if\": {\n" +
+			"                \"required\": [\"optional\"],\n" +
+			"                \"properties\": { \"optional\": { \"const\": true } }\n" +
+			"              },\n" +
+			"              \"then\": {\n" +
+			"                \"properties\": {\n" +
+			"                  \"command\": { \"pattern\": \"\\\\{each_path\\\\}|\\\\{all_paths\\\\}\" }\n" +
+			"                }\n" +
+			"              }\n" +
+			"            },\n" +
+			"            {\n" +
+			"              \"if\": { \"required\": [\"matching\"] },\n" +
+			"              \"then\": {\n" +
+			"                \"properties\": {\n" +
+			"                  \"command\": { \"pattern\": \"\\\\{each_path\\\\}|\\\\{all_paths\\\\}\" }\n" +
+			"                }\n" +
+			"              }\n" +
+			"            },\n" +
+			"            {\n" +
+			"              \"if\": { \"required\": [\"excluding\"] },\n" +
+			"              \"then\": {\n" +
+			"                \"properties\": {\n" +
+			"                  \"command\": { \"pattern\": \"\\\\{each_path\\\\}|\\\\{all_paths\\\\}\" }\n" +
+			"                }\n" +
 			"              }\n" +
 			"            }\n" +
-			"          }\n" +
+			"          ]\n" +
 			"        },\n" +
 			"        {\n" +
 			"          \"title\": \"a jig task\",\n" +

@@ -977,6 +977,34 @@ def test_a_task_may_allow_an_empty_selection():
 
 
 # COVERS: FR-3.1, FR-3.4 | edge
+def test_filtering_needs_a_selection_to_filter():
+    """`matching` and `excluding` say which paths a selection takes, so a
+    command naming neither path variable has no selection for them to shape.
+    bolt's FR-3.4b calls that a jig error and puts the refusal in this schema."""
+    accepted = {
+        "matching one per path": b'tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: ["*.json"]\n',
+        "excluding over the whole set": b'tasks:\n  - name: check\n    command: jq . {all_paths}\n    excluding: ["vendor/**"]\n',
+        "both, one per path": b'tasks:\n  - name: check\n    command: jq . {each_path}\n    matching: ["*.json"]\n    excluding: ["vendor/**"]\n',
+    }
+    for what, document in accepted.items():
+        try:
+            wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document))
+        except wrench.ValidationError as problem:  # pragma: no cover - failure path
+            pytest.fail(f"{what} was refused: {problem}")
+
+    refused = {
+        "matching with no selection": b"tasks:\n  - name: whole\n    command: sh -c 'exit 0'\n    matching: [\"*.txt\"]\n",
+        "excluding with no selection": b"tasks:\n  - name: whole\n    command: go test ./...\n    excluding: [\"vendor/**\"]\n",
+    }
+    for what, document in refused.items():
+        try:
+            wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(document))
+        except wrench.ValidationError:
+            continue
+        pytest.fail(f"{what} was accepted")
+
+
+# COVERS: FR-3.1, FR-3.4 | edge
 def test_a_time_limit_is_a_decimal_with_a_unit():
     """The grammar is deliberately narrower than a float parse, so the runner
     and this schema stay expressible as the same regex. A jig author gets the
