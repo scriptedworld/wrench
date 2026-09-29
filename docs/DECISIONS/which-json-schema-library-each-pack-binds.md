@@ -133,7 +133,9 @@ and whoever adds the fifth pack checks that again. The criterion is the
 implementation and not the runtime, so two implementations in one language are
 as independent of each other as two in different ones.
 
-That is why TypeScript binding `ajv` costs nothing.
+The TypeScript pack binds `ajv`, and `ajv` is the only validator the gate asks, so
+the gate has no independent implementation until a second one is added. That is
+the rule above broken, not a cost the rule excuses.
 `the-gate-asks-every-validator-and-requires-agreement` has the shape the check
 takes: every validator wrench binds is asked and must agree, plus at least one
 implementation no pack binds, so unanimity cannot quietly become unanimity among

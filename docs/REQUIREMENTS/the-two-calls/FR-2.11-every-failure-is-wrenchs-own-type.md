@@ -50,7 +50,7 @@ and Rust `source()`. A wrap that discarded it would be worse than the leak it
 replaced, because the leak at least says what went wrong.
 
 Every pack exposes the family, so "was this wrench's fault" is one check and not
-six: Python's `WrenchError` base, Rust's `Error` enum, Go's `Error` interface.
+six: Python's `Error` base class, Rust's `Error` enum, Go's `Error` interface.
 Go had neither a base type nor a step before this row and needed both, which is
 what makes this a contract row and not three implementations that happen to
 agree.

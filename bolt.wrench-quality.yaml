@@ -66,6 +66,10 @@ tasks:
 
   # Cheapest and most specific to wrench: the schemas are the product, so they
   # are checked before anything that merely uses them.
+  #
+  # None of the three `matching:` tasks carries `optional`. Each matching
+  # nothing means the schemas or the JSON moved, which is the failure an empty
+  # selection is refused to catch.
 
   - name: json-parses
     description: every JSON file is JSON
@@ -96,14 +100,16 @@ tasks:
     # schemas cannot catch every binding misreading the specification the same
     # way.
     #
-    # ajv, in JavaScript, which no pack binds. A pack and the gate's independent
-    # validator may never bind the same library: Go's santhosh-tekuri, Python's
-    # jsonschema and Rust's jsonschema crate are all already wrench's.
+    # ajv, in JavaScript. A pack and the gate's independent validator may never
+    # bind the same library, and the TypeScript pack now binds ajv, so this task
+    # asks one of wrench's own bindings and nothing independent. Go's
+    # santhosh-tekuri, Python's jsonschema and Rust's jsonschema crate are
+    # wrench's too.
     #
     # The intended check asks every validator wrench binds, requires them to
     # agree, and adds at least one implementation no pack binds, so unanimity
     # cannot quietly become unanimity among wrench's own bindings. Only ajv is
-    # asked so far; a second independent implementation is the remaining work.
+    # asked so far; an implementation no pack binds is the missing half.
     # The argument is in
     # docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md.
     #

@@ -99,7 +99,7 @@ class Error(Exception):
 # value, and an `object()` has none because of its type.
 #
 # So wrench's six kinds are orthogonal to Python's value/type split, and a
-# consumer catches `WrenchError` or the kind it means. A consumer catching
+# consumer catches `Error` or the kind it means. A consumer catching
 # `ValueError` was relying on what one bound library happened to raise, never
 # on wrench's contract, and catches nothing now that every failure is wrapped.
 #

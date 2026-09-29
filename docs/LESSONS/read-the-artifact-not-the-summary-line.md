@@ -96,7 +96,7 @@ gate cannot decide the number looked fine.
 instance: a `repro.sh` whose build silently produced no binary, so it timed a
 program that did not exist and printed 0ms, which reads as a better result.
 
-## The fourth instance is this file being ignored by the person who wrote it
+## The fourth instance is my ignoring this file
 
 Hours after the paragraph above about controls landed at `97d1f83`, I was asked
 whether a filename could mark a requirement retired. I probed it with a file

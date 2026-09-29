@@ -6,7 +6,7 @@ import "fmt"
 // satisfies it, so a consumer can match the family instead of naming all seven
 // types.
 //
-// Python spells the same thing as a WrenchError base class and Rust as one enum;
+// Python spells the same thing as an Error base class and Rust as one enum;
 // Go has neither, so the interface is what gives all three packs the same
 // capability. Without it, "was this wrench's fault" needs seven errors.As calls.
 type Error interface {
