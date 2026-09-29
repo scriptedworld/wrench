@@ -63,7 +63,15 @@ something works; read this file for how the project is run.
 
 ## The gate
 
-    bolt wrench-quality .
+    just checks
+
+Three layers, in order: each pack's own jig at its own base (`go/`, `python/`,
+`rust/`, `typescript/`, each through its `Justfile`), then the common standard
+over the whole repository, then `bolt wrench-quality .`, the contract. The last
+is not the gate on its own: it runs no pack's formatter or linter, so a pack
+change can pass it and fail its pack's jig. Run the pack's jig too when
+changing a pack, `bolt <lang>-std-quality . --config-dir .. --definitions
+wrench` from inside it.
 
 Read `success` in `result.yaml`, never the exit status. bolt exits 0 whenever
 the run completed, whatever the tools concluded, and says so in its own usage.
