@@ -1,8 +1,9 @@
 """Schemas, and validating a decoded structure against one.
 
-The schemas are the files in this repository's `schemas/` directory, read from
-there rather than copied here. One copy is what stops a Go producer and a Python
-producer drifting apart while both believe they conform.
+The schemas are the files in this repository's `schemas/` directory, carried in
+`_shipped.py` as generated source and checked against that directory by the
+gate. One source is what stops a Go producer and a Python producer drifting apart
+while both believe they conform.
 
 Compiling is deferred until something validates against a schema, so importing
 wrench costs nothing and a broken schema surfaces as an error from the call that
@@ -173,8 +174,8 @@ class Schema:
 
 
 class _Shipped(Schema):
-    """One of the schemas that ships with the library, read from disk the first
-    time it is used.
+    """One of the schemas that ships with the library, compiled from its carried
+    copy the first time it is used.
 
     It is named by its `$id` alone, which is also how every other shipped schema
     references it. There is no filename here, so the two ways of naming one

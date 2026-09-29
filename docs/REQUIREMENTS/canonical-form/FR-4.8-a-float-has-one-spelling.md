@@ -7,7 +7,7 @@
 The rule carries no threshold, and the absence is part of the requirement, not
 an implementation note. Every alternative spelling needs a magnitude at which
 the form changes, which then has to be stated here as a number and implemented
-identically in nine places; "never" has nothing to get wrong.
+identically in every codec of every pack; "never" has nothing to get wrong.
 
 It is also the only spelling a consumer parsing with a naive numeric pattern
 reads correctly. `1e+06` matched against `[0-9.]+` yields `1`, which is how this
@@ -17,7 +17,7 @@ with no error anywhere.
 The cost is bounded and is accepted. The longest output is 326 characters, for a
 subnormal near the bottom of the range, and the largest finite double is 311.
 
-This is a property of the value, not of the format. YAML, JSON and TOML can all
-spell an exponent, and all three are forbidden from doing so here, because the
+This is a property of the value, not of the format. YAML and JSON can both spell
+an exponent, and both are forbidden from doing so here, because the
 contract exists to serve a consumer that reads a number out of one format and
 compares it against the same number from another.

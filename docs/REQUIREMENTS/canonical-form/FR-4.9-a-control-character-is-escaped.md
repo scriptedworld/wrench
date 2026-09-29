@@ -14,17 +14,12 @@ Escaping instead of refusing is what
 `docs/DECISIONS/parity-is-reached-by-widening-never-by-refusing.md` requires.
 Every value stays writable; nothing is limited to make the packs agree.
 
-The table belongs to the format, not to the library. YAML and TOML spell escapes
-differently and neither is wrong; what must not differ is two packs writing the
-same format two ways. YAML names fourteen points and uses `\xNN` elsewhere; TOML
-has no `\e`, `\v`, `\0` or `\x`, so anything without a name becomes `\uXXXX`.
+The table belongs to the format, not to the library. Formats spell escapes
+differently and none is wrong; what must not differ is two packs writing the
+same format two ways. YAML names fourteen points and uses `\xNN` elsewhere.
 
 U+0085, U+2028 and U+2029 are escaped in YAML even though nothing observable
 misbehaves today. YAML 1.1 makes all three line breaks and 1.2 does not, so
 which of them fold depends on the reader's version and not on the character. The
 three parsers reachable from here all preserve U+2028 and U+2029 and all fold
 U+0085, which is a property of those implementations and not of the format.
-
-C1 is left raw in TOML. TOML does not require escaping it and every parser round
-trips it, so escaping there would be a pack inventing a rule the format does not
-have.
