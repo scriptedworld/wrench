@@ -33,30 +33,6 @@ surface, which is the thing the shared version was for.
 
 Tag form is `go/vX.Y.Z`, because the module lives in a subdirectory.
 
-### A document names its own schema, cross-checked and not trusted
-
-This is the largest of them and it changes the error contract in three packs. A
-caller and a document disagreeing about what a file is fits none of the seven
-kinds: it is not `validate`, because the document may be perfectly valid against
-the schema it names, and it is not `schema`, which is a schema that will not
-compile. An eighth kind is the likely answer and it lands in every pack at once.
-
-Its other half is the harder question: what does a document that omits the key
-get? If the answer is silently fine, the check only ever fires on producers who
-opted in, which are the ones least likely to be wrong, and it reads as coverage
-while never running against anything that could fail. Unclaimed has to be
-distinguishable from checked and correct. Decide it while specifying; do not let
-it default.
-
-### The unanimity check
-
-The shape is settled and the check is unwritten: the gate asks every validator
-wrench binds and requires them to agree, plus at least one implementation no
-pack binds. `docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md`
-has why. Measure first whether each binding can validate against the 2020-12
-meta-schema without reaching the network, because the whole shape rests on it
-and none has been asked.
-
 ### Numbers agree on range and type, mechanism first
 
 The rules are settled and the agreement mechanism is not. FR-4.10 carries the

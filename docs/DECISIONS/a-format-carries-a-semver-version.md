@@ -93,40 +93,31 @@ Schema-per-major is also what the specification does to itself. JSON Schema
 ships `https://json-schema.org/draft/2020-12/schema` as a file per draft, not one
 file branching over all of them.
 
-## Should a document also name its schema?
+## A document does not name its own schema
 
-A third option: a top-level `schema` beside `version`, so the document says which
-schema to validate it against. It is a good idea, though not in the form it first
-suggests.
+Declined. A top-level `schema` beside `version`, holding the `$id` the document
+claims to conform to and cross-checked against the schema the caller passes, was
+specified and not built.
 
-A document must not choose its own validator. A document naming the schema it
-validates against can name one that makes it valid, and wrench's whole job is
-establishing that a file has the form its schema declares. Input selecting its
-own check is not a check.
+Its purpose was to make passing the wrong schema detectable, the hole FR-2.3
+states. That hole is already closed wherever it matters: a document of one
+shipped format fails validation against another. Checked by validating every
+canonical fixture against every shipped schema; each envelope, jig and manifest
+is accepted by its own schema and refused by the other two. Only the definitions
+schema, an open mapping of scalars, accepts flat documents of other kinds, and
+nothing passes it where an envelope, jig or manifest is expected.
 
-So the caller keeps naming the schema, and the field is cross-checked. FR-2.2
-stays exactly as it is: validation sits in the signature and nothing reads or
-writes without naming what the file must conform to. If the document *also* names
-one and the two disagree, that is an error.
+The case that asked for the field was an adapter writing the wrong kind of file.
+The ruling is that adapter conformance is the adapter's own tests' job: an
+adapter file that is not a valid Result Envelope is an invalid envelope, a
+`validate` failure, and no runtime check in wrench or bolt adds a separate
+verdict for it. So there is no `claim` error kind, FR-2.11 stays at seven, and
+the unclaimed-document count that would have shown the check running has
+nothing to count.
 
-That closes a hole FR-2.3 currently states as permanent:
-
-> The signature compels a schema, not the right one. Passing none is impossible;
-> passing the wrong one is not, and no part of the library detects that.
-
-A document carrying its own `$id` makes passing the wrong one detectable for every
-document that carries one. FR-2.3 would go from "no part of the library detects
-that" to "detected wherever the document says". That improves the contract; it
-is more than a convenience.
-
-It also makes `version` mostly redundant, and that is fine. Once an `$id` carries
-the major, `schema: .../v2/envelope.schema.json` says both what the format is and
-which major. `version` still carries minor and patch, which no file
-distinguishes, and a document may carry either or both.
-
-Not built. It changes what every producer writes and what wrench does with it,
-so it needs bolt's agreement, not wrench's decision alone.
-`NEXT_STEPS.md` carries it.
+A document must still never choose its own validator. Were the field proposed
+again, the caller would keep naming the schema and the field would only ever be
+cross-checked, since input selecting its own check is not a check.
 
 ## What is deliberately not done yet
 
