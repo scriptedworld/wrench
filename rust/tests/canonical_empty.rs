@@ -9,7 +9,7 @@
 use serde_json::json;
 use wrench::{Codec, JSON};
 
-// COVERS: FR-4.6 | edge
+// COVERS FR-4.6 | edge
 #[test]
 fn json_empty_containers_are_short() {
     let cases: [(&str, serde_json::Value, &str); 3] = [
@@ -23,7 +23,7 @@ fn json_empty_containers_are_short() {
     }
 }
 
-// COVERS: FR-4.6 | edge
+// COVERS FR-4.6 | edge
 #[test]
 fn json_nested_empty_containers_keep_the_short_spelling() {
     let encoded = JSON

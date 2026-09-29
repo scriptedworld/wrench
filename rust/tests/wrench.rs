@@ -96,7 +96,7 @@ fn anything() -> Box<dyn Schema> {
     .expect("a permissive schema compiles")
 }
 
-// COVERS: FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-5.5, FR-5.6 | property
+// COVERS FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-5.5, FR-5.6 | property
 #[test]
 fn canonical_form_matches_the_shared_fixtures() {
     for case in fixtures() {
@@ -157,7 +157,7 @@ fn shipped_by_id(id: &str) -> &'static dyn Schema {
     }
 }
 
-// COVERS: FR-4.5 | property
+// COVERS FR-4.5 | property
 #[test]
 fn canonical_form_is_a_fixed_point() {
     for case in fixtures() {
@@ -187,7 +187,7 @@ fn canonical_form_is_a_fixed_point() {
     }
 }
 
-// COVERS: FR-5.7 | positive
+// COVERS FR-5.7 | positive
 #[test]
 fn the_shipped_set_is_reachable_without_the_suffix() {
     // wrench::schemas::JIG rather than wrench::JIG_SCHEMA, the module carrying
@@ -233,7 +233,7 @@ fn the_shipped_set_is_reachable_without_the_suffix() {
     .expect("schemas::ENVELOPE did not validate a passing envelope");
 }
 
-// COVERS: FR-3.8 | positive
+// COVERS FR-3.8 | positive
 #[test]
 fn every_shipped_schema_has_an_instance_fixture() {
     let mut seen: Vec<String> = Vec::new();
@@ -251,7 +251,7 @@ fn every_shipped_schema_has_an_instance_fixture() {
     }
 }
 
-// COVERS: FR-2.1, FR-2.2 | positive
+// COVERS FR-2.1, FR-2.2 | positive
 #[test]
 fn load_returns_the_validated_structure() {
     let value = load_formatted_file(
@@ -264,7 +264,7 @@ fn load_returns_the_validated_structure() {
     assert_eq!(value, json!({"success": true}));
 }
 
-// COVERS: FR-2.5a | positive
+// COVERS FR-2.5a | positive
 #[test]
 fn the_reader_is_handed_the_path() {
     let reader = Stub::new(b"success: true\n");
@@ -280,7 +280,7 @@ fn the_reader_is_handed_the_path() {
     );
 }
 
-// COVERS: FR-2.6 | negative
+// COVERS FR-2.6 | negative
 #[test]
 fn a_failure_says_which_step_failed() {
     let read = load_formatted_file(
@@ -315,7 +315,7 @@ fn a_failure_says_which_step_failed() {
     assert_ne!(parse.step(), validate.step());
 }
 
-// COVERS: FR-2.4 | negative
+// COVERS FR-2.4 | negative
 #[test]
 fn save_refuses_a_structure_it_would_not_read_back() {
     let writer = Stub::new(b"");
@@ -334,7 +334,7 @@ fn save_refuses_a_structure_it_would_not_read_back() {
     );
 }
 
-// COVERS: FR-2.4, FR-4.3 | positive
+// COVERS FR-2.4, FR-4.3 | positive
 #[test]
 fn save_writes_canonical_form() {
     let writer = Stub::new(b"");
@@ -358,7 +358,7 @@ fn save_writes_canonical_form() {
     );
 }
 
-// COVERS: FR-3.1, FR-3.3, FR-3.6 | positive
+// COVERS FR-3.1, FR-3.3, FR-3.6 | positive
 #[test]
 fn a_jigs_definitions_block_is_held_to_the_shared_shape() {
     let flat = b"definitions:\n  requirements: REQUIREMENTS.md\n  line_length: 100\ntasks:\n  - name: check\n    command: \"true\"\n";
@@ -375,7 +375,7 @@ fn a_jigs_definitions_block_is_held_to_the_shared_shape() {
     .expect_err("a nested value is refused, so the reference resolved");
 }
 
-// COVERS: FR-3.10 | positive
+// COVERS FR-3.10 | positive
 #[test]
 fn a_consumer_schema_may_reference_a_shipped_one() {
     let schema = compile_schema(
@@ -393,7 +393,7 @@ fn a_consumer_schema_may_reference_a_shipped_one() {
         .expect_err("a nested value is refused, so the reference resolved");
 }
 
-// COVERS: FR-3.10 | negative
+// COVERS FR-3.10 | negative
 #[test]
 fn a_schema_may_reference_nothing_outside_the_shipped_set() {
     // jsonschema is declared without resolve-file and resolve-http, and the
@@ -416,7 +416,7 @@ fn a_schema_may_reference_nothing_outside_the_shipped_set() {
     }
 }
 
-// COVERS: FR-3.10 | edge
+// COVERS FR-3.10 | edge
 #[test]
 fn a_caller_cannot_redefine_a_shipped_schema() {
     for id in wrench::shipped_ids() {
@@ -431,7 +431,7 @@ fn a_caller_cannot_redefine_a_shipped_schema() {
     }
 }
 
-// COVERS: FR-2.9 | regression
+// COVERS FR-2.9 | regression
 #[test]
 fn a_timestamp_decodes_to_a_string_so_it_can_be_written_back() {
     let value = YAML
@@ -451,7 +451,7 @@ fn a_timestamp_decodes_to_a_string_so_it_can_be_written_back() {
     assert_eq!(encoded, again, "not a fixed point");
 }
 
-// COVERS: FR-1.2 | negative
+// COVERS FR-1.2 | negative
 #[test]
 fn a_mapping_key_that_is_not_a_string_is_refused() {
     // A YAML mapping may be keyed by anything. JSON Schema addresses string
@@ -477,7 +477,7 @@ fn a_mapping_key_that_is_not_a_string_is_refused() {
     );
 }
 
-// COVERS: FR-2.3 | negative
+// COVERS FR-2.3 | negative
 #[test]
 fn the_wrong_schema_is_not_detected() {
     // FR-2.3: the signature compels a schema and not the right one. An envelope
@@ -493,7 +493,7 @@ fn the_wrong_schema_is_not_detected() {
     assert_eq!(error.step(), "validate");
 }
 
-// COVERS: FR-3.4 | edge
+// COVERS FR-3.4 | edge
 #[test]
 fn a_schema_checks_shape_and_not_meaning() {
     let schema = anything();
@@ -569,7 +569,7 @@ fn manifest_with(variables: &str) -> String {
     )
 }
 
-// COVERS: FR-1.1, FR-3.2, FR-3.5 | positive
+// COVERS FR-1.1, FR-3.2, FR-3.5 | positive
 #[test]
 fn the_schemas_ship_as_files_beside_the_library() {
     // Present as files is what lets a YAML language server be pointed at one
@@ -599,7 +599,7 @@ fn the_schemas_ship_as_files_beside_the_library() {
     );
 }
 
-// COVERS: FR-3.7, FR-5.7 | regression
+// COVERS FR-3.7, FR-5.7 | regression
 #[test]
 fn every_shipped_schema_is_exported() {
     // A schema added to schemas/ and picked up by one pack but not another is a
@@ -625,7 +625,7 @@ fn every_shipped_schema_is_exported() {
     }
 }
 
-// COVERS: FR-5.2 | property
+// COVERS FR-5.2 | property
 #[test]
 fn validation_is_a_real_json_schema_implementation() {
     // $ref resolution, $defs and conditional application are the parts a
@@ -648,7 +648,7 @@ fn validation_is_a_real_json_schema_implementation() {
         .expect_err("a $ref'd constraint was not applied, so the reference did not resolve");
 }
 
-// COVERS: FR-3.1 | edge
+// COVERS FR-3.1 | edge
 #[test]
 fn the_envelope_schema_requires_reasons_only_when_it_failed() {
     // The conditional is the part of the envelope schema most likely to be
@@ -670,7 +670,7 @@ fn the_envelope_schema_requires_reasons_only_when_it_failed() {
     .expect_err("a failing envelope carried no reasons and was accepted");
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 #[test]
 fn a_jig_may_declare_it_stands_at_the_repository_root() {
     // The field reaches the working directory and nothing else. It is the
@@ -724,7 +724,7 @@ fn a_jig_may_declare_it_stands_at_the_repository_root() {
     );
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 #[test]
 fn a_manifest_variable_says_which_layer_supplied_it() {
     // Without this, a change to the manifest schema can break one pack alone
@@ -765,7 +765,7 @@ fn a_manifest_variable_says_which_layer_supplied_it() {
     }
 }
 
-// COVERS: FR-3.1 | negative
+// COVERS FR-3.1 | negative
 #[test]
 fn a_manifest_keeps_the_five_locations() {
     // Every execution has them whatever else it has, so a manifest missing one
@@ -795,7 +795,7 @@ fn a_manifest_keeps_the_five_locations() {
     }
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 #[test]
 fn a_task_may_allow_an_empty_selection() {
     // An empty selection is a failure by default, because a pattern matching
@@ -841,7 +841,7 @@ fn a_task_may_allow_an_empty_selection() {
     }
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 #[test]
 fn filtering_needs_a_selection_to_filter() {
     // matching and excluding say which paths a selection takes, so a command
@@ -884,7 +884,7 @@ fn filtering_needs_a_selection_to_filter() {
     }
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 #[test]
 fn a_time_limit_is_a_decimal_with_a_unit() {
     // The grammar is deliberately narrower than a float parse, so the runner
@@ -952,7 +952,7 @@ fn a_time_limit_is_a_decimal_with_a_unit() {
     }
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 #[test]
 fn envelope_evidence_and_statistics_are_objects() {
     // With a description and no type, a producer could write either as a
@@ -996,7 +996,7 @@ fn envelope_evidence_and_statistics_are_objects() {
     }
 }
 
-// COVERS: FR-3.1 | negative
+// COVERS FR-3.1 | negative
 #[test]
 fn an_unusable_schema_fails_when_it_is_compiled() {
     // Compiling is where a broken schema should fail, so the failure surfaces
@@ -1012,7 +1012,7 @@ fn an_unusable_schema_fails_when_it_is_compiled() {
     }
 }
 
-// COVERS: FR-3.2 | regression
+// COVERS FR-3.2 | regression
 #[test]
 fn a_validation_error_names_the_schema_by_id_not_by_local_path() {
     // The identifier lands in the error, the error lands in a reason, and a
@@ -1044,7 +1044,7 @@ fn a_validation_error_names_the_schema_by_id_not_by_local_path() {
     }
 }
 
-// COVERS: FR-3.2, FR-3.3 | negative
+// COVERS FR-3.2, FR-3.3 | negative
 #[test]
 fn a_definitions_file_takes_one_level_of_scalars() {
     let scalars =
@@ -1077,7 +1077,7 @@ fn a_definitions_file_takes_one_level_of_scalars() {
     }
 }
 
-// COVERS: FR-3.3 | property
+// COVERS FR-3.3 | property
 #[test]
 fn validation_is_indifferent_to_serialisation() {
     // The same structure written two ways validates the same, because the
@@ -1120,7 +1120,7 @@ fn versioned() -> Vec<(&'static str, &'static dyn Schema, String)> {
     ]
 }
 
-// COVERS: FR-3.9 | edge
+// COVERS FR-3.9 | edge
 #[test]
 fn a_format_may_declare_the_version_it_conforms_to() {
     // Optional, because every document written before the field existed carries
@@ -1169,7 +1169,7 @@ fn a_format_may_declare_the_version_it_conforms_to() {
     }
 }
 
-// COVERS: FR-3.9 | property
+// COVERS FR-3.9 | property
 #[test]
 fn the_version_field_is_the_same_in_every_format_that_carries_it() {
     // Written into each schema rather than referenced, because it constrains a
@@ -1197,7 +1197,7 @@ fn the_version_field_is_the_same_in_every_format_that_carries_it() {
     );
 }
 
-// COVERS: FR-1.4 | negative
+// COVERS FR-1.4 | negative
 #[test]
 fn an_envelope_missing_success_is_refused() {
     let error = load_formatted_file(
@@ -1215,7 +1215,7 @@ fn an_envelope_missing_success_is_refused() {
     );
 }
 
-// COVERS: FR-2.5, FR-2.7 | positive
+// COVERS FR-2.5, FR-2.7 | positive
 #[test]
 fn codec_and_io_are_independent() {
     // The same codec with two different readers. Neither combination needs a
@@ -1237,7 +1237,7 @@ fn codec_and_io_are_independent() {
     }
 }
 
-// COVERS: FR-6.3, FR-2.8 | positive
+// COVERS FR-6.3, FR-2.8 | positive
 #[test]
 fn local_file_writes_atomically() {
     let dir = scratch("atomic");
@@ -1262,7 +1262,7 @@ fn local_file_writes_atomically() {
     );
 }
 
-// COVERS: FR-6.3 | negative
+// COVERS FR-6.3 | negative
 #[test]
 fn a_failed_write_leaves_no_temporary_behind() {
     let dir = scratch("failed-write");
@@ -1287,7 +1287,7 @@ fn a_failed_write_leaves_no_temporary_behind() {
     );
 }
 
-// COVERS: FR-2.8 | negative
+// COVERS FR-2.8 | negative
 #[test]
 fn the_shipped_reader_fails_on_what_it_cannot_read() {
     // A directory is not a file, and the shipped reader says so. Answering with
@@ -1301,7 +1301,7 @@ fn the_shipped_reader_fails_on_what_it_cannot_read() {
     assert!(refused.is_err(), "a directory read back as a file");
 }
 
-// COVERS: FR-6.3 | edge
+// COVERS FR-6.3 | edge
 #[cfg(unix)]
 #[test]
 fn a_written_file_is_readable_by_its_consumers() {
@@ -1318,7 +1318,7 @@ fn a_written_file_is_readable_by_its_consumers() {
     assert_eq!(mode, 0o644, "mode is {mode:o}, want 644");
 }
 
-// COVERS: FR-2.1, FR-6.3 | positive
+// COVERS FR-2.1, FR-6.3 | positive
 #[test]
 fn round_trip_through_the_real_filesystem() {
     let path = scratch("round-trip").join("output.yaml");

@@ -31,7 +31,7 @@ FR-4.1 through FR-4.9 written out per codec.
 ## What it is not
 
 Not a judgment that the design was wrong. The pack's own gate reported
-`success: true`, its suite carried 113 `COVERS:` marks, and the three shape
+`success: true`, its suite carried 113 `COVERS` marks, and the three shape
 decisions it made were sound enough to write down:
 
 - the value type was `jsoncons::json` under `wrench::value`, because C++ has no

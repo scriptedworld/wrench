@@ -13,7 +13,7 @@ import (
 // containers can still differ about empty ones, and a shared case set is what
 // catches that.
 
-// COVERS: FR-4.6 | edge
+// COVERS FR-4.6 | edge
 func TestJSONEmptyContainersAreShort(t *testing.T) {
 	t.Parallel()
 
@@ -40,7 +40,7 @@ func TestJSONEmptyContainersAreShort(t *testing.T) {
 	}
 }
 
-// COVERS: FR-4.6 | edge
+// COVERS FR-4.6 | edge
 func TestJSONNestedEmptyContainersKeepTheShortSpelling(t *testing.T) {
 	t.Parallel()
 

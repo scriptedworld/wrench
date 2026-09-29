@@ -119,7 +119,7 @@ func assertKindSaysItself(t *testing.T, c kindCase, schema wrench.Schema) {
 	}
 }
 
-// COVERS: FR-2.11 | property
+// COVERS FR-2.11 | property
 func TestEveryKindSaysItselfWithTheCallersPath(t *testing.T) {
 	t.Parallel()
 
@@ -140,7 +140,7 @@ func TestEveryKindSaysItselfWithTheCallersPath(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.11 | property
+// COVERS FR-2.11 | property
 func TestAValidationFailureSaysItselfWithThePath(t *testing.T) {
 	t.Parallel()
 
@@ -169,7 +169,7 @@ func TestAValidationFailureSaysItselfWithThePath(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.11 | property
+// COVERS FR-2.11 | property
 func TestASchemaFailureKeepsItsOwnNameAndNotTheDocumentsPath(t *testing.T) {
 	t.Parallel()
 
@@ -217,7 +217,7 @@ type failingSchema struct{ cause error }
 
 func (s failingSchema) Validate(_ any) error { return s.cause }
 
-// COVERS: FR-2.8 | negative
+// COVERS FR-2.8 | negative
 func TestTheShippedReaderFailsOnWhatItCannotRead(t *testing.T) {
 	t.Parallel()
 
@@ -230,7 +230,7 @@ func TestTheShippedReaderFailsOnWhatItCannotRead(t *testing.T) {
 	}
 }
 
-// COVERS: FR-6.3 | negative
+// COVERS FR-6.3 | negative
 func TestTheShippedWriterFailsWhereItCannotCreateItsTemporary(t *testing.T) {
 	t.Parallel()
 
@@ -252,7 +252,7 @@ func TestTheShippedWriterFailsWhereItCannotCreateItsTemporary(t *testing.T) {
 	}
 }
 
-// COVERS: FR-6.3 | negative
+// COVERS FR-6.3 | negative
 func TestAWriteThatCannotLandLeavesNoTemporaryBehind(t *testing.T) {
 	t.Parallel()
 

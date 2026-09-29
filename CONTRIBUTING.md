@@ -52,7 +52,7 @@ is the finding.
 
 ## Every test names its requirement
 
-    // COVERS: FR-2.1, FR-2.2 | positive
+    // COVERS FR-2.1, FR-2.2 | positive
 
 Go and Rust write it with `//`, Python with `#`, in the comment block
 immediately above the test. Rust must use `//` and never `///`, because a doc
@@ -66,7 +66,7 @@ test at all.
 
 `docs/REQUIREMENTS/` holds one file per requirement, and its README explains the
 status markers and how retirement works. A requirement id is never reused.
-Retiring one renames its file to a `.retired` suffix, and the `COVERS:` marks
+Retiring one renames its file to a `.retired` suffix, and the `COVERS` marks
 pointing at it are repointed or removed in the same change.
 
 ## Changing what a pack emits

@@ -63,7 +63,7 @@ def outcome(name, schema_body, instance):
     return "accepted", ""
 
 
-# COVERS: FR-3.10c | negative
+# COVERS FR-3.10c | negative
 @pytest.mark.parametrize(
     ("what", "instance"),
     [
@@ -90,7 +90,7 @@ def test_a_keyword_in_an_instance_is_data(what, instance):
     assert got == "accepted", f"{what} in an instance was interpreted: {got}: {detail}"
 
 
-# COVERS: FR-3.10a | positive
+# COVERS FR-3.10a | positive
 @pytest.mark.parametrize(
     ("what", "body"),
     [
@@ -128,7 +128,7 @@ def test_a_reference_within_the_document_resolves(what, body):
     assert got == "validate", f"{what} did not constrain, so the reference resolved to nothing"
 
 
-# COVERS: FR-3.10b, FR-3.10d | negative
+# COVERS FR-3.10b, FR-3.10d | negative
 def test_a_refusal_names_the_resolved_reference():
     """A relative reference resolves against the document's $id, so the text and
     the reference are different strings. Naming the text would send a reader
@@ -151,7 +151,7 @@ def test_a_refusal_names_the_resolved_reference():
     assert REFUSAL in detail, detail
 
 
-# COVERS: FR-3.10d | negative
+# COVERS FR-3.10d | negative
 @pytest.mark.parametrize(
     ("what", "ref"),
     [
@@ -173,7 +173,7 @@ def test_every_refused_form_gives_the_same_sentence(what, ref):
     assert REFUSAL in detail, f"{what} was refused in different words: {detail}"
 
 
-# COVERS: FR-3.10 | negative
+# COVERS FR-3.10 | negative
 @pytest.mark.parametrize(
     "name",
     [

@@ -137,7 +137,7 @@ func groupedAgainstSuffixed() map[string]schemaPair {
 	}
 }
 
-// COVERS: FR-5.7 | positive
+// COVERS FR-5.7 | positive
 func TestTheShippedSetIsReachableWithoutTheSuffix(t *testing.T) {
 	t.Parallel()
 
@@ -174,7 +174,7 @@ func TestTheShippedSetIsReachableWithoutTheSuffix(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.7, FR-5.7 | regression
+// COVERS FR-3.7, FR-5.7 | regression
 func TestEveryShippedSchemaIsExported(t *testing.T) {
 	t.Parallel()
 
@@ -203,7 +203,7 @@ func TestEveryShippedSchemaIsExported(t *testing.T) {
 	}
 }
 
-// COVERS: FR-1.1, FR-3.2, FR-3.5 | positive
+// COVERS FR-1.1, FR-3.2, FR-3.5 | positive
 func TestTheSchemasShipAsFilesBesideTheLibrary(t *testing.T) {
 	t.Parallel()
 
@@ -227,7 +227,7 @@ func TestTheSchemasShipAsFilesBesideTheLibrary(t *testing.T) {
 	}
 }
 
-// COVERS: FR-5.2 | property
+// COVERS FR-5.2 | property
 func TestValidationIsARealJSONSchemaImplementation(t *testing.T) {
 	t.Parallel()
 
@@ -258,7 +258,7 @@ func TestValidationIsARealJSONSchemaImplementation(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1 | edge
+// COVERS FR-3.1 | edge
 func TestTheEnvelopeSchemaRequiresReasonsOnlyWhenItFailed(t *testing.T) {
 	t.Parallel()
 
@@ -275,7 +275,7 @@ func TestTheEnvelopeSchemaRequiresReasonsOnlyWhenItFailed(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.2 | regression
+// COVERS FR-3.2 | regression
 func TestAValidationErrorNamesTheSchemaByIdNotByLocalPath(t *testing.T) {
 	t.Parallel()
 
@@ -302,7 +302,7 @@ func TestAValidationErrorNamesTheSchemaByIdNotByLocalPath(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1, FR-3.3, FR-3.6 | positive
+// COVERS FR-3.1, FR-3.3, FR-3.6 | positive
 func TestAJigsDefinitionsBlockIsHeldToTheSharedShape(t *testing.T) {
 	t.Parallel()
 
@@ -323,7 +323,7 @@ func TestAJigsDefinitionsBlockIsHeldToTheSharedShape(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 func TestAJigMayDeclareItStandsAtTheRepositoryRoot(t *testing.T) {
 	t.Parallel()
 
@@ -380,7 +380,7 @@ func versionedFormats() map[string]struct {
 	}
 }
 
-// COVERS: FR-3.9 | edge
+// COVERS FR-3.9 | edge
 func TestAFormatMayDeclareTheVersionItConformsTo(t *testing.T) {
 	t.Parallel()
 
@@ -451,7 +451,7 @@ func loadDocument(path string, schema wrench.Schema, document string) error {
 	return nil
 }
 
-// COVERS: FR-3.9 | property
+// COVERS FR-3.9 | property
 func TestTheVersionFieldIsTheSameInEveryFormatThatCarriesIt(t *testing.T) {
 	t.Parallel()
 
@@ -492,7 +492,7 @@ func consumerSchema(target string) string {
 		`"properties":{"d":{"$ref":"` + target + `"}}}`
 }
 
-// COVERS: FR-3.10 | positive
+// COVERS FR-3.10 | positive
 func TestAConsumerSchemaMayReferenceAShippedOne(t *testing.T) {
 	t.Parallel()
 
@@ -519,7 +519,7 @@ func TestAConsumerSchemaMayReferenceAShippedOne(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.10 | negative
+// COVERS FR-3.10 | negative
 func TestASchemaMayReferenceNothingOutsideTheShippedSet(t *testing.T) {
 	t.Parallel()
 
@@ -547,7 +547,7 @@ func TestASchemaMayReferenceNothingOutsideTheShippedSet(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.10 | negative
+// COVERS FR-3.10 | negative
 func TestTheEnvironmentCannotRestoreExternalReferences(t *testing.T) {
 	// The escape hatch is retired, but the variable was documented and somebody
 	// may still set it. A refusal that quietly turns permissive because an old
@@ -572,7 +572,7 @@ func TestTheEnvironmentCannotRestoreExternalReferences(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.10 | edge
+// COVERS FR-3.10 | edge
 func TestACallerCannotRedefineAShippedSchema(t *testing.T) {
 	t.Parallel()
 
@@ -587,7 +587,7 @@ func TestACallerCannotRedefineAShippedSchema(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.2, FR-3.3 | negative
+// COVERS FR-3.2, FR-3.3 | negative
 func TestADefinitionsFileTakesOneLevelOfScalars(t *testing.T) {
 	t.Parallel()
 
@@ -627,7 +627,7 @@ func manifestWith(variables string) string {
 		variables
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 func TestAManifestVariableSaysWhichLayerSuppliedIt(t *testing.T) {
 	t.Parallel()
 
@@ -654,7 +654,7 @@ func TestAManifestVariableSaysWhichLayerSuppliedIt(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1 | negative
+// COVERS FR-3.1 | negative
 func TestAManifestKeepsTheFiveLocations(t *testing.T) {
 	t.Parallel()
 
@@ -669,7 +669,7 @@ func TestAManifestKeepsTheFiveLocations(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 func TestATaskMayAllowAnEmptySelection(t *testing.T) {
 	t.Parallel()
 
@@ -706,7 +706,7 @@ func TestATaskMayAllowAnEmptySelection(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 func TestFilteringNeedsASelectionToFilter(t *testing.T) {
 	t.Parallel()
 
@@ -740,7 +740,7 @@ func TestFilteringNeedsASelectionToFilter(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 func TestATimeLimitIsADecimalWithAUnit(t *testing.T) {
 	t.Parallel()
 
@@ -777,7 +777,7 @@ func TestATimeLimitIsADecimalWithAUnit(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 func TestEnvelopeEvidenceAndStatisticsAreObjects(t *testing.T) {
 	t.Parallel()
 

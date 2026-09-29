@@ -38,7 +38,7 @@ func (w *stubWriter) Write(path string, data []byte) error {
 
 const validEnvelope = `success: true` + "\n"
 
-// COVERS: FR-2.1, FR-2.2 | positive
+// COVERS FR-2.1, FR-2.2 | positive
 func TestLoadFormattedFileReturnsTheValidatedStructure(t *testing.T) {
 	t.Parallel()
 
@@ -59,7 +59,7 @@ func TestLoadFormattedFileReturnsTheValidatedStructure(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.5a | positive
+// COVERS FR-2.5a | positive
 func TestTheReaderIsHandedThePathAndNothingTouchesDisk(t *testing.T) {
 	t.Parallel()
 
@@ -76,7 +76,7 @@ func TestTheReaderIsHandedThePathAndNothingTouchesDisk(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.3 | negative
+// COVERS FR-2.3 | negative
 func TestACallWithNoSchemaIsRefused(t *testing.T) {
 	t.Parallel()
 
@@ -94,7 +94,7 @@ func TestACallWithNoSchemaIsRefused(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.6 | negative
+// COVERS FR-2.6 | negative
 func TestAFailureSaysWhichStepFailed(t *testing.T) {
 	t.Parallel()
 
@@ -145,7 +145,7 @@ func TestAFailureSaysWhichStepFailed(t *testing.T) {
 	})
 }
 
-// COVERS: FR-2.4 | negative
+// COVERS FR-2.4 | negative
 func TestSaveRefusesAStructureItWouldNotReadBack(t *testing.T) {
 	t.Parallel()
 
@@ -163,7 +163,7 @@ func TestSaveRefusesAStructureItWouldNotReadBack(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.4, FR-4.3 | positive
+// COVERS FR-2.4, FR-4.3 | positive
 func TestSaveWritesCanonicalForm(t *testing.T) {
 	t.Parallel()
 
@@ -185,7 +185,7 @@ func TestSaveWritesCanonicalForm(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.5, FR-2.7 | positive
+// COVERS FR-2.5, FR-2.7 | positive
 func TestCodecAndIOAreIndependent(t *testing.T) {
 	t.Parallel()
 
@@ -203,7 +203,7 @@ func TestCodecAndIOAreIndependent(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1, FR-3.2 | positive
+// COVERS FR-3.1, FR-3.2 | positive
 func TestBothShippedSchemasAreUsable(t *testing.T) {
 	t.Parallel()
 
@@ -221,7 +221,7 @@ func TestBothShippedSchemasAreUsable(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.3 | negative
+// COVERS FR-2.3 | negative
 func TestTheWrongSchemaIsNotDetected(t *testing.T) {
 	t.Parallel()
 
@@ -237,7 +237,7 @@ func TestTheWrongSchemaIsNotDetected(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.3 | property
+// COVERS FR-3.3 | property
 func TestValidationIsIndifferentToSerialisation(t *testing.T) {
 	t.Parallel()
 
@@ -255,7 +255,7 @@ func TestValidationIsIndifferentToSerialisation(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.4 | edge
+// COVERS FR-3.4 | edge
 func TestASchemaChecksShapeAndNotMeaning(t *testing.T) {
 	t.Parallel()
 
@@ -270,7 +270,7 @@ func TestASchemaChecksShapeAndNotMeaning(t *testing.T) {
 	}
 }
 
-// COVERS: FR-1.4 | negative
+// COVERS FR-1.4 | negative
 func TestAnEnvelopeMissingSuccessIsRefused(t *testing.T) {
 	t.Parallel()
 
@@ -286,7 +286,7 @@ func TestAnEnvelopeMissingSuccessIsRefused(t *testing.T) {
 	}
 }
 
-// COVERS: FR-6.3, FR-2.8 | positive
+// COVERS FR-6.3, FR-2.8 | positive
 func TestLocalFileWritesAtomically(t *testing.T) {
 	t.Parallel()
 
@@ -321,7 +321,7 @@ func TestLocalFileWritesAtomically(t *testing.T) {
 	}
 }
 
-// COVERS: FR-6.3 | negative
+// COVERS FR-6.3 | negative
 func TestAFailedWriteLeavesNoTemporaryBehind(t *testing.T) {
 	t.Parallel()
 
@@ -347,7 +347,7 @@ func TestAFailedWriteLeavesNoTemporaryBehind(t *testing.T) {
 	}
 }
 
-// COVERS: FR-6.3 | edge
+// COVERS FR-6.3 | edge
 func TestAWrittenFileIsReadableByItsConsumers(t *testing.T) {
 	t.Parallel()
 
@@ -367,7 +367,7 @@ func TestAWrittenFileIsReadableByItsConsumers(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.1, FR-6.3 | positive
+// COVERS FR-2.1, FR-6.3 | positive
 func TestRoundTripThroughTheRealFilesystem(t *testing.T) {
 	t.Parallel()
 

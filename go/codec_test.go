@@ -22,7 +22,7 @@ func compileAnything(t *testing.T) wrench.Schema {
 	return schema
 }
 
-// COVERS: FR-3.1 | positive
+// COVERS FR-3.1 | positive
 func TestAnyoneCanAttachTheirOwnSchema(t *testing.T) {
 	t.Parallel()
 
@@ -51,7 +51,7 @@ func TestAnyoneCanAttachTheirOwnSchema(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.1 | negative
+// COVERS FR-3.1 | negative
 func TestAnUnusableSchemaFailsWhenItIsCompiled(t *testing.T) {
 	t.Parallel()
 
@@ -70,7 +70,7 @@ func TestAnUnusableSchemaFailsWhenItIsCompiled(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.2 | negative
+// COVERS FR-2.2 | negative
 func TestACallWithNoCodecOrNoIOIsRefused(t *testing.T) {
 	t.Parallel()
 
@@ -94,7 +94,7 @@ func TestACallWithNoCodecOrNoIOIsRefused(t *testing.T) {
 	}
 }
 
-// COVERS: FR-4.1 | negative
+// COVERS FR-4.1 | negative
 func TestAValueWithNoCanonicalFormIsRefused(t *testing.T) {
 	t.Parallel()
 
@@ -117,7 +117,7 @@ func TestAValueWithNoCanonicalFormIsRefused(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.9 | regression
+// COVERS FR-2.9 | regression
 func TestATimestampDecodesToAStringSoItCanBeWrittenBack(t *testing.T) {
 	t.Parallel()
 
@@ -157,7 +157,7 @@ func TestATimestampDecodesToAStringSoItCanBeWrittenBack(t *testing.T) {
 	}
 }
 
-// COVERS: FR-4.1 | edge
+// COVERS FR-4.1 | edge
 func TestNaNAndTheInfinitiesAreRefused(t *testing.T) {
 	t.Parallel()
 
@@ -180,7 +180,7 @@ func TestNaNAndTheInfinitiesAreRefused(t *testing.T) {
 	}
 }
 
-// COVERS: FR-1.2 | negative
+// COVERS FR-1.2 | negative
 func TestAMappingKeyThatIsNotAStringIsRefused(t *testing.T) {
 	t.Parallel()
 
@@ -201,7 +201,7 @@ func TestAMappingKeyThatIsNotAStringIsRefused(t *testing.T) {
 	}
 }
 
-// COVERS: FR-4.5 | property
+// COVERS FR-4.5 | property
 func TestEveryScalarTypeSurvivesTheRoundTrip(t *testing.T) {
 	t.Parallel()
 

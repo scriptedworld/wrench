@@ -29,7 +29,7 @@ const canonicalJSON = "{\n  \"a\": {\n    \"y\": \"x\",\n" +
 // reaches it.
 var errStub = errors.New("nope")
 
-// COVERS: FR-2.7, FR-4.6 | property
+// COVERS FR-2.7, FR-4.6 | property
 func TestJSONCanonicalForm(t *testing.T) {
 	t.Parallel()
 
@@ -55,7 +55,7 @@ func TestJSONCanonicalForm(t *testing.T) {
 	}
 }
 
-// COVERS: FR-4.11 | edge
+// COVERS FR-4.11 | edge
 func TestNegativeZeroIsSignedInJSONAndAnIntegerElsewhere(t *testing.T) {
 	t.Parallel()
 
@@ -96,7 +96,7 @@ func TestNegativeZeroIsSignedInJSONAndAnIntegerElsewhere(t *testing.T) {
 	}
 }
 
-// COVERS: FR-4.10 | property
+// COVERS FR-4.10 | property
 func TestAnIntegerPastInt64WidensToAFloat(t *testing.T) {
 	t.Parallel()
 
@@ -122,7 +122,7 @@ func TestAnIntegerPastInt64WidensToAFloat(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.10 | positive
+// COVERS FR-2.10 | positive
 func TestAWrapperPerFormatSuppliesTheCodec(t *testing.T) {
 	t.Parallel()
 
@@ -154,7 +154,7 @@ func TestAWrapperPerFormatSuppliesTheCodec(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.10 | negative
+// COVERS FR-2.10 | negative
 func TestAWrapperStillValidates(t *testing.T) {
 	t.Parallel()
 
@@ -192,7 +192,7 @@ func canonicalFloats() []struct {
 	}
 }
 
-// COVERS: FR-4.8 | property
+// COVERS FR-4.8 | property
 func TestAFloatHasOneSpellingInEveryCodec(t *testing.T) {
 	t.Parallel()
 
@@ -244,7 +244,7 @@ func canonicalEscapes() []struct {
 	}
 }
 
-// COVERS: FR-4.9 | property
+// COVERS FR-4.9 | property
 func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
 	t.Parallel()
 
@@ -272,7 +272,7 @@ func TestAControlCharacterIsEscapedInEveryCodec(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.11 | negative
+// COVERS FR-2.11 | negative
 func TestAValueOutsideTheModelIsRefusedByNameInEveryCodec(t *testing.T) {
 	t.Parallel()
 
@@ -299,7 +299,7 @@ func TestAValueOutsideTheModelIsRefusedByNameInEveryCodec(t *testing.T) {
 	}
 }
 
-// COVERS: FR-2.11 | property
+// COVERS FR-2.11 | property
 func TestEveryFailureIsWrenchsOwnTypeWithItsStep(t *testing.T) {
 	t.Parallel()
 

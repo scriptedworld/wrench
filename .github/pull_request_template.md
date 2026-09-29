@@ -4,7 +4,7 @@ exist.
 
 `CONTRIBUTING.md` has the detail behind each of these.
 
-- [ ] Every new test carries a `COVERS:` line naming a requirement and a kind.
+- [ ] Every new test carries a `COVERS` line naming a requirement and a kind.
 - [ ] `./bin/test-suite-parity.py` passes, or the divergence is declared by a
       scope marker on the requirement.
 - [ ] All three suites pass, including `go test ./...` from `go/`, which `just test` does

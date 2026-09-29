@@ -47,7 +47,7 @@ fn three_formats() -> serde_json::Value {
     json!({"b": 1, "a": {"z": [1, 2], "y": "x"}, "d": true})
 }
 
-// COVERS: FR-2.7, FR-4.6 | property
+// COVERS FR-2.7, FR-4.6 | property
 #[test]
 fn json_canonical_form() {
     let encoded = JSON.encode(&three_formats()).expect("encode");
@@ -63,7 +63,7 @@ fn json_canonical_form() {
     );
 }
 
-// COVERS: FR-4.11 | edge
+// COVERS FR-4.11 | edge
 #[test]
 fn negative_zero_is_signed_in_json_and_an_integer_elsewhere() {
     // JavaScript decides what a JSON document means, and V8 reads -0 as signed.
@@ -87,7 +87,7 @@ fn negative_zero_is_signed_in_json_and_an_integer_elsewhere() {
     );
 }
 
-// COVERS: FR-4.10 | property
+// COVERS FR-4.10 | property
 #[test]
 fn an_integer_past_int64_widens_to_a_float() {
     // Rust is the reference for this in YAML: its decoder falls to f64 where
@@ -112,7 +112,7 @@ fn an_integer_past_int64_widens_to_a_float() {
     assert!(exact["n"].is_i64(), "int64 max must stay an integer");
 }
 
-// COVERS: FR-2.10 | positive
+// COVERS FR-2.10 | positive
 #[test]
 fn a_wrapper_per_format_supplies_the_codec() {
     let writer = Stub::new(b"");
@@ -146,7 +146,7 @@ fn a_wrapper_per_format_supplies_the_codec() {
     );
 }
 
-// COVERS: FR-2.10 | negative
+// COVERS FR-2.10 | negative
 #[test]
 fn a_wrapper_still_validates() {
     let writer = Stub::new(b"");
@@ -180,7 +180,7 @@ fn canonical_floats() -> Vec<(f64, &'static str)> {
     ]
 }
 
-// COVERS: FR-4.8 | property
+// COVERS FR-4.8 | property
 #[test]
 fn a_float_has_one_spelling_in_every_codec() {
     // Positional decimal, never an exponent. Each language's default float
@@ -222,7 +222,7 @@ fn canonical_escapes() -> Vec<(u32, &'static str)> {
     ]
 }
 
-// COVERS: FR-4.9 | property
+// COVERS FR-4.9 | property
 #[test]
 fn a_control_character_is_escaped_in_every_codec() {
     // A raw control character is refused by a strict YAML reader, accepted by a
@@ -246,7 +246,7 @@ fn a_control_character_is_escaped_in_every_codec() {
     }
 }
 
-// COVERS: FR-2.11 | property
+// COVERS FR-2.11 | property
 #[test]
 fn every_failure_is_wrenchs_own_type_with_its_step() {
     // Six kinds on three axes. `schema` against `validate` is the pair most

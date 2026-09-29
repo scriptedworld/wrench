@@ -44,7 +44,7 @@ fn outcome(name: &str, schema_body: &str, instance: &Value) -> (&'static str, St
     }
 }
 
-// COVERS: FR-3.10c | negative
+// COVERS FR-3.10c | negative
 #[test]
 fn a_keyword_in_an_instance_is_data() {
     // The schema keywords are ordinary keys in a document being validated, and a
@@ -88,7 +88,7 @@ fn a_keyword_in_an_instance_is_data() {
     }
 }
 
-// COVERS: FR-3.10a | positive
+// COVERS FR-3.10a | positive
 #[test]
 fn a_reference_within_the_document_resolves() {
     // Both spellings of an internal reference, each asserted by its VIOLATION:
@@ -122,7 +122,7 @@ fn a_reference_within_the_document_resolves() {
     }
 }
 
-// COVERS: FR-3.10b, FR-3.10d | negative
+// COVERS FR-3.10b, FR-3.10d | negative
 #[test]
 fn a_refusal_names_the_resolved_reference() {
     // A relative reference resolves against the document's $id, so the text and
@@ -149,7 +149,7 @@ fn a_refusal_names_the_resolved_reference() {
     );
 }
 
-// COVERS: FR-3.10d | negative
+// COVERS FR-3.10d | negative
 #[test]
 fn every_refused_form_gives_the_same_sentence() {
     // One sentence for every shape a reference can take, so a consumer matching
@@ -187,7 +187,7 @@ fn every_refused_form_gives_the_same_sentence() {
     }
 }
 
-// COVERS: FR-3.10 | negative
+// COVERS FR-3.10 | negative
 #[test]
 fn no_environment_variable_opens_a_reference() {
     // WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS was documented before it was retired, so

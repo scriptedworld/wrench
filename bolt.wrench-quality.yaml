@@ -224,7 +224,7 @@ tasks:
   # tests keep the two reading a file the same way.
   #
   # The tests live under testdata/ and not beside a suite because they contain
-  # `COVERS:` marks as fixture data, and this checker greps that string out of
+  # `COVERS` marks as fixture data, and this checker greps that string out of
   # every file matching a suite glob. A file in a python suite whose only
   # mention of FR-9.2 was inside a string turned a reported divergence into a
   # pass. `testdata/` is in test-traceability.py's SKIP_DIRS and matches no

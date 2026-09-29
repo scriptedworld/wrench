@@ -5,8 +5,8 @@ constraints leave nowhere else, and both are worth knowing before anybody moves
 them.
 
 **A test of this checker cannot sit in a directory the checker reads.** The
-checker greps `COVERS:` out of every file matching a suite glob, and these tests
-must contain `COVERS:` marks as fixture data. Measured 2026-08-28: a file
+checker greps `COVERS` out of every file matching a suite glob, and these tests
+must contain `COVERS` marks as fixture data. Measured 2026-08-28: a file
 placed in a python suite whose only mention of `FR-9.2` was a string inside a
 test body turned a reported divergence into a pass.
 
@@ -17,7 +17,7 @@ Nothing in that file tested FR-9.2 or claimed to. The string alone masked a real
 divergence in the checker whose entire purpose is finding them.
 
 **And it cannot sit anywhere `test-traceability.py` walks.** That checker
-demands a `COVERS:` mark on every test function it finds, and these tests
+demands a `COVERS` mark on every test function it finds, and these tests
 discharge no requirement: wrench's contract is the schemas and the packs, and
 this checker is wrench's own tooling. Citing a row here would be a false
 citation to satisfy a checker. toolbox's equivalent tests cite toolbox
@@ -42,8 +42,8 @@ CHECKER = Path(__file__).resolve().parents[2] / "bin" / "test-suite-parity.py"
 # One suite citing FR-9.2 and one not. Against a requirements set where FR-9.2 is
 # live this is a divergence; against one where it is retired there is nothing to
 # report. Every case below turns on which of those the checker decides.
-GO_SUITE = "// COVERS: FR-9.1 | positive\n// COVERS: FR-9.2 | positive\n"
-PYTHON_SUITE = "# COVERS: FR-9.1 | positive\n"
+GO_SUITE = "// COVERS FR-9.1 | positive\n// COVERS FR-9.2 | positive\n"
+PYTHON_SUITE = "# COVERS FR-9.1 | positive\n"
 
 
 def run(root: Path, requirements: Path) -> subprocess.CompletedProcess[str]:
@@ -183,6 +183,39 @@ def test_a_retired_filename_retires_its_rows_with_no_heading(tmp_path):
 
     assert "FR-9.2" not in result.stdout
     assert result.returncode == 0
+
+
+def test_the_colon_form_of_a_mark_is_still_counted(tmp_path):
+    """A mark written the old way, with a colon, is read as toolbox's
+    traceability checker reads it, so a straggler is counted and not dropped."""
+    (tmp_path / "alpha_test.go").write_text(GO_SUITE)
+    (tmp_path / "test_beta.py").write_text(
+        PYTHON_SUITE + "# COVERS" + ": FR-9.2 | positive\n"
+    )
+    requirements = tmp_path / "reqs.md"
+    requirements.write_text(row("FR-9.1", "one") + row("FR-9.2", "two"))
+
+    result = run(tmp_path, requirements)
+
+    assert "FR-9.2" not in result.stdout
+    assert result.returncode == 0
+
+
+def test_prose_about_marks_is_not_a_mark(tmp_path):
+    """Only an id directly after the marker counts, so a sentence about COVERS
+    marks that happens to list a row and a kind cites nothing. The comma is what
+    makes this a test: split on it, the sentence would yield FR-9.2 alone."""
+    (tmp_path / "alpha_test.go").write_text(GO_SUITE)
+    (tmp_path / "test_beta.py").write_text(
+        PYTHON_SUITE + "# the COVERS marks, FR-9.2 | positive\n"
+    )
+    requirements = tmp_path / "reqs.md"
+    requirements.write_text(row("FR-9.1", "one") + row("FR-9.2", "two"))
+
+    result = run(tmp_path, requirements)
+
+    assert "FR-9.2 | positive is in go but not in python" in result.stdout
+    assert result.returncode == 1
 
 
 def test_an_empty_requirements_directory_refuses(tmp_path):

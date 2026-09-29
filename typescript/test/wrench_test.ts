@@ -156,7 +156,7 @@ const VALID_JIG = 'tasks:\n  - name: check\n    command: "true"\n';
 
 // ---- what wrench is ---------------------------------------------------------
 
-// COVERS: FR-1.1 | positive
+// COVERS FR-1.1 | positive
 void test("the pack reads the one copy of the schemas", async () => {
   // The schemas and a library for each language live in one repository, so two
   // producers work from the same definition. The pack carries their text rather
@@ -173,7 +173,7 @@ void test("the pack reads the one copy of the schemas", async () => {
   assert(Object.keys(SHIPPED).length > 0, "no schemas are carried");
 });
 
-// COVERS: FR-1.2 | negative
+// COVERS FR-1.2 | negative
 void test("a key that is not a string is refused rather than coerced", () => {
   // wrench establishes that a file has the FORM its schema declares. A mapping
   // key that is not a string has no JSON equivalent, and stringifying it
@@ -187,7 +187,7 @@ void test("a key that is not a string is refused rather than coerced", () => {
   assert.deepEqual(wrench.YAML.decode('"1": x\n'), { "1": "x" });
 });
 
-// COVERS: FR-1.4 | negative
+// COVERS FR-1.4 | negative
 void test("an envelope missing success is refused", () => {
   // Validation is JSON Schema over the decoded structure, and wrench does not
   // get to differ from that decision. This is where it is implemented.
@@ -209,7 +209,7 @@ void test("an envelope missing success is refused", () => {
 
 // ---- the two calls ----------------------------------------------------------
 
-// COVERS: FR-2.1 | positive
+// COVERS FR-2.1 | positive
 void test("the two calls round trip a document", () => {
   withDirectory((dir) => {
     const path = `${dir}/doc.yaml`;
@@ -218,7 +218,7 @@ void test("the two calls round trip a document", () => {
   });
 });
 
-// COVERS: FR-2.2 | positive
+// COVERS FR-2.2 | positive
 void test("validation sits in the signature", () => {
   // Nothing reads or writes without naming what the file must conform to, so
   // conformance is a property of the call rather than of remembering to check.
@@ -232,7 +232,7 @@ void test("validation sits in the signature", () => {
   assert.deepEqual(reader.seen, ["f.yaml"]);
 });
 
-// COVERS: FR-2.2 | negative
+// COVERS FR-2.2 | negative
 void test("a missing seam is usage and touches no file", () => {
   withDirectory((dir) => {
     const path = `${dir}/doc.yaml`;
@@ -249,7 +249,7 @@ void test("a missing seam is usage and touches no file", () => {
   });
 });
 
-// COVERS: FR-2.3 | negative
+// COVERS FR-2.3 | negative
 void test("a call with no schema is refused, and the wrong one is not detected", () => {
   // The signature compels a schema, not the right one. Passing none is
   // impossible; passing the wrong one is not, and no part of the library
@@ -285,7 +285,7 @@ void test("a call with no schema is refused, and the wrong one is not detected",
   );
 });
 
-// COVERS: FR-2.4 | positive
+// COVERS FR-2.4 | positive
 void test("what a save wrote survives a load", () => {
   withDirectory((dir) => {
     const path = `${dir}/out.yaml`;
@@ -309,7 +309,7 @@ void test("what a save wrote survives a load", () => {
   });
 });
 
-// COVERS: FR-2.4 | negative
+// COVERS FR-2.4 | negative
 void test("a structure the schema refuses is not written", () => {
   const schema = wrench.compileSchema("needs a name", {
     type: "object",
@@ -330,7 +330,7 @@ void test("a structure the schema refuses is not written", () => {
   });
 });
 
-// COVERS: FR-2.5 | positive
+// COVERS FR-2.5 | positive
 void test("the codec and the IO are separate seams", () => {
   // One format against two sources, and one source against two formats, with
   // nothing invented on either side to make the combinations work.
@@ -344,7 +344,7 @@ void test("the codec and the IO are separate seams", () => {
   );
 });
 
-// COVERS: FR-2.5a | positive
+// COVERS FR-2.5a | positive
 void test("a reader is handed the path and can be substituted", () => {
   // No filesystem at all. This is what handing the reader a path rather than
   // bytes buys: a substituted reader exercises decode and validate together.
@@ -353,7 +353,7 @@ void test("a reader is handed the path and can be substituted", () => {
   assert.deepEqual(reader.seen, ["some/path"]);
 });
 
-// COVERS: FR-2.5a | property
+// COVERS FR-2.5a | property
 void test("every step is reachable through a substituted reader", () => {
   assert.deepEqual(
     assertThrows(
@@ -384,7 +384,7 @@ void test("every step is reachable through a substituted reader", () => {
   );
 });
 
-// COVERS: FR-2.6 | negative
+// COVERS FR-2.6 | negative
 void test("a failure says which step failed", () => {
   assertThrows(
     () =>
@@ -418,14 +418,14 @@ void test("a failure says which step failed", () => {
   );
 });
 
-// COVERS: FR-2.7 | positive
+// COVERS FR-2.7 | positive
 void test("two codecs ship and both round trip the shared tree", () => {
   for (const codec of [wrench.YAML, wrench.JSON]) {
     assert.deepEqual(codec.decode(codec.encode(TREE)), TREE);
   }
 });
 
-// COVERS: FR-2.7 | property
+// COVERS FR-2.7 | property
 void test("both codecs decode to one structure", () => {
   // The codec argument exists so that one schema validates a file whichever
   // codec read it, which only holds if the two produce the same value model.
@@ -435,7 +435,7 @@ void test("both codecs decode to one structure", () => {
   );
 });
 
-// COVERS: FR-2.8 | positive
+// COVERS FR-2.8 | positive
 void test("one local reader and one local writer ship", () => {
   withDirectory((dir) => {
     const path = `${dir}/out.yaml`;
@@ -444,7 +444,7 @@ void test("one local reader and one local writer ship", () => {
   });
 });
 
-// COVERS: FR-2.9 | regression
+// COVERS FR-2.9 | regression
 void test("a timestamp decodes to a string so it can be written back", () => {
   // YAML has a native timestamp type and JSON does not. A date decoding to a
   // date object reaches the validator, which has no type for it, and then
@@ -467,7 +467,7 @@ void test("a timestamp decodes to a string so it can be written back", () => {
   );
 });
 
-// COVERS: FR-2.10 | positive
+// COVERS FR-2.10 | positive
 void test("a wrapper per format supplies the codec and adds nothing else", () => {
   withDirectory((dir) => {
     const value = { success: true };
@@ -502,7 +502,7 @@ void test("a wrapper per format supplies the codec and adds nothing else", () =>
   });
 });
 
-// COVERS: FR-2.10 | negative
+// COVERS FR-2.10 | negative
 void test("a wrapper still validates, so the seam is unchanged in both directions", () => {
   assertThrows(
     () =>
@@ -527,7 +527,7 @@ void test("a wrapper still validates, so the seam is unchanged in both direction
   });
 });
 
-// COVERS: FR-2.11 | property
+// COVERS FR-2.11 | property
 void test("every failure is one family with a step", () => {
   assert.deepEqual(
     [...wrench.STEPS],
@@ -553,7 +553,7 @@ void test("every failure is one family with a step", () => {
   }
 });
 
-// COVERS: FR-2.11 | negative
+// COVERS FR-2.11 | negative
 void test("an error names the file and keeps the cause", () => {
   // A codec is handed bytes and a schema a structure, so neither knows which
   // file it is working on. The two calls fill it in.
@@ -570,7 +570,7 @@ void test("an error names the file and keeps the cause", () => {
 
 // ---- the schemas ------------------------------------------------------------
 
-// COVERS: FR-3.1, FR-3.2, FR-3.5 | positive
+// COVERS FR-3.1, FR-3.2, FR-3.5 | positive
 void test("all four shipped schemas validate from the one copy", () => {
   wrench.schemas.ENVELOPE.validate({ success: true });
   wrench.schemas.JIG.validate({
@@ -591,7 +591,7 @@ void test("all four shipped schemas validate from the one copy", () => {
   });
 });
 
-// COVERS: FR-3.1 | negative
+// COVERS FR-3.1 | negative
 void test("a document of the wrong shape is refused by its own schema", () => {
   assertThrows(
     () => wrench.schemas.JIG.validate({ tasks: [{ name: "build" }] }),
@@ -599,7 +599,7 @@ void test("a document of the wrong shape is refused by its own schema", () => {
   );
 });
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 void test("a schema checks shape and not meaning", () => {
   // A reason whose message is empty is the right type and says nothing, so it
   // passes. Anything relying on a schema to catch a wrong value is relying on
@@ -612,7 +612,7 @@ void test("a schema checks shape and not meaning", () => {
   );
 });
 
-// COVERS: FR-3.1, FR-3.4 | edge
+// COVERS FR-3.1, FR-3.4 | edge
 void test("filtering needs a selection to filter", () => {
   // matching and excluding say which paths a selection takes, so a command
   // naming neither path variable has no selection for them to shape. bolt's
@@ -655,7 +655,7 @@ void test("filtering needs a selection to filter", () => {
   }
 });
 
-// COVERS: FR-3.2 | negative
+// COVERS FR-3.2 | negative
 void test("a definitions file takes one level of scalars", () => {
   wrench.loadFormattedFile(
     "d.yaml",
@@ -687,7 +687,7 @@ void test("a definitions file takes one level of scalars", () => {
   }
 });
 
-// COVERS: FR-3.2 | regression
+// COVERS FR-3.2 | regression
 void test("a validation error names the schema by id and not by a local path", () => {
   // The identifier lands in the error, the error lands in a reason, and a
   // reason travels as evidence to another machine.
@@ -713,7 +713,7 @@ void test("a validation error names the schema by id and not by a local path", (
   );
 });
 
-// COVERS: FR-3.3 | positive
+// COVERS FR-3.3 | positive
 void test("one schema validates a document whichever codec read it", () => {
   const asYaml = wrench.loadFormattedFile(
     "f.yaml",
@@ -732,7 +732,7 @@ void test("one schema validates a document whichever codec read it", () => {
   assert.deepEqual(asYaml, asJson);
 });
 
-// COVERS: FR-3.3 | negative
+// COVERS FR-3.3 | negative
 void test("the same document is refused whichever codec read it", () => {
   for (const [codec, document] of [
     [wrench.YAML, 'success: "yes"\n'],
@@ -751,7 +751,7 @@ void test("the same document is refused whichever codec read it", () => {
   }
 });
 
-// COVERS: FR-3.3 | property
+// COVERS FR-3.3 | property
 void test("validation is indifferent to serialisation", () => {
   // Block and flow are the same structure, so the schema cannot tell them
   // apart. Flow is not what wrench emits and is still what it reads.
@@ -768,7 +768,7 @@ void test("validation is indifferent to serialisation", () => {
   }
 });
 
-// COVERS: FR-3.4 | edge
+// COVERS FR-3.4 | edge
 void test("a value that parsed differently from how it was written still validates", () => {
   // `1.20` unquoted is the number 1.2 and is a number of the right type, so
   // validation passes it. Quoting is what marks intent, not the schema.
@@ -783,7 +783,7 @@ void test("a value that parsed differently from how it was written still validat
   );
 });
 
-// COVERS: FR-3.5 | positive
+// COVERS FR-3.5 | positive
 void test("the schemas are files in the tree and the pack carries those bytes", async () => {
   for (const name of Object.keys(SHIPPED)) {
     const info = await stat(new URL(`schemas/${name}`, ROOT));
@@ -791,7 +791,7 @@ void test("the schemas are files in the tree and the pack carries those bytes", 
   }
 });
 
-// COVERS: FR-3.6 | positive
+// COVERS FR-3.6 | positive
 void test("a shipped schema may reference another and it resolves offline", () => {
   // The jig's definitions block and the definitions file are one shape, written
   // once and referenced across two shipped schemas. A jig carrying a nested
@@ -819,7 +819,7 @@ void test("a shipped schema may reference another and it resolves offline", () =
   );
 });
 
-// COVERS: FR-3.7, FR-5.7 | regression
+// COVERS FR-3.7, FR-5.7 | regression
 void test("the carried set is the directory, regenerated rather than believed", async () => {
   // A schema added to schemas/ and picked up by one pack but not another is a
   // divergence in the contract that nothing reports. It has happened: a fourth
@@ -867,7 +867,7 @@ void test("the carried set is the directory, regenerated rather than believed", 
   );
 });
 
-// COVERS: FR-3.8 | positive
+// COVERS FR-3.8 | positive
 void test("every shipped schema has a fixture that is an instance of it", async () => {
   // The fixture set names its schema in a `schema` file beside the input, so
   // the pack is asked the question the fixture was written to ask.
@@ -907,7 +907,7 @@ void test("every shipped schema has a fixture that is an instance of it", async 
   assert(checked > 0, "no fixture declares a schema, so this asserts nothing");
 });
 
-// COVERS: FR-3.9 | edge
+// COVERS FR-3.9 | edge
 void test("a document may declare the version it conforms to", () => {
   // Optional, because every document written before the field existed carries
   // none. Present, it is semver, so a consumer can refuse a major rather than
@@ -961,7 +961,7 @@ void test("a document may declare the version it conforms to", () => {
   }
 });
 
-// COVERS: FR-3.9 | property
+// COVERS FR-3.9 | property
 void test("the version field is the same in every format that carries it", async () => {
   // Written into each schema rather than referenced, because it constrains a
   // scalar rather than describing a shape. Repetition is the cost, so drift is
@@ -1028,7 +1028,7 @@ function outcome(
   return ["accepted", ""];
 }
 
-// COVERS: FR-3.10 | positive
+// COVERS FR-3.10 | positive
 void test("a caller's schema may reference a shipped one by its $id", () => {
   const [got, detail] = outcome(
     "https://example.invalid/s.schema.json",
@@ -1041,7 +1041,7 @@ void test("a caller's schema may reference a shipped one by its $id", () => {
   assert.deepEqual(got, "accepted", detail);
 });
 
-// COVERS: FR-3.10 | negative
+// COVERS FR-3.10 | negative
 void test("no environment variable opens a reference", () => {
   // WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS was documented before it was retired, so
   // somebody may still set it. It meant three different things while it
@@ -1071,7 +1071,7 @@ void test("no environment variable opens a reference", () => {
   }
 });
 
-// COVERS: FR-3.10 | edge
+// COVERS FR-3.10 | edge
 void test("a shipped $id cannot be redefined by a caller", () => {
   // A document deciding what the envelope schema means defeats the reason a
   // schema ships at all.
@@ -1087,7 +1087,7 @@ void test("a shipped $id cannot be redefined by a caller", () => {
   assert.deepEqual(failure.step, "schema");
 });
 
-// COVERS: FR-3.10a | positive
+// COVERS FR-3.10a | positive
 void test("a reference within the document resolves", () => {
   // Both spellings, each asserted by its VIOLATION: an accepted document says
   // nothing, because a $ref that contributed no constraint would accept it too.
@@ -1126,7 +1126,7 @@ void test("a reference within the document resolves", () => {
   }
 });
 
-// COVERS: FR-3.10b, FR-3.10d | negative
+// COVERS FR-3.10b, FR-3.10d | negative
 void test("a refusal names the resolved reference", () => {
   // A relative reference resolves against the document's $id, so the text and
   // the reference are different strings. This also pins that the $id wins over
@@ -1152,7 +1152,7 @@ void test("a refusal names the resolved reference", () => {
   assert(detail.includes(REFUSAL), detail);
 });
 
-// COVERS: FR-3.10c | negative
+// COVERS FR-3.10c | negative
 void test("a keyword in an instance is data", () => {
   // The schema keywords are ordinary keys in a document being validated. The
   // file this points at EXISTS, so an implementation that resolved it is caught
@@ -1189,7 +1189,7 @@ void test("a keyword in an instance is data", () => {
   }
 });
 
-// COVERS: FR-3.10d | negative
+// COVERS FR-3.10d | negative
 void test("every refused form gives the same sentence", () => {
   // One sentence for every shape a reference can take, so a consumer matching
   // on the failure does not need a list of the ways it can be spelled.
@@ -1228,7 +1228,7 @@ void test("every refused form gives the same sentence", () => {
 
 // ---- canonical form ---------------------------------------------------------
 
-// COVERS: FR-4.1 | property
+// COVERS FR-4.1 | property
 void test("a scalar is quoted exactly when it is meant to be a string", () => {
   // Unquoted, a YAML reader takes each of these for something else, and `1.20`
   // loses its trailing zero as a number.
@@ -1252,7 +1252,7 @@ void test("a scalar is quoted exactly when it is meant to be a string", () => {
   assert.deepEqual(written, '"f": 2.5\n"n": 1\n"t": true\n"z": null\n');
 });
 
-// COVERS: FR-4.1 | edge
+// COVERS FR-4.1 | edge
 void test("a numeric key stays a string", () => {
   // Sharper than the value case: to a YAML 1.1 reader an unquoted `10:` is an
   // integer key, so the key is quoted too.
@@ -1261,7 +1261,7 @@ void test("a numeric key stays a string", () => {
   assert(text(wrench.YAML.encode(subject)).startsWith('"10": 1\n"2": 2\n'));
 });
 
-// COVERS: FR-4.1 | negative
+// COVERS FR-4.1 | negative
 void test("a value with no canonical form is refused rather than guessed at", () => {
   for (const value of [NaN, Infinity, -Infinity]) {
     for (const codec of [wrench.YAML, wrench.JSON]) {
@@ -1273,7 +1273,7 @@ void test("a value with no canonical form is refused rather than guessed at", ()
   }
 });
 
-// COVERS: FR-4.2 | property
+// COVERS FR-4.2 | property
 void test("a string survives the round trip as the string it was", () => {
   const strings = [
     "no",
@@ -1300,7 +1300,7 @@ void test("a string survives the round trip as the string it was", () => {
   }
 });
 
-// COVERS: FR-4.3 | positive
+// COVERS FR-4.3 | positive
 void test("canonical form belongs to the save call", () => {
   // A caller cannot emit something valid but written another way: the save call
   // writes canonical form whatever the structure was built from.
@@ -1309,7 +1309,7 @@ void test("canonical form belongs to the save call", () => {
   assert.deepEqual(recorder.seen, [["out.yaml", '"a": 2\n"z": 1\n']]);
 });
 
-// COVERS: FR-4.3 | property
+// COVERS FR-4.3 | property
 void test("keys are sorted so two runs agree", () => {
   for (const codec of [wrench.YAML, wrench.JSON]) {
     assert.deepEqual(
@@ -1326,7 +1326,7 @@ void test("keys are sorted so two runs agree", () => {
   );
 });
 
-// COVERS: FR-4.4 | property
+// COVERS FR-4.4 | property
 void test("flow style is not what wrench emits", () => {
   const written = text(wrench.YAML.encode({ items: [1, 2], nested: { a: 1 } }));
   assert.deepEqual(written, '"items":\n  - 1\n  - 2\n"nested":\n  "a": 1\n');
@@ -1338,7 +1338,7 @@ void test("flow style is not what wrench emits", () => {
   );
 });
 
-// COVERS: FR-4.5 | property
+// COVERS FR-4.5 | property
 void test("a structure round trips through both codecs and the filesystem", () => {
   withDirectory((dir) => {
     for (const [name, save, load] of [
@@ -1356,7 +1356,7 @@ void test("a structure round trips through both codecs and the filesystem", () =
   });
 });
 
-// COVERS: FR-4.6 | property
+// COVERS FR-4.6 | property
 void test("json canonical form is two-space indent, sorted, with a trailing newline", () => {
   const written = text(
     wrench.JSON.encode({ b: [1, { d: 4, c: 3 }], a: "x", e: null }),
@@ -1367,7 +1367,7 @@ void test("json canonical form is two-space indent, sorted, with a trailing newl
   );
 });
 
-// COVERS: FR-4.6 | edge
+// COVERS FR-4.6 | edge
 void test("json canonical form keeps a non-ascii character as itself", () => {
   // `deno fmt` leaves it alone and the other packs write it, so escaping it
   // here would put this pack alone on the other side.
@@ -1379,7 +1379,7 @@ void test("json canonical form keeps a non-ascii character as itself", () => {
   assert.deepEqual(wrench.JSON.decode(wrench.JSON.encode(subject)), subject);
 });
 
-// COVERS: FR-4.8 | property
+// COVERS FR-4.8 | property
 void test("a float is positional and never an exponent", () => {
   const table: [number, string][] = [
     [1.2, "1.2"],
@@ -1416,7 +1416,7 @@ void test("a float is positional and never an exponent", () => {
   }
 });
 
-// COVERS: FR-4.8 | negative
+// COVERS FR-4.8 | negative
 void test("a float with no canonical form is refused", () => {
   for (const value of [NaN, Infinity, -Infinity]) {
     assertThrows(() => wrench.canonicalFloatText(value), RangeError);
@@ -1424,7 +1424,7 @@ void test("a float with no canonical form is refused", () => {
   }
 });
 
-// COVERS: FR-4.9 | property
+// COVERS FR-4.9 | property
 void test("a control character is escaped and never written raw", () => {
   // A raw control character is refused by a strict reader and folded by a
   // lenient one, so escaping is the only answer that keeps every value
@@ -1469,7 +1469,7 @@ void test("a control character is escaped and never written raw", () => {
   assert.deepEqual(wrench.JSON.decode(wrench.JSON.encode(subject)), subject);
 });
 
-// COVERS: FR-4.10 | property
+// COVERS FR-4.10 | property
 void test("an integer past the exact range widens to a float, visibly", () => {
   // The widening is deliberately VISIBLE: a number that cannot be carried
   // exactly is written with a `.0` rather than as a different exact-looking
@@ -1509,7 +1509,7 @@ void test("an integer past the exact range widens to a float, visibly", () => {
   );
 });
 
-// COVERS: FR-4.11 | edge
+// COVERS FR-4.11 | edge
 void test("negative zero is a value in json and a spelling elsewhere", () => {
   // JavaScript decides what a JSON document means, and V8 reads `-0` as signed.
   // In YAML an integer zero cannot carry the sign, so `-0` is the integer 0 and
@@ -1533,7 +1533,7 @@ void test("negative zero is a value in json and a spelling elsewhere", () => {
 
 // ---- the packs --------------------------------------------------------------
 
-// COVERS: FR-5.2 | property
+// COVERS FR-5.2 | property
 void test("the pack binds an established validator rather than implementing one", () => {
   // The binding is asked something only a real JSON Schema implementation
   // answers: a 2020-12 keyword, applied to a document that violates it.
@@ -1556,7 +1556,7 @@ void test("the pack binds an established validator rather than implementing one"
   assertThrows(() => tuple.validate(["a", "b"]), wrench.ValidationError);
 });
 
-// COVERS: FR-5.5 | property
+// COVERS FR-5.5 | property
 void test("the shared fixture set decodes to one structure", async () => {
   // Packs agree on structure and no longer on bytes, so what a fixture holds is
   // a structure that must survive every pack: the input and the canonical form
@@ -1584,7 +1584,7 @@ void test("the shared fixture set decodes to one structure", async () => {
   assert(checked > 0, "the fixture set is empty, so this asserts nothing");
 });
 
-// COVERS: FR-5.6 | property
+// COVERS FR-5.6 | property
 void test("the fixture set lives beside the schemas and this pack reads that copy", async () => {
   const fixtures = await stat(new URL("testdata/canonical", ROOT));
   assert(
@@ -1595,7 +1595,7 @@ void test("the fixture set lives beside the schemas and this pack reads that cop
   assert(schemas.isDirectory(), "schemas/ is not beside it");
 });
 
-// COVERS: FR-5.7 | positive
+// COVERS FR-5.7 | positive
 void test("the shipped set is reachable without the suffix", () => {
   // `schemas.JIG` rather than a name carrying `_SCHEMA`, the namespace carrying
   // what kind of thing these are so the names do not have to.
@@ -1621,7 +1621,7 @@ void test("the shipped set is reachable without the suffix", () => {
 
 // ---- reaching the library ---------------------------------------------------
 
-// COVERS: FR-6.3 | positive
+// COVERS FR-6.3 | positive
 void test("a write replaces the previous contents whole", () => {
   withDirectory((dir) => {
     const path = `${dir}/out.yaml`;
@@ -1636,7 +1636,7 @@ void test("a write replaces the previous contents whole", () => {
   });
 });
 
-// COVERS: FR-6.3 | property
+// COVERS FR-6.3 | property
 void test("two writes leave the last one and no litter", () => {
   withDirectory((dir) => {
     const path = `${dir}/doc.yaml`;
@@ -1649,7 +1649,7 @@ void test("two writes leave the last one and no litter", () => {
   });
 });
 
-// COVERS: FR-6.3 | edge
+// COVERS FR-6.3 | edge
 void test("a written file is readable by its consumers", () => {
   // A file created for a rename is owner-only, and evidence meant to be handed
   // around has to survive being handed around.
@@ -1660,7 +1660,7 @@ void test("a written file is readable by its consumers", () => {
   });
 });
 
-// COVERS: FR-6.3 | negative
+// COVERS FR-6.3 | negative
 void test("a failed write leaves no temporary behind", () => {
   // The temporary is what atomicity is built on, so a write that fails must not
   // leave one for somebody to find.

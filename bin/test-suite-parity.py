@@ -6,7 +6,7 @@ more than once. Each suite passing says nothing about whether they exercise the
 same rows, so a row held by one suite alone is a row every other pack can break
 silently, and every suite stays green while it happens.
 
-This reads the `COVERS:` marks out of each declared suite and compares the sets.
+This reads the `COVERS` marks out of each declared suite and compares the sets.
 
 It cannot be a per-base task, because the comparison is between bases. A checker
 run once inside `go/` and once inside `python/` sees one suite each time and can
@@ -25,15 +25,21 @@ import re
 import sys
 from pathlib import Path
 
-# `# COVERS: FR-1.1, FR-2.3 | positive` in Python, `// COVERS: ...` in Go, and
+# `# COVERS FR-1.1, FR-2.3 | positive` in Python, `// COVERS ...` in Go, and
 # whatever a third language spells a comment as. The marker is the anchor, not
 # the comment syntax, so a new language needs no change here.
+#
+# The mark has no colon, because a colon after COVERS makes the comment parse as
+# a Python annotation and ruff's ERA001 reads it as commented-out code. That form is
+# still read, as toolbox's traceability checker reads it, so a mark written the
+# old way is counted and not silently dropped. The ids must start `FR-`, which is
+# what keeps prose mentioning "COVERS marks" out of the count.
 #
 # The kind is part of the comparison. Two suites both citing FR-3.1 have both
 # touched it, which does not mean they test the same thing: one asserting the
 # positive path and the other the negative one is a divergence that an id-only
 # comparison calls level. In wrench an id-only comparison hid three of them.
-COVERS = re.compile(r"COVERS:\s*([^|\n]+)\|\s*(\w+)")
+COVERS = re.compile(r"COVERS:?[ \t]+(FR-[^|\n]+)\|[ \t]*(\w+)")
 
 # `| FR-6.1 | ... | [A] |` and the optional scope naming the suites expected to
 # discharge it, inside the SAME bracket: `| FR-6.1 | ... | [A python] |`.

@@ -44,7 +44,7 @@ still passes there.
 
 `testdata/canonical/` holds the packs to the same canonical form and says
 nothing about when each read the schema. `bin/test-suite-parity.py` compares
-`COVERS:` marks and says nothing about it either.
+`COVERS` marks and says nothing about it either.
 
 Why no guard here can close it decides where a fix could live. Every guard in
 this repository compares packs on the same input by construction, and given the

@@ -84,7 +84,7 @@ def declared_schema(case):
     return getattr(wrench, SHIPPED_BY_ID[identifier])
 
 
-# COVERS: FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-5.5, FR-5.6 | property
+# COVERS FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-5.5, FR-5.6 | property
 @pytest.mark.parametrize("case", CASES)
 def test_canonical_form_matches_the_shared_fixtures(case):
     """The bytes this pack emits are the bytes the fixture declares. The Go
@@ -102,7 +102,7 @@ def test_canonical_form_matches_the_shared_fixtures(case):
         schema.validate(value)
 
 
-# COVERS: FR-3.8 | positive
+# COVERS FR-3.8 | positive
 def test_every_shipped_schema_has_an_instance_fixture():
     """A schema nothing is ever validated against is a schema nobody knows
     compiles, let alone accepts a real document. The directory is the authority
@@ -124,7 +124,7 @@ def test_every_shipped_schema_has_an_instance_fixture():
     assert not uncovered, f"no fixture is an instance of: {', '.join(uncovered)}"
 
 
-# COVERS: FR-4.5 | property
+# COVERS FR-4.5 | property
 @pytest.mark.parametrize("case", CASES)
 def test_canonical_form_is_a_fixed_point(case):
     """Encoding the canonical form returns it unchanged, or it was not
@@ -133,7 +133,7 @@ def test_canonical_form_is_a_fixed_point(case):
     assert wrench.YAML.encode(wrench.YAML.decode(canonical)) == canonical
 
 
-# COVERS: FR-4.5 | property
+# COVERS FR-4.5 | property
 def test_every_scalar_type_survives_the_round_trip():
     value = {
         "truth": True,
@@ -150,7 +150,7 @@ def test_every_scalar_type_survives_the_round_trip():
     assert isinstance(back["text"], str), "a quoted string read back as something else"
 
 
-# COVERS: FR-4.1 | negative
+# COVERS FR-4.1 | negative
 def test_a_value_with_no_canonical_form_is_refused():
     """An object with no YAML spelling. Refusing beats inventing one, the error
     says where the trouble was, and the writer never runs."""
@@ -163,7 +163,7 @@ def test_a_value_with_no_canonical_form_is_refused():
     assert writer.written is None, "the writer ran despite encoding failing"
 
 
-# COVERS: FR-2.9 | regression
+# COVERS FR-2.9 | regression
 def test_a_timestamp_decodes_to_a_string_so_it_can_be_written_back():
     """YAML has a native timestamp type and JSON does not. Before this, an
     unquoted date decoded to a date object, reached the validator, which has no
@@ -179,7 +179,7 @@ def test_a_timestamp_decodes_to_a_string_so_it_can_be_written_back():
     assert wrench.YAML.encode(wrench.YAML.decode(encoded)) == encoded, "not a fixed point"
 
 
-# COVERS: FR-4.1 | edge
+# COVERS FR-4.1 | edge
 def test_nan_and_the_infinities_are_refused():
     for value in (float("nan"), float("inf"), float("-inf")):
         with pytest.raises(wrench.EncodeError):
@@ -189,20 +189,20 @@ def test_nan_and_the_infinities_are_refused():
 # ---- the two calls ----------------------------------------------------------
 
 
-# COVERS: FR-2.1, FR-2.2 | positive
+# COVERS FR-2.1, FR-2.2 | positive
 def test_load_returns_the_validated_structure():
     value = wrench.load_formatted_file("output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(VALID_ENVELOPE))
     assert value == {"success": True}
 
 
-# COVERS: FR-2.5a | positive
+# COVERS FR-2.5a | positive
 def test_the_reader_is_handed_the_path():
     reader = Stub(VALID_ENVELOPE)
     wrench.load_formatted_file("nowhere/output.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, reader)
     assert reader.saw_path == "nowhere/output.yaml"
 
 
-# COVERS: FR-2.3 | negative
+# COVERS FR-2.3 | negative
 def test_a_call_with_no_schema_is_refused():
     with pytest.raises(wrench.UsageError, match="no schema"):
         wrench.load_formatted_file("f.yaml", None, wrench.YAML, Stub())
@@ -210,7 +210,7 @@ def test_a_call_with_no_schema_is_refused():
         wrench.save_formatted_file({}, "f.yaml", None, wrench.YAML, Stub())
 
 
-# COVERS: FR-2.2 | negative
+# COVERS FR-2.2 | negative
 def test_a_call_with_no_codec_or_no_io_is_refused():
     with pytest.raises(wrench.UsageError, match="no codec"):
         wrench.load_formatted_file("f.yaml", ANYTHING, None, Stub())
@@ -220,7 +220,7 @@ def test_a_call_with_no_codec_or_no_io_is_refused():
         wrench.save_formatted_file({}, "f.yaml", ANYTHING, wrench.YAML, None)
 
 
-# COVERS: FR-2.6 | negative
+# COVERS FR-2.6 | negative
 def test_a_failure_says_which_step_failed():
     with pytest.raises(wrench.ReadError):
         wrench.load_formatted_file(
@@ -242,7 +242,7 @@ def test_a_failure_says_which_step_failed():
         wrench.load_formatted_file("f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(b'success: "yes"\n'))
 
 
-# COVERS: FR-2.4 | negative
+# COVERS FR-2.4 | negative
 def test_save_refuses_a_structure_it_would_not_read_back():
     writer = Stub()
     with pytest.raises(wrench.ValidationError):
@@ -250,7 +250,7 @@ def test_save_refuses_a_structure_it_would_not_read_back():
     assert writer.written is None, "the writer ran despite validation failing"
 
 
-# COVERS: FR-2.4, FR-4.3 | positive
+# COVERS FR-2.4, FR-4.3 | positive
 def test_save_writes_canonical_form():
     writer = Stub()
     wrench.save_formatted_file(
@@ -297,7 +297,7 @@ def _refuses(schema, value, what):
     pytest.fail(f"{what} was accepted")
 
 
-# COVERS: FR-3.1, FR-3.2, FR-3.5 | positive
+# COVERS FR-3.1, FR-3.2, FR-3.5 | positive
 def test_all_four_shipped_schemas_load_from_the_one_copy():
     for schema in (
         wrench.ENVELOPE_SCHEMA,
@@ -312,7 +312,7 @@ def test_all_four_shipped_schemas_load_from_the_one_copy():
     wrench.DEFINITIONS_SCHEMA.validate({"requirements": "../REQUIREMENTS.md"})
 
 
-# COVERS: FR-5.7 | positive
+# COVERS FR-5.7 | positive
 def test_the_shipped_set_is_reachable_without_the_suffix():
     """wrench.schemas.JIG rather than wrench.JIG_SCHEMA, the namespace carrying
     what kind of thing these are so the names do not have to.
@@ -333,7 +333,7 @@ def test_the_shipped_set_is_reachable_without_the_suffix():
     assert wrench.load_formatted_file("out.yaml", schemas.ENVELOPE, wrench.YAML, Stub(VALID_ENVELOPE)) == {"success": True}
 
 
-# COVERS: FR-3.7, FR-5.7 | regression
+# COVERS FR-3.7, FR-5.7 | regression
 def test_every_shipped_schema_is_exported():
     """A schema added to schemas/ and picked up by one pack but not the other is
     a divergence in the contract that nothing reports. It has happened: a fourth
@@ -359,7 +359,7 @@ def test_every_shipped_schema_is_exported():
         assert identifier in declared, f"this pack exports {identifier} and no file in schemas/ declares it"
 
 
-# COVERS: FR-3.1, FR-3.4 | edge
+# COVERS FR-3.1, FR-3.4 | edge
 def test_a_manifest_variable_says_which_layer_supplied_it():
     """A bare value is the shape before three layers existed. It is refused, so
     a producer cannot write a manifest that loses which layer won."""
@@ -397,7 +397,7 @@ def _manifest_yaml():
     return b"".join(lines)
 
 
-# COVERS: FR-3.9 | edge
+# COVERS FR-3.9 | edge
 def test_a_format_may_declare_the_version_it_conforms_to():
     """Optional, because every document written before the field existed carries
     none and claiming nothing is the honest reading of that. Present, it is
@@ -438,7 +438,7 @@ def test_a_format_may_declare_the_version_it_conforms_to():
         pytest.fail(f"{name}: an unquoted 1.0 was accepted, so a float passed as a version")
 
 
-# COVERS: FR-3.9 | property
+# COVERS FR-3.9 | property
 def test_the_version_field_is_the_same_in_every_format_that_carries_it():
     """Written into each schema instead of referenced, because it constrains a
     scalar and does not describe a shape, and a shipped schema is meant to be an
@@ -455,7 +455,7 @@ def test_the_version_field_is_the_same_in_every_format_that_carries_it():
         assert block == seen[first], f"the version field in {name} differs from the one in {first}"
 
 
-# COVERS: FR-3.1, FR-3.3, FR-3.6 | positive
+# COVERS FR-3.1, FR-3.3, FR-3.6 | positive
 def test_a_jigs_definitions_block_is_held_to_the_shared_shape():
     """The block and the file are one shape, written once and referenced across
     two shipped schemas. A jig carrying a nested value has to be refused by a
@@ -469,7 +469,7 @@ def test_a_jigs_definitions_block_is_held_to_the_shared_shape():
         wrench.load_formatted_file("bolt.q.yaml", wrench.JIG_SCHEMA, wrench.YAML, Stub(nested))
 
 
-# COVERS: FR-3.1, FR-3.4 | edge
+# COVERS FR-3.1, FR-3.4 | edge
 def test_a_jig_may_declare_it_stands_at_the_repository_root():
     """The field reaches the working directory and nothing else. The walk, the
     containment, the filter patterns and {base_dir} stay what the caller
@@ -515,7 +515,7 @@ def _consumer_schema(target):
     )
 
 
-# COVERS: FR-3.10 | positive
+# COVERS FR-3.10 | positive
 def test_a_consumer_schema_may_reference_a_shipped_one():
     """The case a consumer most wants: an adapter extending the envelope schema
     references it instead of copying it, and FR-3.2 forbids the drift a copy
@@ -536,7 +536,7 @@ def test_a_consumer_schema_may_reference_a_shipped_one():
     )
 
 
-# COVERS: FR-3.10 | negative
+# COVERS FR-3.10 | negative
 def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
     """Without this refusal a file:// reference loads that file off disk, so a
     schema's meaning depends on files outside it. Nothing is fetched over the
@@ -562,7 +562,7 @@ def test_a_schema_may_reference_nothing_outside_the_shipped_set(tmp_path):
             schema.validate({"d": "anything"})
 
 
-# COVERS: FR-3.10 | negative
+# COVERS FR-3.10 | negative
 def test_the_environment_cannot_restore_external_references(tmp_path):
     """The retired escape hatch opens nothing. The variable was documented and
     somebody may still set it, and a refusal that quietly turns permissive
@@ -602,7 +602,7 @@ def test_the_environment_cannot_restore_external_references(tmp_path):
             os.environ[retired] = previous
 
 
-# COVERS: FR-3.10 | edge
+# COVERS FR-3.10 | edge
 def test_a_caller_cannot_redefine_a_shipped_schema():
     """Registering a shipped id twice would let a document decide what the
     envelope schema means, which is the one thing a shipped schema fixes."""
@@ -618,7 +618,7 @@ def test_a_caller_cannot_redefine_a_shipped_schema():
         pytest.fail(f"{identifier} was redefined by a caller")
 
 
-# COVERS: FR-3.2, FR-3.3 | negative
+# COVERS FR-3.2, FR-3.3 | negative
 def test_a_definitions_file_takes_one_level_of_scalars():
     scalars = b'requirements: ../REQUIREMENTS.md\nline_length: 100\nstrict: true\nempty: ""\n'
     wrench.load_formatted_file("d.yaml", wrench.DEFINITIONS_SCHEMA, wrench.YAML, Stub(scalars))
@@ -638,7 +638,7 @@ def test_a_definitions_file_takes_one_level_of_scalars():
         pytest.fail(f"{what} was accepted")
 
 
-# COVERS: FR-3.2 | regression
+# COVERS FR-3.2 | regression
 def test_a_validation_error_names_the_schema_by_id_not_by_local_path():
     """The identifier lands in the error, the error lands in a reason, and a
     reason travels as evidence."""
@@ -649,7 +649,7 @@ def test_a_validation_error_names_the_schema_by_id_not_by_local_path():
     assert str(ROOT) not in message, "the error carries a local filesystem path"
 
 
-# COVERS: FR-3.3 | property
+# COVERS FR-3.3 | property
 def test_validation_is_indifferent_to_serialisation():
     block = b"success: false\nreasons:\n  - kind: k\n    message: m\n"
     flow = b"{success: false, reasons: [{kind: k, message: m}]}\n"
@@ -657,7 +657,7 @@ def test_validation_is_indifferent_to_serialisation():
         wrench.load_formatted_file("f.yaml", wrench.ENVELOPE_SCHEMA, wrench.YAML, Stub(data))
 
 
-# COVERS: FR-3.4 | edge
+# COVERS FR-3.4 | edge
 def test_a_schema_checks_shape_and_not_meaning():
     """A reason whose message is empty is the right type and says nothing."""
     wrench.load_formatted_file(
@@ -668,7 +668,7 @@ def test_a_schema_checks_shape_and_not_meaning():
     )
 
 
-# COVERS: FR-1.2 | negative
+# COVERS FR-1.2 | negative
 def test_a_mapping_key_that_is_not_a_string_is_refused():
     with pytest.raises(wrench.ParseError):
         wrench.load_formatted_file("f.yaml", ANYTHING, wrench.YAML, Stub(b"1: one\n"))
@@ -677,7 +677,7 @@ def test_a_mapping_key_that_is_not_a_string_is_refused():
 # ---- the filesystem ---------------------------------------------------------
 
 
-# COVERS: FR-2.1, FR-6.3 | positive
+# COVERS FR-2.1, FR-6.3 | positive
 def test_round_trip_through_the_real_filesystem(tmp_path):
     path = str(tmp_path / "output.yaml")
     value = {"success": True, "metadata": {"statistics": {"checked": 12}}}
@@ -689,7 +689,7 @@ def test_round_trip_through_the_real_filesystem(tmp_path):
     assert back["metadata"]["statistics"]["checked"] == 12
 
 
-# COVERS: FR-2.1, FR-6.3 | positive
+# COVERS FR-2.1, FR-6.3 | positive
 def test_a_path_object_is_accepted_and_normalised(tmp_path):
     """A Python caller passes `pathlib.Path`, so the annotation must accept it.
     Annotated as `str`, the call runs correctly and a consumer type-checking
@@ -716,7 +716,7 @@ def test_a_path_object_is_accepted_and_normalised(tmp_path):
     assert saw == [str(target)], "the writer was handed something other than a string"
 
 
-# COVERS: FR-2.11 | negative
+# COVERS FR-2.11 | negative
 def test_a_path_that_is_neither_string_nor_pathlike_is_a_usage_error():
     """Refused before any file is touched, so it is `usage` and not `read`.
     Reaching the reader it would surface as a filesystem failure and send
@@ -728,7 +728,7 @@ def test_a_path_that_is_neither_string_nor_pathlike_is_a_usage_error():
     assert "int" in str(caught.value)
 
 
-# COVERS: FR-2.8 | negative
+# COVERS FR-2.8 | negative
 def test_the_shipped_reader_fails_on_what_it_cannot_read(tmp_path):
     """A directory is not a file, and the shipped reader says so.
 
@@ -740,7 +740,7 @@ def test_the_shipped_reader_fails_on_what_it_cannot_read(tmp_path):
         wrench.LOCAL_FILE.read(str(tmp_path))
 
 
-# COVERS: FR-2.8, FR-6.3 | positive
+# COVERS FR-2.8, FR-6.3 | positive
 def test_local_file_writes_atomically(tmp_path):
     path = tmp_path / "output.yaml"
     path.write_bytes(b"previous\n")
@@ -751,7 +751,7 @@ def test_local_file_writes_atomically(tmp_path):
     assert list(tmp_path.iterdir()) == [path], "a temporary was left behind"
 
 
-# COVERS: FR-6.3 | edge
+# COVERS FR-6.3 | edge
 def test_a_written_file_is_readable_by_its_consumers(tmp_path):
     """mkstemp makes a file only its owner can read. Evidence meant to be
     handed around has to survive being handed around."""
@@ -763,7 +763,7 @@ def test_a_written_file_is_readable_by_its_consumers(tmp_path):
 # ---- reaching the library ---------------------------------------------------
 
 
-# COVERS: FR-6.1 | positive
+# COVERS FR-6.1 | positive
 def test_the_pack_is_importable_without_an_install():
     """A fresh interpreter, given only the path to the package, imports it. No
     pip, no virtualenv, nothing that can be half present."""
@@ -781,7 +781,7 @@ def test_the_pack_is_importable_without_an_install():
     assert "YAMLCodec" in result.stdout
 
 
-# COVERS: FR-6.2 | positive
+# COVERS FR-6.2 | positive
 def test_yaml_support_is_a_library_rather_than_a_vendored_copy():
     """The pack binds an installed library by name and vendors nothing.
 
@@ -797,7 +797,7 @@ def test_yaml_support_is_a_library_rather_than_a_vendored_copy():
     assert RUAMEL_YAML(typ="safe").load("a: 1") == {"a": 1}
 
 
-# COVERS: FR-4.3 | property
+# COVERS FR-4.3 | property
 def test_nothing_in_the_codec_writes_yaml_by_hand():
     """The emitter is the library's. It is asserted because a hand-written
     emitter (192 lines of one were removed) creeps back one special case at a
@@ -820,7 +820,7 @@ def test_nothing_in_the_codec_writes_yaml_by_hand():
 # docs/LESSONS/a-schema-change-lands-green-in-the-pack-that-does-not-test-it.md.
 
 
-# COVERS: FR-3.1 | negative
+# COVERS FR-3.1 | negative
 def test_an_unusable_schema_fails_when_it_is_compiled():
     """A schema that will not compile fails at the call that compiled it, so the
     failure does not surface later and somewhere else."""
@@ -839,7 +839,7 @@ def test_an_unusable_schema_fails_when_it_is_compiled():
         assert caught.value.__cause__ is not None, "the wrap discarded the cause"
 
 
-# COVERS: FR-3.1 | negative
+# COVERS FR-3.1 | negative
 def test_a_manifest_keeps_the_five_locations():
     """Every execution has them whatever else it has, so a manifest missing one
     is not a smaller manifest, it is a broken one."""
@@ -857,7 +857,7 @@ def test_a_manifest_keeps_the_five_locations():
         )
 
 
-# COVERS: FR-6.3 | negative
+# COVERS FR-6.3 | negative
 def test_a_failed_write_leaves_no_temporary_behind(tmp_path):
     """The temporary is what atomicity is built on, so a write that fails before
     it starts must not leave one for somebody to find."""
@@ -871,7 +871,7 @@ def test_a_failed_write_leaves_no_temporary_behind(tmp_path):
     assert entries == [not_a_dir], f"directory holds {entries}, want only the seeded file"
 
 
-# COVERS: FR-1.1 | positive
+# COVERS FR-1.1 | positive
 def test_the_pack_reads_the_one_copy_of_the_schemas():
     """The schemas and a library for each language live in one repository, so a
     Go producer and a Python producer work from the same definition. The pack
@@ -890,7 +890,7 @@ def test_the_pack_reads_the_one_copy_of_the_schemas():
     assert not list(package.glob("*.schema.json")), "a second copy beside the package"
 
 
-# COVERS: FR-1.4 | negative
+# COVERS FR-1.4 | negative
 def test_an_envelope_missing_success_is_refused():
     """Validation is JSON Schema over the decoded structure, and wrench does not
     get to differ from that decision. It is where it is implemented."""
@@ -899,7 +899,7 @@ def test_an_envelope_missing_success_is_refused():
     assert "success" in str(caught.value), "the error does not name the missing key"
 
 
-# COVERS: FR-2.5, FR-2.7 | positive
+# COVERS FR-2.5, FR-2.7 | positive
 def test_codec_and_io_are_independent():
     """The same codec with two different readers. Neither combination needs a
     function of its own, which is what declaring them separately buys."""
@@ -923,7 +923,7 @@ def test_codec_and_io_are_independent():
     assert {"Codec", "Reader", "Writer"} <= set(wrench.__all__), "a seam the other packs name is not exported"
 
 
-# COVERS: FR-5.2 | property
+# COVERS FR-5.2 | property
 def test_validation_is_a_real_json_schema_implementation():
     """$ref resolution, $defs and conditional application are the parts a
     hand-written checker never gets right. Binding to an established
@@ -945,7 +945,7 @@ def test_validation_is_a_real_json_schema_implementation():
     )
 
 
-# COVERS: FR-3.1, FR-3.4 | edge
+# COVERS FR-3.1, FR-3.4 | edge
 def test_a_task_may_allow_an_empty_selection():
     """An empty selection is a failure by default, because a pattern matching
     nothing is far more often a stale path than a deliberate one. A task says
@@ -976,7 +976,7 @@ def test_a_task_may_allow_an_empty_selection():
         pytest.fail(f"{what} was accepted")
 
 
-# COVERS: FR-3.1, FR-3.4 | edge
+# COVERS FR-3.1, FR-3.4 | edge
 def test_filtering_needs_a_selection_to_filter():
     """`matching` and `excluding` say which paths a selection takes, so a
     command naming neither path variable has no selection for them to shape.
@@ -994,7 +994,7 @@ def test_filtering_needs_a_selection_to_filter():
 
     refused = {
         "matching with no selection": b"tasks:\n  - name: whole\n    command: sh -c 'exit 0'\n    matching: [\"*.txt\"]\n",
-        "excluding with no selection": b"tasks:\n  - name: whole\n    command: go test ./...\n    excluding: [\"vendor/**\"]\n",
+        "excluding with no selection": b'tasks:\n  - name: whole\n    command: go test ./...\n    excluding: ["vendor/**"]\n',
     }
     for what, document in refused.items():
         try:
@@ -1004,7 +1004,7 @@ def test_filtering_needs_a_selection_to_filter():
         pytest.fail(f"{what} was accepted")
 
 
-# COVERS: FR-3.1, FR-3.4 | edge
+# COVERS FR-3.1, FR-3.4 | edge
 def test_a_time_limit_is_a_decimal_with_a_unit():
     """The grammar is deliberately narrower than a float parse, so the runner
     and this schema stay expressible as the same regex. A jig author gets the
@@ -1036,7 +1036,7 @@ def test_a_time_limit_is_a_decimal_with_a_unit():
         pytest.fail(f"{what} was accepted")
 
 
-# COVERS: FR-3.1, FR-3.4 | edge
+# COVERS FR-3.1, FR-3.4 | edge
 def test_envelope_evidence_and_statistics_are_objects():
     """Both carried a description and no type, so a producer could write either
     as a string, a list or a number and validation passed every time. The member
@@ -1072,7 +1072,7 @@ THREE_FORMATS = {"b": 1, "a": {"z": [1, 2], "y": "x"}, "d": True}
 CANONICAL_JSON = b'{\n  "a": {\n    "y": "x",\n    "z": [\n      1,\n      2\n    ]\n  },\n  "b": 1,\n  "d": true\n}\n'
 
 
-# COVERS: FR-2.7, FR-4.6 | property
+# COVERS FR-2.7, FR-4.6 | property
 def test_json_canonical_form():
     """Two-space indent, one key to a line, keys sorted, trailing newline. The
     same bytes the Go and Rust packs emit for this structure."""
@@ -1080,7 +1080,7 @@ def test_json_canonical_form():
     assert wrench.JSON.decode(CANONICAL_JSON) == THREE_FORMATS
 
 
-# COVERS: FR-4.11 | edge
+# COVERS FR-4.11 | edge
 def test_negative_zero_is_signed_in_json_and_an_integer_elsewhere():
     """JavaScript decides what a JSON document means, and V8 reads -0 as signed.
 
@@ -1101,7 +1101,7 @@ def test_negative_zero_is_signed_in_json_and_an_integer_elsewhere():
     assert math.copysign(1, wrench.YAML.decode(b"n: -0.0")["n"]) < 0
 
 
-# COVERS: FR-4.10 | property
+# COVERS FR-4.10 | property
 def test_an_integer_past_int64_widens_to_a_float():
     """YAML and JSON widen where TOML refuses, and the loss is visible.
 
@@ -1122,7 +1122,7 @@ def test_an_integer_past_int64_widens_to_a_float():
     assert isinstance(exact, int)
 
 
-# COVERS: FR-2.10 | positive
+# COVERS FR-2.10 | positive
 def test_a_wrapper_per_format_supplies_the_codec():
     """The wrappers add no behaviour. Each is the core call with one argument
     filled in, and validation still runs."""
@@ -1138,7 +1138,7 @@ def test_a_wrapper_per_format_supplies_the_codec():
     assert yaml_writer.written == b'"success": true\n'
 
 
-# COVERS: FR-2.10 | negative
+# COVERS FR-2.10 | negative
 def test_a_wrapper_still_validates():
     """The codec is filled in; the schema is not. A wrapper that skipped
     validation would be a way round FR-2.2."""
@@ -1169,7 +1169,7 @@ CANONICAL_FLOAT_CODECS: list[tuple[wrench.YAMLCodec | wrench.JSONCodec, str, str
 ]
 
 
-# COVERS: FR-4.8 | property
+# COVERS FR-4.8 | property
 @pytest.mark.parametrize(("value", "spelled"), CANONICAL_FLOATS)
 def test_a_float_has_one_spelling_in_every_codec(value: float, spelled: str) -> None:
     """Positional decimal, never an exponent, in both codecs.
@@ -1183,7 +1183,7 @@ def test_a_float_has_one_spelling_in_every_codec(value: float, spelled: str) -> 
         assert codec.encode({"n": value}) == (prefix + spelled + suffix).encode()
 
 
-# COVERS: FR-4.1 | edge
+# COVERS FR-4.1 | edge
 @pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
 def test_the_float_spelling_refuses_what_has_no_digits(value: float) -> None:
     """NaN and the infinities have no positional spelling, so the spelling
@@ -1210,7 +1210,7 @@ CANONICAL_ESCAPES = [
 ]
 
 
-# COVERS: FR-4.9 | property
+# COVERS FR-4.9 | property
 @pytest.mark.parametrize(("point", "in_yaml"), CANONICAL_ESCAPES)
 def test_a_control_character_is_escaped_in_every_codec(point, in_yaml):
     """Escaped, never written raw, in each format's own spelling.
@@ -1230,7 +1230,7 @@ def test_a_control_character_is_escaped_in_every_codec(point, in_yaml):
     assert wrench.YAML.decode(encoded)["n"] == text
 
 
-# COVERS: FR-2.11 | property
+# COVERS FR-2.11 | property
 def test_every_failure_is_wrenchs_own_type_with_its_step():
     """Six kinds on three axes, and the cause kept.
 

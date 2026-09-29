@@ -23,7 +23,7 @@ defect, and catching it is what this file is for.
         --suite rust='rust/tests/*.rs' .
 
 **Run this before committing anything that touches a test.** It fails when a
-`COVERS:` mark exists in one suite and not another, and it compares the
+`COVERS` mark exists in one suite and not another, and it compares the
 requirement and the kind, so a row where one pack asserts the positive path and
 another the negative one is a divergence, not agreement.
 

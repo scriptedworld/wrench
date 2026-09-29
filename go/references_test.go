@@ -34,7 +34,7 @@ func outcome(t *testing.T, name, schemaBody, instanceJSON string) (string, strin
 	return "accepted", ""
 }
 
-// COVERS: FR-3.10c | negative
+// COVERS FR-3.10c | negative
 func TestAKeywordInAnInstanceIsData(t *testing.T) {
 	t.Parallel()
 
@@ -59,7 +59,7 @@ func TestAKeywordInAnInstanceIsData(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.10a | positive
+// COVERS FR-3.10a | positive
 func TestAReferenceWithinTheDocumentResolves(t *testing.T) {
 	t.Parallel()
 
@@ -85,7 +85,7 @@ func TestAReferenceWithinTheDocumentResolves(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.10b, FR-3.10d | negative
+// COVERS FR-3.10b, FR-3.10d | negative
 func TestARefusalNamesTheResolvedReference(t *testing.T) {
 	t.Parallel()
 
@@ -111,7 +111,7 @@ func TestARefusalNamesTheResolvedReference(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.10d | negative
+// COVERS FR-3.10d | negative
 func TestEveryRefusedFormGivesTheSameSentence(t *testing.T) {
 	t.Parallel()
 
@@ -139,7 +139,7 @@ func TestEveryRefusedFormGivesTheSameSentence(t *testing.T) {
 	}
 }
 
-// COVERS: FR-3.10 | negative
+// COVERS FR-3.10 | negative
 func TestNoEnvironmentVariableOpensAReference(t *testing.T) {
 	// WRENCH_ALLOW_EXTERNAL_SCHEMA_REFS was documented before it was retired, so
 	// somebody may still set it. It meant three different things while it

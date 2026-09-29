@@ -39,7 +39,7 @@ func updatingFixtures() bool {
 	return os.Getenv(updateVariable) != ""
 }
 
-// COVERS: FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-5.5, FR-5.6 | property
+// COVERS FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-5.5, FR-5.6 | property
 func TestCanonicalFixtures(t *testing.T) {
 	t.Parallel()
 
@@ -134,7 +134,7 @@ func declaredSchema(t *testing.T, dir string) wrench.Schema {
 	return schema
 }
 
-// COVERS: FR-3.8 | positive
+// COVERS FR-3.8 | positive
 func TestEveryShippedSchemaHasAnInstanceFixture(t *testing.T) {
 	t.Parallel()
 
@@ -197,7 +197,7 @@ func TestEveryShippedSchemaHasAnInstanceFixture(t *testing.T) {
 	}
 }
 
-// COVERS: FR-4.5 | property
+// COVERS FR-4.5 | property
 func TestCanonicalFormIsAFixedPoint(t *testing.T) {
 	t.Parallel()
 

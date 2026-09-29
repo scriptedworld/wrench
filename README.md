@@ -64,7 +64,7 @@ The contract is written down and traced to the tests. `docs/REQUIREMENTS/`
 holds one file per requirement, and every test names the requirement it
 discharges in a comment above it:
 
-    // COVERS: FR-4.4 | negative
+    // COVERS FR-4.4 | negative
 
 A checker walks both directions. A test citing a requirement that does not exist
 fails; a requirement no test cites fails too, unless its row is marked as an open

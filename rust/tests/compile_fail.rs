@@ -13,7 +13,7 @@
 //!
 //!     TRYBUILD=overwrite cargo test --manifest-path rust/Cargo.toml --test compile_fail
 
-// COVERS: FR-2.2 | negative
+// COVERS FR-2.2 | negative
 #[test]
 fn a_call_with_no_codec_or_no_io_does_not_compile() {
     trybuild::TestCases::new().compile_fail("tests/compile-fail/*.rs");
