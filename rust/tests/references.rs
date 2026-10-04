@@ -16,17 +16,23 @@ const REFUSAL: &str =
 /// A schema that really is on disk, so "it was not read" is a measurement rather
 /// than the absence of a target. It requires a property no instance here
 /// carries, so a document validated against it would fail loudly.
-const REACHABLE: &str = "/tmp/wrench-reachable.schema.json";
+///
+/// It goes in the temporary directory the environment names, as the Go and
+/// Python suites' copies do, so a sandbox that allows only `$TMPDIR` can run it.
+const REACHABLE: &str = "wrench-reachable.schema.json";
 
 const PERMISSIVE: &str =
     r#"{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object"}"#;
 
-fn seed() {
+/// Writes the reachable schema and returns its absolute path.
+fn seed() -> String {
+    let path = std::env::temp_dir().join(REACHABLE);
     fs::write(
-        REACHABLE,
+        &path,
         r#"{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["proof_it_resolved"]}"#,
     )
     .expect("seeding the reachable schema");
+    path.to_str().expect("a UTF-8 temporary path").to_owned()
 }
 
 /// What happened, rather than an assertion, so a table states its own
@@ -51,8 +57,8 @@ fn a_keyword_in_an_instance_is_data() {
     // data file is allowed to carry them. The file this points at EXISTS, so an
     // implementation that resolved it is caught here rather than passing for
     // want of a target.
-    seed();
-    let file_ref = format!("file://{REACHABLE}");
+    let reachable = seed();
+    let file_ref = format!("file://{reachable}");
 
     let cases: [(&str, Value); 5] = [
         ("a $ref at a file that exists", json!({ "$ref": file_ref })),
@@ -154,14 +160,14 @@ fn a_refusal_names_the_resolved_reference() {
 fn every_refused_form_gives_the_same_sentence() {
     // One sentence for every shape a reference can take, so a consumer matching
     // on the failure does not need a list of the ways it can be spelled.
-    seed();
-    let file_ref = format!("file://{REACHABLE}");
+    let reachable = seed();
+    let file_ref = format!("file://{reachable}");
 
     let cases = [
         ("an http url", "http://example.invalid/x.schema.json"),
         ("an https url", "https://example.invalid/x.schema.json"),
         ("a file url", file_ref.as_str()),
-        ("an absolute path", REACHABLE),
+        ("an absolute path", reachable.as_str()),
         ("a relative path", "sibling.schema.json"),
         (
             "an unshipped wrench",
@@ -200,9 +206,9 @@ fn no_environment_variable_opens_a_reference() {
     // graph, so another crate enabling jsonschema/resolve-http enables it here.
     // The retriever is what this asserts, and it holds whatever the rest of the
     // build turned on.
-    seed();
+    let reachable = seed();
     let body = format!(
-        r#"{{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"file://{REACHABLE}"}}"#
+        r#"{{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"file://{reachable}"}}"#
     );
 
     for name in [
