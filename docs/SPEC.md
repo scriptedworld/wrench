@@ -423,8 +423,10 @@ envelope's reasons say belong to the components that produce and consume them.
 
 **Whether an unknown key is an error.** The shipped schemas refuse no unknown
 key today, deliberately, and whether that should become a failure or a warning
-is open. A jig carrying a key bolt does not read validates here and is refused
-one layer later.
+is open. A jig carrying a key bolt does not read validates here and bolt runs
+it with the key ignored, at the top level and on a task alike, since bolt leaves
+open what a schema leaves open (bolt FR-1.5). So a misspelt key does nothing and
+nothing says so.
 
 **The shape of `metadata.evidence` and `metadata.statistics` in the envelope.**
 Both carry a description and no type, so a producer may write either as a
