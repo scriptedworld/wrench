@@ -148,6 +148,19 @@ def test_negative_zero_keeps_its_sign_on_the_wire() -> None:
     assert parity.diverge(parity.to_wire(-0.0), parity.to_wire(0.0))
 
 
+def test_the_tracked_tree_carries_a_negative_zero_float() -> None:
+    """FR-4.11. Without it the gate is green with negative zero out of it.
+
+    Read the way the checker reads it, so `-0` would arrive as the integer 0
+    and fail here rather than assert the opposite of the row's JSON half.
+    """
+    tree = json.loads(parity.parse_args([]).tree.read_text(encoding="utf-8"))
+    assert "float_negative_zero" in tree, "the tree lost float_negative_zero"
+    value = tree["float_negative_zero"]
+    assert isinstance(value, float), f"float_negative_zero is {value!r}"
+    assert struct.pack(">d", value).hex() == "8000000000000000"
+
+
 def test_an_integer_past_a_double_is_carried_exactly() -> None:
     """9223372036854775807 as a double is 9223372036854775808."""
     assert parity.to_wire(2**63 - 1) == {"k": "int", "v": "9223372036854775807"}

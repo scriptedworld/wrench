@@ -15,6 +15,7 @@
   "empty_string": "",
   "float_big": 1e+20,
   "float_negative": -2.5,
+  "float_negative_zero": -0.0,
   "float_pi": 3.141592653589793,
   "float_simple": 0.1,
   "float_small": 1e-07,
