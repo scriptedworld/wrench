@@ -7,45 +7,43 @@ is right. Each format has a different kind of answer.
            form it gives for each type
     TOML   the toml.io v1.0.0 specification, which states the awkward cases
            outright
-    JSON   JavaScript on V8, because the grammar in RFC 8259 defines syntax and
-           says nothing about what a number means
+    JSON   RFC 8259 for the grammar, and for what a number means the IEEE 754
+           binary64 its section 6 names as what interoperable readers implement
 
-## Why JSON's authority is a runtime and not a document
+## Why JSON's authority for numbers is binary64
 
-JSON's specification is a grammar. It admits `-0` and `1e400` and an integer of
-any length, and declines to say what any of them denote, because it describes an
-interchange syntax and not a value model. So a document cannot settle a question
-about meaning and something that executes has to.
+RFC 8259 is a grammar. It admits `-0` and `1e400` and an integer of any length,
+and its grammar alone does not say what any of them mean. Section 6 does say
+what a reader can rely on: "Since software that implements IEEE 754 binary64
+(double precision) numbers [IEEE754] is generally available and widely used,
+good interoperability can be achieved by implementations that expect no more
+precision or range than these provide", and integers from -(2^53)+1 to
+(2^53)-1 are interoperable, in that implementations agree on them exactly.
 
-V8 is that something: it is the reference implementation of the language JSON
-was taken from, and `JSON.parse` is the most-run JSON reader in existence.
-
-V8 is the authority for meaning and not for output. `JSON.stringify(-0)` is
-`0`, and a value past 2^53 comes back spelled `1e+21`. Both are artefacts of a
-runtime with one numeric type, and both would break things wrench guarantees:
-the first loses a value it just read, the second is the exponent spelling FR-4.8
-forbids. Ask V8 what a document says. Do not copy how it writes one.
+So binary64 answers the questions the grammar leaves open. It is the authority
+for what a number means and not for how one is written: the spelling of a float
+is FR-4.8's, and wrench does not copy any runtime's output.
 
 ## What this settled
 
-`-0`. V8 reads it as a signed zero, so JSON decodes it to a negative zero float.
+`-0`. binary64 has a signed zero, so JSON decodes `-0` to a negative zero float.
 TOML says `-0` and `+0` are identical to an unprefixed zero and only `-0.0`
 carries a sign. YAML's integer regex `[-+]?(0|[1-9][0-9_]*)` admits `-0`, and its
 canonical form `0|-?[1-9][0-9]*` has no signed zero. So the same two characters
 are a float in one format and an integer in the other two, on three separate
 authorities that happen to agree with each other twice.
 
-Where the integer range ends. V8 loses precision above 2^53 because it has no
-integer type. wrench has one, so it keeps exactness to int64 and widens past it.
-That is wrench exceeding its authority's capability without departing from it:
-the JSON grammar permits the digits, and V8 simply cannot hold them.
+Where the integer range ends. binary64 is exact only to 2^53. wrench has an
+integer type, so it keeps exactness to int64 and widens past it. That is wrench
+exceeding its authority's capability without departing from it: the JSON
+grammar permits the digits, and binary64 simply cannot hold them.
 
 ## The band between 2^53 and int64 is real
 
 It is where a nanosecond timestamp lives. `time.time_ns()` is about
 1.79e18, which is 199 times above 2^53 and 5 times below int64 max, and a
-64-bit id sits in the same range. Through V8 a nanosecond timestamp comes back
-silently rounded; through wrench it is exact.
+64-bit id sits in the same range. A reader holding every number as binary64
+returns a nanosecond timestamp silently rounded; through wrench it is exact.
 
 Nothing wrench itself writes goes near it. Its schemas carry one integer field,
 `manifest.ordinal`, an execution index. So the range rule protects consumers and

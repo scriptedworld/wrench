@@ -1,0 +1,8 @@
+{
+  "lineWidth": 80,
+  "indentWidth": 2,
+  "useTabs": false,
+  "plugins": [
+    "https://plugins.dprint.dev/json-0.25.2.wasm@811ca4c6f732bcd6f707bc2f42d42395bb4127cdf829960cf628a18fc149777e"
+  ]
+}

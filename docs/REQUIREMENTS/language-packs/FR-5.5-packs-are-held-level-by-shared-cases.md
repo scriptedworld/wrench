@@ -8,21 +8,18 @@
 
 Before 2026-09-07 the row asked every pack to emit the same bytes, and that is
 what forced a hand-written emitter per format per pack. It cannot ask that, and
-the reason is a measurement: no canonical form exists that all four libraries
+the reason is a measurement: no canonical form exists that every pack's library
 can emit.
 
     libyaml, used by Rust    block sequences indentless, hard-coded
     yaml.v3, used by Go      block sequences indented, SetIndent is the only knob
     ruamel, used by Python   either
-    Psych, used by Ruby      indentless
 
 Whichever indentation the contract picks, one of Go or Rust cannot produce it,
 and neither has an alternative worth having.
 
-So the packs are held to what consumers actually depend on, and that already
-held when the row changed: four differently-shaped YAML files from four
-independent emitters, each decoding to the same structure in both packs that
-could be run against all of them.
+So the packs are held to what consumers actually depend on: each pack's
+differently-shaped YAML decodes to the same structure in every other pack.
 
 The adapter set is where meaning is preserved, and it is the same as before:
 keys sorted, every string and key quoted, floats spelled positionally, null

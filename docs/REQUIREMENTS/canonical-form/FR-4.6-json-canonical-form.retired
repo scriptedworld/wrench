@@ -1,0 +1,12 @@
+# FR-4.6, retired
+
+Retirement is carried by this file's name. The row is kept so the id stays registered as retired and can never be reused.
+
+| ID | Retired | Superseded by |
+|---|---|---|
+| FR-4.6 | 2026-10-11 | FR-4.12 |
+
+It stated JSON's canonical form and named the formatter the gate then ran
+as one that form agreed with. That formatter left the gate. The layout is
+FR-4.12; the agreement with whatever formatter the gate runs is a design
+choice, stated in `docs/SPEC.md` under "Canonical form".

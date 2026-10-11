@@ -20,23 +20,9 @@ covering the 2020-12 dialect wrench declares.
 | Go | `santhosh-tekuri/jsonschema/v6` | yes | In use, `go/go.mod` |
 | Python | `jsonschema` | yes | In use, `pyproject.toml` |
 | Rust | `jsonschema`, `default-features = false` | yes | Measured, below |
-| TypeScript | `ajv` | yes | Run against wrench's schemas |
-| Ruby | `json_schemer` 2.5.0 | yes | The gem's own summary |
-| C++ | jsoncons, pinned at v1.9.0 | yes | Measured: wrench's four schemas valid against the meta-schema under `unshare -rn` |
 
-The Ruby and C++ rows are the survey, not bindings. Ruby's pack was removed on
-2026-09-16 and C++'s on 2026-09-25, and the rows stay because the survey is what
-a later pack in either language starts from. TypeScript's row is a binding again:
-the pack returned at `237f969`.
-
-A library is not why a pack does or does not get built. Ruby was dropped and
-restored, and `json_schemer` was solid throughout: 76,948,643 total downloads,
-6,792,182 on 2.5.0, MIT, released 2025-12-09. What each pack waits for is a
-consumer, per `packs-follow-demand`.
-
-Two library names were doubted for sounding unsupported, `json_schemer` and
-`ajv`, and both turned out to be first class when measured. That is why this
-table carries numbers and not adjectives.
+A library is not why a pack does or does not get built. What each pack waits
+for is a consumer, per `packs-follow-demand`.
 
 Go was the one to check, since a gap there would have been a problem and not an
 inconvenience. There is no gap. The library declares `Draft4`, `Draft6`,
@@ -48,17 +34,6 @@ only in 2020-12:
 
     "$dynamicRef" "dependentSchemas" "prefixItems"
     "unevaluatedItems" "unevaluatedProperties"
-
-C++ has two maintained 2020-12 implementations and both are heavy: a program
-that compiles one schema and validates one document carries 735,281 bytes of
-jsoncons symbols, with drafts 4, 6, 7 and 2019-09 instantiated whether or not
-anything reaches them, and 1,649,630 bytes of sourcemeta/blaze, which supports
-2020-12 alone and is larger anyway. That weight would land on every consumer that
-linked the pack, and it is part of why a C++ pack came out again:
-`a-cpp-pack-was-built-and-removed`.
-
-Ruby: `json_schemer`'s summary reads *"JSON Schema validator. Supports drafts 4,
-6, 7, 2019-09, 2020-12, OpenAPI 3.0, and OpenAPI 3.1."* Versions run to 2.5.0.
 
 Rust binds `jsonschema` and not `boon`, on use and maintenance, not on which
 draft a crates.io line names first:
@@ -118,25 +93,58 @@ required, and the reasons it was dropped still apply:
 - It would make wrench's own contract untestable in-process. FR-2.5a exists
   so a test can exercise validation against no filesystem at all.
 
-If a fifth language ever has no maintained implementation, that language does not
+If a further language ever has no maintained implementation, that language does not
 get a pack before this decision is revisited. `packs-follow-demand` says a pack
 waits for a consumer; this adds that it also waits for a library.
 
 ## The gate's validators are not bindings
 
-`bolt.wrench-quality.yaml` asks every pack's binding and `@hyperjump/json-schema`
-whether each file in `schemas/` is valid 2020-12. hyperjump is a checker of
-wrench's own schema files, not part of any pack: nothing imports it, nothing
-shells to it at run time, and it never sees a document a consumer wrote.
+`bolt.wrench-quality.yaml` asks every pack's binding and jschon whether each
+file in `schemas/` is valid 2020-12. jschon is a checker of wrench's own schema
+files, not part of any pack: nothing imports it, nothing shells to it at run
+time, and it never sees a document a consumer wrote.
 
 **A pack and the gate's independent validator may never bind the same library**,
-and whoever adds the fifth pack checks that again. The criterion is the
-implementation and not the runtime, so two implementations in one language are
-as independent of each other as two in different ones.
+and whoever adds a pack checks that again. The criterion is the implementation
+and not the runtime, so two implementations in one language are as independent
+of each other as two in different ones.
 
-`ajv` was that validator until the TypeScript pack bound it, and for that span
-the gate asked one of wrench's own bindings and nothing independent. hyperjump
-replaced it. `the-gate-asks-every-validator-and-requires-agreement` has the shape
-the check takes: every validator wrench binds is asked and must agree, plus at
-least one implementation no pack binds, so unanimity cannot quietly become
-unanimity among wrench's own bindings.
+`the-gate-asks-every-validator-and-requires-agreement` has the shape the check
+takes: every validator wrench binds is asked and must agree, plus at least one
+implementation no pack binds, so unanimity cannot quietly become unanimity among
+wrench's own bindings.
+
+### Why jschon
+
+Four candidates went through the gate's own harness with no network allowed,
+each alone as the independent reader, against the four shipped schemas and the
+two controls:
+
+    candidate                    lang    result
+    jschon 0.11.1                Python  passes, with the 2020-12 meta-schema
+                                         it ships
+    boon 0.6.1                   Rust    passes, with the meta-schema it ships
+    kaptinlin/jsonschema 0.9.10  Go      cannot run: fetches the 2020-12
+                                         meta-schema over https and carries
+                                         only drafts 4, 6 and 7
+    google/jsonschema-go 0.4.3   Go      refuses jig.schema.json, failing to
+                                         load definitions.schema.json by $ref;
+                                         carries no meta-schema in the library
+
+Both Go candidates pass once handed a local copy of the meta-schema. That makes
+the one document the check turns on a copy wrench vendored, chosen by the tree
+being judged, which is weaker than an implementation bringing its own. boon
+passes, and its author, santhosh kumar tekuri, wrote the Go pack's binding: the
+same design and the same reading of the specification, and so the weakest
+outsider of the four. jschon is Mark Jacobson's, and the Python pack's
+`jsonschema` is a different project.
+
+jschon's cost is its age, with no release since 2023-10-22. JSON Schema 2020-12
+is a fixed dialect, so that matters only if it stops installing on a newer
+Python. If it does, kaptinlin with a vendored meta-schema is the measured
+fallback.
+
+The Go pack refuses a schema whose `$ref` points outside the shipped set, and
+jschon accepts one. That is by design: jschon checks a schema against the
+meta-schema and does not resolve its references, and the Go pack's loader
+resolves only the shipped schemas.

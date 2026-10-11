@@ -34,7 +34,7 @@ version: 1.0.0
 # No pack's tooling. A language's toolchain is named in that pack's own jig,
 # reached through its own Justfile, so a machine missing one pack's compiler or
 # runtime still runs the contract over the schemas and the requirements.
-requires: [python3, jq, deno, mypy, uv]
+requires: [python3, jq, dprint, mypy, uv]
 
 definitions:
   # A directory, one file per requirement, nested by category. Both checkers
@@ -75,16 +75,16 @@ tasks:
     description: every JSON file is JSON
     command: jq empty {each_path}
     matching: ["**/*.json"]
-    excluding: [".ephemera/**", "**/node_modules/**"]
+    excluding: [".ephemera/**"]
 
   - name: json-formatted
     description: every JSON file is formatted, and formatting preserves how it was written
-    # deno and not `jq --indent 2`, which is a processor and not a formatter:
+    # dprint and not `jq --indent 2`, which is a processor and not a formatter:
     # it strips the blank lines grouping a schema and explodes short inline
     # arrays, so enforcing it would make a hand-written schema worse.
-    command: deno fmt --check {each_path}
+    command: dprint check {each_path}
     matching: ["**/*.json"]
-    excluding: [".ephemera/**", "**/node_modules/**"]
+    excluding: [".ephemera/**"]
 
   - name: schema-declares-its-dialect-and-id
     description: a shipped schema says which JSON Schema it is and what it is called
@@ -107,8 +107,8 @@ tasks:
   # the split removes, and it is why `.gitignore` carried two `.coverage` paths.
   #
   # What each pack runs is in `<pack>/just/lang.just`: go-std-quality,
-  # python-std-quality, node-std-quality, and Rust's cargo tasks until a shared
-  # Rust standard is adopted.
+  # python-std-quality, and Rust's cargo tasks until a shared Rust standard is
+  # adopted.
 
   # ---- the contract ---------------------------------------------------------
 
@@ -211,10 +211,6 @@ tasks:
     # Compares the suites against each other, so it stands at the root and
     # cannot become a per-language task. Adding a pack means adding a --suite
     # here.
-    #
-    # TypeScript is absent on purpose and not by omission: it is not yet in any
-    # of the three mechanisms that hold packs level, and `NEXT_STEPS.md` carries
-    # what adding it reported.
     command: ./bin/test-suite-parity.py --requirements {requirements} --suite go='go/*_test.go' --suite python='python/tests/*.py' --suite rust='rust/tests/*.rs' .
 
   # Nothing else checks the checker above. It decides whether three suites
@@ -256,9 +252,9 @@ tasks:
     description: every pack's output decodes to the same value in every other pack
     command: ./bin/test-cross-pack-parity.py
 
-  # Every validator a pack binds, and @hyperjump/json-schema, which none binds,
-  # must agree that each shipped schema is valid 2020-12 and must refuse two
-  # controls that are not. Unanimity tests that every pack can consume what
+  # Every validator a pack binds, and jschon, which none binds, must agree that
+  # each shipped schema is valid 2020-12 and must refuse two controls that are
+  # not. Unanimity tests that every pack can consume what
   # wrench ships; the outsider keeps it from becoming agreement among wrench's
   # own bindings; the controls catch a reader that stopped checking.
   # docs/DECISIONS/the-gate-asks-every-validator-and-requires-agreement.md is the

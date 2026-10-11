@@ -9,11 +9,12 @@
 //! produce the same bytes. `serde_json`'s `preserve_order` feature is
 //! deliberately not enabled, so its map is a `BTreeMap` and iterates sorted.
 //!
-//! The form is `deno fmt` clean, and that is deliberate.
-//! `bolt.wrench-quality.yaml` already runs `deno fmt --check` over
-//! `schemas/*.json`, so a second answer about JSON layout would put two
-//! formatters in one repository. The output is byte-identical to the Go and
-//! Python packs'.
+//! The form is one the gate's JSON formatter leaves unchanged, and that is
+//! deliberate: a second answer about JSON layout would put two formatters in
+//! one repository. The formatter does not sort keys, so it is a formatter and
+//! not a canonical form, and the agreement holds in one direction only.
+//! `docs/SPEC.md` names the formatter. The output is byte-identical to the Go
+//! and Python packs'.
 
 use std::io;
 
@@ -39,7 +40,7 @@ impl Codec for JsonCodec {
 
     fn encode(&self, value: &Value) -> Result<Vec<u8>, crate::Error> {
         // `PrettyFormatter` indents with two spaces, which is what the other two
-        // packs emit and what `deno fmt` produces. Everything about serde_json's
+        // packs emit. Everything about serde_json's
         // output is right except how it spells a float, so the formatter is
         // wrapped rather than the whole serializer being hand-written: `ryu`
         // switches to an exponent at 1e16, which disagrees with this pack's own

@@ -92,13 +92,7 @@ class Pack:
 
 
 def default_packs(work: Path) -> list[Pack]:
-    """The packs that take part, one entry each.
-
-    The TypeScript pack is absent: it needs a driver under
-    `testdata/parity/typescript/` and a table entry here. It is absent rather
-    than stubbed, because a stub that reported agreement would be the only thing
-    here that could lie.
-    """
+    """The packs that take part, one entry each."""
     parity = REPO / "testdata" / "parity"
     return [
         Pack(

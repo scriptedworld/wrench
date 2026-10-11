@@ -90,12 +90,9 @@ def default_readers(work: Path) -> list[Reader]:
             env={"CARGO_TARGET_DIR": str(work / "rust-target")},
         ),
         Reader(
-            name="typescript",
-            driver=["node", str(DRIVERS / "typescript" / "driver.ts")],
-        ),
-        Reader(
-            name="hyperjump",
-            driver=["deno", "run", "--allow-read", str(DRIVERS / "hyperjump" / "driver.ts")],
+            name="jschon",
+            driver=["uv", "run", "--no-project", "--with", "jschon==0.11.1",
+                    "python", str(DRIVERS / "jschon" / "driver.py")],
             independent=True,
         ),
     ]

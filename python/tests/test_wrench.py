@@ -1072,7 +1072,7 @@ THREE_FORMATS = {"b": 1, "a": {"z": [1, 2], "y": "x"}, "d": True}
 CANONICAL_JSON = b'{\n  "a": {\n    "y": "x",\n    "z": [\n      1,\n      2\n    ]\n  },\n  "b": 1,\n  "d": true\n}\n'
 
 
-# COVERS FR-2.7, FR-4.6 | property
+# COVERS FR-2.7, FR-4.12 | property
 def test_json_canonical_form():
     """Two-space indent, one key to a line, keys sorted, trailing newline. The
     same bytes the Go and Rust packs emit for this structure."""
@@ -1082,9 +1082,7 @@ def test_json_canonical_form():
 
 # COVERS FR-4.11 | edge
 def test_negative_zero_is_signed_in_json_and_an_integer_elsewhere():
-    """JavaScript decides what a JSON document means, and V8 reads -0 as signed.
-
-    YAML has no sentence about it and every implementation agrees anyway: an
+    """YAML has no sentence about `-0` and every implementation agrees anyway: an
     integer zero cannot carry a sign, so `-0` is the integer 0 and only `-0.0`
     is a signed zero. The decimal point is the whole of the distinction.
 

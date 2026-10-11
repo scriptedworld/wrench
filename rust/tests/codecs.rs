@@ -47,7 +47,7 @@ fn three_formats() -> serde_json::Value {
     json!({"b": 1, "a": {"z": [1, 2], "y": "x"}, "d": true})
 }
 
-// COVERS FR-2.7, FR-4.6 | property
+// COVERS FR-2.7, FR-4.12 | property
 #[test]
 fn json_canonical_form() {
     let encoded = JSON.encode(&three_formats()).expect("encode");
@@ -66,9 +66,8 @@ fn json_canonical_form() {
 // COVERS FR-4.11 | edge
 #[test]
 fn negative_zero_is_signed_in_json_and_an_integer_elsewhere() {
-    // JavaScript decides what a JSON document means, and V8 reads -0 as signed.
-    // serde_json agrees on its own: it routes -0 alone to a float while -1
-    // stays an i64, so the JSON half needs nothing from this pack.
+    // serde_json routes -0 alone to a float while -1 stays an i64, so the
+    // JSON half needs nothing from this pack.
     let json = JSON.decode(b"{\"n\": -0}").expect("decode");
     assert!(json["n"].is_f64(), "JSON -0 came back {:?}", json["n"]);
     assert!(

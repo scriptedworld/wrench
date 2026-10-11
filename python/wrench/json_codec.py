@@ -8,9 +8,11 @@ Keys are sorted for the reason the YAML codec sorts them: a mapping has no order
 of its own, so sorting is what makes two runs over the same structure produce
 the same bytes.
 
-The form is `deno fmt` clean, and that is deliberate. `bolt.wrench-quality.yaml`
-already runs `deno fmt --check` over `schemas/*.json`, so a second answer about
-JSON layout would put two formatters in one repository.
+The form is one the gate's JSON formatter leaves unchanged, and that is
+deliberate: a second answer about JSON layout would put two formatters in one
+repository. The formatter does not sort keys, so it is a formatter and not a
+canonical form, and the agreement holds in one direction only. `docs/SPEC.md`
+names the formatter.
 
 The structure is walked by hand, and only because of floats. `json.dumps`
 is correct about everything else and offers no supported hook for how a number
@@ -70,11 +72,11 @@ class JSONCodec:
 def _json_int(text: str) -> int | float:
     """One integer literal, as the value JSON gives it.
 
-    Negative zero is a value in JSON, not a spelling of zero. JavaScript is
-    the reference for what a JSON document means, and V8 reads `-0` as a signed
-    zero: `Object.is(JSON.parse("-0"), -0)` is true and `1/x` is -Infinity. An
-    integer zero cannot carry the sign, so this is the one literal with no
-    decimal point that still decodes to a float.
+    Negative zero is a value in JSON, not a spelling of zero. RFC 8259 leaves
+    what a number means to IEEE 754 binary64, which has a signed zero, so `-0`
+    decodes to negative zero. An integer zero cannot carry the sign, so this is
+    the one literal with no decimal point that still decodes to a float.
+    FR-4.11.
 
     YAML and TOML keep it an integer, because each format's own reference
     answers for it and both call `-0` an integer.
@@ -130,7 +132,7 @@ def _string(value: str) -> str:
     """A quoted string, escaped the way JSON spells escapes.
 
     `ensure_ascii=False` keeps a non-ASCII character as itself, which is what
-    the other two packs write and what `deno fmt` leaves alone.
+    the other two packs write.
     """
     return json.dumps(value, ensure_ascii=False)
 

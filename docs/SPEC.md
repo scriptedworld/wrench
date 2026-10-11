@@ -218,12 +218,15 @@ The complement is the half that surprises people: an unquoted `1.20` was a
 number, and that number has no trailing zero, so it round trips as `1.2`. Quote
 a version number.
 
-**JSON** (FR-4.6). Two-space indent, one key to a line, keys sorted, trailing
-newline. It is `deno fmt` clean, which is deliberate, because the gate already
-runs `deno fmt --check` over `schemas/*.json` and a second answer about JSON
-layout would put two formatters in one repository. The agreement is one
-direction only: `deno fmt` does not sort keys and will collapse a short object
-onto one line, so it is a formatter and not a canonical form.
+**JSON** (FR-4.12). Two-space indent, one key to a line, keys sorted, trailing
+newline. The formatter the gate runs over every JSON file in the repository,
+`dprint` with its JSON plugin, leaves that output unchanged, which is
+deliberate: a second answer about JSON layout would put two formatters in one
+repository. The agreement is one direction only. The formatter does not sort
+keys, and within its 80-column line width it keeps an object on one line or
+across several as it was written, so it is a formatter and not a canonical
+form. No test asserts the agreement; it holds because the layout above is one
+the formatter accepts.
 
 **Control characters** are escaped and never written raw (FR-4.9), using the
 escape table of the format being written. That table is a property of the

@@ -57,16 +57,12 @@ something works; read this file for how the project is run.
     rust/src/                the Rust pack
     rust/tests/              build.rs generates its copy every build
 
-    typescript/src/          the TypeScript pack, Node-first and running
-    typescript/test/         under Deno as well
-
-
 ## The gate
 
     just checks
 
 Three layers, in order: each pack's own jig at its own base (`go/`, `python/`,
-`rust/`, `typescript/`, each through its `Justfile`), then the common standard
+`rust/`, each through its `Justfile`), then the common standard
 over the whole repository, then `bolt wrench-quality .`, the contract. The last
 is not the gate on its own: it runs no pack's formatter or linter, so a pack
 change can pass it and fail its pack's jig. Run the pack's jig too when
@@ -109,15 +105,10 @@ the register against every source file, not only the Python pack. There is no
 | Go | bolt's Go implementation | Built, under `go/` |
 | Python | toolbox's adapters and checkers | Built, under `python/` |
 | Rust | bolt | Built, suite level with the others |
-| TypeScript | no consumer yet | Built, under `typescript/`, gated by its own tooling and in none of the mechanisms that hold packs level |
 
 `packs-follow-demand` says what decides when a pack gets written: whether the
 estate writes tools in that language. A waiting consumer is not required,
 because the emitters that made a pack expensive are gone.
-
-A Ruby pack and a TypeScript pack were built and removed on 2026-09-16, both
-outside the gate and neither wanted yet. `ruby/` is at `8d5714c` and
-`typescript/` at `67757b0` if either is restored.
 
 Bump the pack version in the same commit as a change to its surface. A resolver
 serves an unchanged version number out of its cache, so a consumer receives none
@@ -154,10 +145,6 @@ finds an undeclared one:
     ./bin/test-suite-parity.py --requirements docs/REQUIREMENTS \
         --suite go='go/*_test.go' --suite python='python/tests/*.py' \
         --suite rust='rust/tests/*.rs' .
-
-The TypeScript suite is not compared yet. Adding it reported six divergences,
-four of them rows deliberately scoped to two packs, and `NEXT_STEPS.md` carries
-what each one was. It joins the comparison when those are settled.
 
 `docs/PATTERNS/holding-two-packs-level.md` is what keeps it this way. Assert the
 same table in every suite; a table that differs is packs that differ. Its name

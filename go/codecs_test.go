@@ -29,7 +29,7 @@ const canonicalJSON = "{\n  \"a\": {\n    \"y\": \"x\",\n" +
 // reaches it.
 var errStub = errors.New("nope")
 
-// COVERS FR-2.7, FR-4.6 | property
+// COVERS FR-2.7, FR-4.12 | property
 func TestJSONCanonicalForm(t *testing.T) {
 	t.Parallel()
 

@@ -19,13 +19,11 @@ import (
 // its own, so sorting is what makes two runs over the same structure produce
 // the same bytes.
 //
-// The form is `deno fmt` clean, and that is deliberate. bolt.wrench-quality.yaml
-// already runs `deno fmt --check` over schemas/*.json, so a second answer about
-// JSON layout would put two formatters in one repository. Sorted, two-space,
-// one-key-per-line JSON passes deno fmt unchanged. deno fmt does not sort keys
-// and collapses a short object onto one line, so it is a formatter and not a
-// canonical form, and matching it holds in one direction only: what wrench
-// emits, deno accepts.
+// The form is one the gate's JSON formatter leaves unchanged, and that is
+// deliberate: a second answer about JSON layout would put two formatters in
+// one repository. The formatter does not sort keys, so it is a formatter and
+// not a canonical form, and the agreement holds in one direction only.
+// docs/SPEC.md names the formatter.
 //
 // A function and not a var, because an exported var is writable by any package
 // that imports this one: `wrench.JSON = somethingElse` would respell every
@@ -119,11 +117,11 @@ func jsonNumbers(value any) (any, error) {
 // it.
 func jsonNumber(n json.Number) (any, error) {
 	text := n.String()
-	// Negative zero is a value in JSON, distinct from zero. JavaScript is the
-	// reference for what a JSON document means, and V8 reads `-0` as a
-	// signed zero: `Object.is(JSON.parse("-0"), -0)` is true and `1/x` is
-	// -Infinity. An integer zero cannot carry the sign, so this is the one
-	// literal with no decimal point that still decodes to a float. FR-4.11.
+	// Negative zero is a value in JSON, distinct from zero. RFC 8259 leaves
+	// what a number means to IEEE 754 binary64, which has a signed zero, so
+	// `-0` decodes to negative zero. An integer zero cannot carry the sign, so
+	// this is the one literal with no decimal point that still decodes to a
+	// float. FR-4.11.
 	//
 	// YAML keeps it an integer, because that format's own reference answers
 	// for it and calls `-0` an integer.
@@ -144,10 +142,10 @@ func jsonNumber(n json.Number) (any, error) {
 
 // Encode writes a structure in canonical form.
 //
-// Floats go through canonicalNumbers first. encoding/json writes a number the
-// way ECMAScript does, which drops a whole float's decimal point entirely
-// (1000000.0 becomes 1000000, read back as an integer by any pack whose JSON
-// parser distinguishes the two) and switches to an exponent at 1e21. Neither
+// Floats go through canonicalNumbers first. encoding/json drops a whole
+// float's decimal point entirely (1000000.0 becomes 1000000, read back as an
+// integer by any pack whose JSON parser distinguishes the two) and switches to
+// an exponent at 1e21. Neither
 // matches what this pack's YAML codec writes, so the number formatter is the
 // one part of encoding/json wrench cannot use. FR-4.8.
 func (jsonCodec) Encode(value any) ([]byte, error) {

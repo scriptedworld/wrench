@@ -5,7 +5,7 @@ Every one is an arm of a function the other tests exercise from the other side,
 so only branch coverage sees them: line coverage reads them as covered because
 the line above them ran.
 
-The refusals cite FR-2.11 and not FR-4.6. The empty-container case is level
+The refusals cite FR-2.11 and not FR-4.12. The empty-container case is level
 across the three packs and has a counterpart in each. The refusals are not, and
 cannot be: a Go map is `map[string]any`, so a non-string key is unspellable
 there, and a Rust `serde_json::Value` cannot hold a type outside JSON at all.
@@ -23,20 +23,20 @@ import pytest
 import wrench
 
 
-# COVERS FR-4.6 | edge
+# COVERS FR-4.12 | edge
 def test_an_empty_mapping_is_two_braces():
     """The early return, which the recursive path never reaches."""
     assert wrench.JSON.encode({}) == b"{}\n"
 
 
-# COVERS FR-4.6 | edge
+# COVERS FR-4.12 | edge
 def test_an_empty_sequence_is_two_brackets():
     """The same arm for a list. A newline between the brackets would be legal
     JSON and is not canonical form: an empty container has one spelling."""
     assert wrench.JSON.encode({"v": []}) == b'{\n  "v": []\n}\n'
 
 
-# COVERS FR-4.6 | edge
+# COVERS FR-4.12 | edge
 def test_a_nested_empty_container_keeps_the_short_spelling():
     """Depth does not change it, which makes it a property of the value and not
     of where the value sits."""

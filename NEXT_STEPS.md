@@ -41,69 +41,18 @@ where its JSON gives an `int64`, and that is a decode defect a fixture set
 feeding YAML only cannot catch. Every divergence found so far has been on the
 decode path, which is why the mechanism is the work and the rules are not.
 
-### A single number type cannot hold what FR-4.10 promises
-
-FR-4.10 has an integer stay exact across the signed 64-bit range in every pack.
-No JavaScript pack can keep that, and it fails silently, which is the failure
-this project exists to prevent. The TypeScript pack widens at 2^53 instead.
-
-Under Node 26.9.0:
-
-    JSON.parse int64max   9223372036854776000    not 9223372036854775807
-    js-yaml    int64max   9223372036854776000    the same corruption
-    BigInt                exact
-    ajv with a BigInt     INVALID: data/v must be integer
-
-So carrying the exact value collides with validation: ajv checks
-`typeof x === "number"`, and `lossless-json`'s exact `LosslessNumber` is an
-object, which it refuses the same way. RFC 8259 names ±(2^53-1) as the
-interoperable range, and protobuf's JSON mapping sends an int64 as a string for
-exactly this reason.
-
-Three ways out, and the row cannot stay as it is under any of them:
-
-1. Move the exactness boundary to 2^53 in every pack, which is RFC 8259's
-   interoperable range. Check first whether anything in the estate writes an
-   integer above it; a nanosecond epoch timestamp is about 1.7e18 and would be
-   affected.
-2. Large integers as strings, protobuf's answer, which changes FR-2.9's value
-   model.
-3. Scope FR-4.10 away from TypeScript, which writes down that one pack silently
-   corrupts what the others keep.
-
-A fourth thing is worth doing under any of them: the pack detects a value
-outside its exact range and fails with a `parse` error naming the key, rather
-than returning a number that is quietly wrong. Whether it can also carry the
-exact value is the harder half, and needs a schema transform teaching ajv a
-custom type, held to JSON Schema's own test suite.
-
 ### The file mode three packs agree on is written in no requirement
 
 Go, Python and Rust all set 0644 explicitly on a written file. FR-6.3 states the
 atomicity and nothing else, so three packs agree on something no row says, and the
 agreement is an accident waiting to be broken by a fourth.
 
-A C++ pack found this the hard way and had to decide it for itself, because
-`mkstemp` gives 0600 and a rename carries it. That pack is gone
-(`a-cpp-pack-was-built-and-removed`) and the gap it exposed is not: either the row
-says the mode or the next pack guesses too.
+A pack writing through `mkstemp`, as a C pack would, gets 0600, and the rename
+carries it. Either the row says the mode or the next pack guesses.
 
-### The TypeScript pack is not held to what the others are
-
-It passes its own tooling and is in none of the three mechanisms that hold packs
-level. Each is a small piece of work with a measurement attached:
-
-- **`node-std-quality` is written and not adopted.** It is committed in toolbox
-  at `6bcf7b6`. Adopting needs the pack's devDependencies declared, and two
-  files brought to the branch minimum: `local_file.ts`
-  75.0% and `schema.ts` 76.0% against 80.
-- **The suite is not in `bin/test-suite-parity.py`.** Adding
-  `--suite typescript='typescript/test/*.ts'` reported 6 divergences on
-  2026-09-22. Four are rows scoped to `go,python`. One is `FR-6.3 | property`,
-  which TypeScript tests and Go, Python and Rust do not, although all four set
-  0644 deliberately, so that one is a missing test in three packs.
-- **It is not in the cross-pack round-trip check.** A driver at
-  `testdata/parity/typescript/` and a table entry is the whole of it.
+No suite checks the mode either: the 15 `COVERS FR-6.3` marks in `go/`,
+`python/tests/` and `rust/tests/` include no `property` kind, so the mode is a
+missing test in three packs as well as a missing row.
 
 ### Smaller items
 
