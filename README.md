@@ -155,7 +155,9 @@ returning.
 including a bare `PYTHONPATH`, because the pack carries the schemas as generated
 source and resolves them without reference to where it sits. The Rust crate is
 taken by path: `build.rs` reads `schemas/` from above the crate directory, which
-is outside anything `cargo package` would carry.
+is outside anything `cargo package` would carry. A consumer whose cargo-deny
+denies `no-license-field` copies the libyaml-safer clarify that
+`rust/Cargo.toml` carries beside the dependency.
 
 A language gets a pack when something needs to read or write a structured file
 in it. Why this is a library per language instead of a C core with bindings is

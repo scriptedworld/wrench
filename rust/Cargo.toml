@@ -68,6 +68,21 @@ yaml-rust2 = "0.12"
 # at `emitter.rs:732` with no setting. That is why this pack's output is not
 # byte-identical to Go's and Python's, and why FR-5.5 asks for structural
 # agreement instead of identical bytes.
+#
+# Its manifest names `license-file = "LICENSE-MIT"` and no `license`
+# expression, so cargo-deny matches the file's text and warns
+# `no-license-field`. A gate that denies that lint fails on this crate until
+# the consumer's deny.toml records a reading of the file. For 0.3.0 the file is
+# MIT's grant and conditions word for word, with no copyright line:
+#
+#     [[licenses.clarify]]
+#     crate = "libyaml-safer"
+#     expression = "MIT"
+#     license-files = [{ path = "LICENSE-MIT", hash = 0x386ca1bc }]
+#
+# The hash is XXH32 of the text with CRLF turned to LF, the file shipping CRLF.
+# A release that changes the file no longer matches it, and the consumer's gate
+# fails until the new file is read.
 libyaml-safer = "0.3"
 
 # FR-2.6 needs a distinct error per step, and bolt's FR-6.11 is unimplementable
